@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Desafio da Divisão Melhorado</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow-x: hidden; /* Prevenir scroll horizontal com animações */
+        }
+        .input-style {
+            @apply p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 w-full text-lg transition-all duration-150;
+        }
+        .btn {
+            @apply text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 ease-in-out shadow-md hover:shadow-lg text-lg transform active:scale-95;
+        }
+        .btn-primary {
+            @apply bg-sky-500 hover:bg-sky-600 btn;
+        }
+        .btn-secondary {
+            @apply bg-slate-500 hover:bg-slate-600 btn;
+        }
+        .btn-start {
+            @apply bg-green-500 hover:bg-green-600 btn;
+        }
+
+
+        /* Esconde as setas do input number */
+        input[type=number]::-webkit-inner-spin-button,
+        input[type=number]::-webkit-outer-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield; /* Firefox */
+        }
+
+
+        /* Animações */
+        .scale-up-center {
+            animation: scale-up-center 0.4s cubic-bezier(0.390, 0.575, 0.565, 1.000) both;
+        }
+        @keyframes scale-up-center {
+            0% { transform: scale(0.5); opacity: 0.5; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+
+        .slide-in-bottom {
+            animation: slide-in-bottom 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
+        }
+        @keyframes slide-in-bottom {
+            0% { transform: translateY(50px); opacity: 0; }
+            100% { transform: translateY(0); opacity: 1; }
+        }
+        
+        .shake-horizontal {
+         animation: shake-horizontal 0.6s cubic-bezier(0.455, 0.030, 0.515, 0.955) both;
+        }
+        @keyframes shake-horizontal {
+            0%,100% { transform: translateX(0); }
+            10%,30%,50%,70% { transform: translateX(-8px); }
+            20%,40%,60% { transform: translateX(8px); }
+            80% { transform: translateX(6px); }
+            90% { transform: translateX(-6px); }
+        }
+
+
+        .pulsate {
+            animation: pulsate 1.5s ease-in-out infinite both;
+        }
+        @keyframes pulsate {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+    </style>
+</head>
+<body class="bg-slate-100 flex flex-col items-center justify-center min-h-screen p-4 selection:bg-sky-200 selection:text-sky-700">
+
+
+    <div id="user-setup-area" class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-md mb-8 scale-up-center">
+        <h2 class="text-2xl font-bold text-center text-sky-600 mb-6">Bem-vindo(a)!</h2>
+        <input type="text" id="username-input" placeholder="Digite seu nome" class="input-style mb-4">
+        <button id="start-game-button" class="btn-start w-full">Começar a Jogar!</button>
+    </div>
+
+
+    <div id="game-container" class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-md hidden">
+        <h1 class="text-3xl md:text-4xl font-bold text-center text-sky-600 mb-2">Desafio da Divisão</h1>
+        <p class="text-center text-slate-600 mb-6 text-lg">Jogador(a): <span id="username-display" class="font-semibold text-sky-500"></span></p>
+
+
+        <div id="game-content">
+            <div id="game-stats" class="flex justify-between text-base md:text-lg text-slate-600 mb-4">
+                <p>Rodada: <span id="round-display" class="font-semibold text-slate-800">1/15</span></p>
+                <p>Pontuação: <span id="score-display" class="font-semibold text-slate-800">0</span></p>
+            </div>
+
+
+            <div id="question-area" class="mb-6 text-center">
+                <p class="text-lg md:text-xl text-gray-700 mb-2">Qual divisão resulta em:</p>
+                <p id="target-result-display" class="text-5xl md:text-6xl font-bold text-sky-500 my-3">?</p>
+            </div>
+
+
+            <div id="input-area" class="space-y-4">
+                <div class="flex items-center space-x-2 md:space-x-3">
+                    <input type="number" id="dividend-input" placeholder="Dividendo" min="0" step="1" class="input-style flex-1">
+                    <span class="text-3xl font-semibold text-gray-500">÷</span>
+                    <input type="number" id="divisor-input" placeholder="Divisor" min="1" step="1" class="input-style flex-1">
+                </div>
+                <button id="submit-answer-button" class="btn-primary w-full">Verificar</button>
+            </div>
+        </div>
+
+
+        <div id="message-area" class="mt-6 text-center text-lg min-h-[4em] flex flex-col items-center justify-center p-2 rounded-md">
+            </div>
+
+
+        <div id="end-game-area" class="hidden text-center mt-6">
+            <h2 class="text-2xl md:text-3xl font-bold text-sky-700 mb-3">Fim de Jogo!</h2>
+            <p id="final-score-message" class="text-xl md:text-2xl text-slate-700 mb-6"></p>
+            <button id="restart-button" class="btn-secondary w-full max-w-xs mx-auto">Jogar Novamente</button>
+        </div>
+    </div>
+
+
+    <script>
+        // DOM Elements
+        const userSetupArea = document.getElementById('user-setup-area');
+        const usernameInput = document.getElementById('username-input');
+        const startGameButton = document.getElementById('start-game-button');
+        const gameContainer = document.getElementById('game-container');
+        const usernameDisplay = document.getElementById('username-display');
+        
+        const targetResultDisplay = document.getElementById('target-result-display');
+        const dividendInput = document.getElementById('dividend-input');
+        const divisorInput = document.getElementById('divisor-input');
+        const submitAnswerButton = document.getElementById('submit-answer-button');
+        const messageArea = document.getElementById('message-area');
+        const roundDisplay = document.getElementById('round-display');
+        const scoreDisplay = document.getElementById('score-display');
+        const gameContent = document.getElementById('game-content');
+        const endGameArea = document.getElementById('end-game-area');
+        const finalScoreMessage = document.getElementById('final-score-message');
+        const restartButton = document.getElementById('restart-button');
+
+
+        // Game State
+        let currentTargetResult;
+        let currentRound = 0;
+        let score = 0;
+        const maxRounds = 15;
+        let username = '';
+        let waitingForNextRound = false; // Flag to prevent multiple submissions while message is shown
+
+
+        function initializeUserSetup() {
+            userSetupArea.classList.remove('hidden');
+            userSetupArea.classList.add('scale-up-center');
+            gameContainer.classList.add('hidden');
+            endGameArea.classList.add('hidden'); // Garante que a tela de fim de jogo esteja oculta
+            usernameInput.value = ''; // Limpa o campo de nome ao reiniciar
+            usernameInput.focus();
+        }
+        
+        startGameButton.addEventListener('click', () => {
+            username = usernameInput.value.trim();
+            if (username === "") {
+                username = "Jogador(a)";
+            }
+            usernameDisplay.textContent = username;
+            userSetupArea.classList.add('hidden');
+            gameContainer.classList.remove('hidden');
+            gameContainer.classList.add('slide-in-bottom');
+            startGame();
+        });
+
+
+        usernameInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                startGameButton.click();
+            }
+        });
+
+
+        function startGame() {
+            currentRound = 0;
+            score = 0;
+            updateScoreDisplay();
+            gameContent.classList.remove('hidden');
+            endGameArea.classList.add('hidden');
+            submitAnswerButton.disabled = false;
+            dividendInput.disabled = false;
+            divisorInput.disabled = false;
+            waitingForNextRound = false;
+            nextRound();
+        }
+
+
+        function nextRound() {
+            currentRound++;
+            if (currentRound > maxRounds) {
+                endGame();
+                return;
+            }
+            updateRoundDisplay();
+            clearInputs();
+            clearMessage();
+            
+            targetResultDisplay.classList.remove('scale-up-center', 'pulsate'); // Remove old animations
+            void targetResultDisplay.offsetWidth; // Trigger reflow to restart animation
+
+
+            currentTargetResult = Math.floor(Math.random() * 9) + 2; 
+            targetResultDisplay.textContent = currentTargetResult;
+            targetResultDisplay.classList.add('scale-up-center'); // Animação para o novo número
+            setTimeout(() => targetResultDisplay.classList.add('pulsate'), 500); // Adiciona pulsação após aparecer
+
+
+            dividendInput.focus();
+            waitingForNextRound = false;
+            submitAnswerButton.disabled = false;
+        }
+
+
+        function clearInputs() {
+            dividendInput.value = '';
+            divisorInput.value = '';
+        }
+
+
+        function clearMessage() {
+            messageArea.innerHTML = ''; // Usar innerHTML para limpar conteúdo complexo
+            messageArea.className = 'mt-6 text-center text-lg min-h-[4em] flex flex-col items-center justify-center p-2 rounded-md';
+        }
+        
+        function showMessage(text, isCorrect, tip = "") {
+            messageArea.innerHTML = ''; // Limpa mensagens anteriores
+            const p = document.createElement('p');
+            p.textContent = text;
+            
+            messageArea.appendChild(p);
+
+
+            if (isCorrect === true) {
+                messageArea.className = 'mt-6 text-center text-lg min-h-[4em] flex flex-col items-center justify-center p-2 rounded-md bg-green-100 text-green-700 font-semibold slide-in-bottom';
+            } else if (isCorrect === false) {
+                messageArea.className = 'mt-6 text-center text-lg min-h-[4em] flex flex-col items-center justify-center p-2 rounded-md bg-red-100 text-red-700 font-semibold shake-horizontal';
+                if (tip) {
+                    const tipElement = document.createElement('small');
+                    tipElement.textContent = tip;
+                    tipElement.className = 'block text-sm text-red-600 mt-1';
+                    messageArea.appendChild(tipElement);
+                }
+            } else { 
+                 messageArea.className = 'mt-6 text-center text-lg min-h-[4em] flex flex-col items-center justify-center p-2 rounded-md bg-yellow-100 text-yellow-700 font-semibold slide-in-bottom';
+            }
+        }
+
+
+        function updateRoundDisplay() {
+            roundDisplay.textContent = `${currentRound}/${maxRounds}`;
+        }
+
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = score;
+        }
+
+
+        function handleSubmit() {
+            if (waitingForNextRound) return; // Impede submissões múltiplas
+
+
+            const dividendStr = dividendInput.value;
+            const divisorStr = divisorInput.value;
+
+
+            if (dividendStr === '' || divisorStr === '') {
+                showMessage('Por favor, preencha os dois campos.', null);
+                return;
+            }
+
+
+            const dividend = parseFloat(dividendStr);
+            const divisor = parseFloat(divisorStr);
+            
+            if (isNaN(dividend) || isNaN(divisor)) {
+                showMessage('Por favor, insira números válidos.', null);
+                return;
+            }
+            if (!Number.isInteger(dividend) || !Number.isInteger(divisor)) {
+                showMessage('Por favor, insira apenas números inteiros.', null);
+                return;
+            }
+            if (divisor === 0) {
+                showMessage('O divisor não pode ser zero!', false, "Zero não pode ser usado como divisor.");
+                return;
+            }
+            if (divisor < 0 || dividend < 0) {
+                 showMessage('Use apenas números naturais (positivos).', false, "Lembre-se: números naturais são inteiros e não negativos.");
+                return;
+            }
+
+
+            const userResult = dividend / divisor;
+
+
+            if (userResult === currentTargetResult) {
+                score++;
+                updateScoreDisplay();
+                showMessage(`Correto! ${dividend} ÷ ${divisor} = ${currentTargetResult}`, true);
+                waitingForNextRound = true;
+                submitAnswerButton.disabled = true; // Desabilita o botão enquanto espera
+                setTimeout(() => {
+                    if (currentRound < maxRounds) {
+                        nextRound();
+                    } else {
+                        endGame();
+                    }
+                }, 2000); // Tempo para ler a mensagem de acerto
+            } else {
+                let tip = "";
+                if (userResult < currentTargetResult) {
+                    tip = `Dica: Seu resultado (${userResult.toFixed(2).replace('.',',')}) foi MENOR que ${currentTargetResult}. Tente números diferentes.`;
+                } else if (userResult > currentTargetResult) {
+                    tip = `Dica: Seu resultado (${userResult.toFixed(2).replace('.',',')}) foi MAIOR que ${currentTargetResult}. Tente outros valores.`;
+                }
+                if (!Number.isInteger(userResult)) {
+                    tip += ` Lembre-se que o resultado deve ser o número inteiro ${currentTargetResult}.`
+                }
+                showMessage(`Incorreto. ${dividend} ÷ ${divisor} = ${userResult.toFixed(2).replace('.',',')}.`, false, tip.trim());
+                dividendInput.focus(); // Foca no primeiro campo para nova tentativa
+                // Não avança para a próxima rodada
+            }
+        }
+
+
+        function endGame() {
+            gameContent.classList.add('hidden');
+            endGameArea.classList.remove('hidden');
+            endGameArea.classList.add('scale-up-center');
+            finalScoreMessage.textContent = `${username}, sua pontuação final: ${score} de ${maxRounds}!`;
+            submitAnswerButton.disabled = true;
+            dividendInput.disabled = true;
+            divisorInput.disabled = true;
+            clearMessage(); 
+        }
+
+
+        // Event Listeners
+        submitAnswerButton.addEventListener('click', handleSubmit);
+        restartButton.addEventListener('click', () => {
+            // Volta para a tela de inserção de nome ao reiniciar
+            gameContainer.classList.add('hidden');
+            gameContainer.classList.remove('slide-in-bottom');
+            endGameArea.classList.add('hidden');
+            endGameArea.classList.remove('scale-up-center');
+            initializeUserSetup();
+        });
+        
+        dividendInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault(); 
+                submitAnswerButton.click();
+            }
+        });
+        divisorInput.addEventListener('keypress', function(event) {
+            if (event.key === 'Enter') {
+                event.preventDefault();
+                submitAnswerButton.click();
+            }
+        });
+
+
+        // Start the game setup on load
+        initializeUserSetup();
+    </script>
+
+
+</body>
+</html>
