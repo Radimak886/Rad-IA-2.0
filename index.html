@@ -1,389 +1,566 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Desafio da Divisão Melhorado</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700;900&display=swap');
-        body {
-            font-family: 'Inter', sans-serif;
-            overflow-x: hidden; /* Prevenir scroll horizontal com animações */
-        }
-        .input-style {
-            @apply p-3 border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-sky-500 focus:border-sky-500 w-full text-lg transition-all duration-150;
-        }
-        .btn {
-            @apply text-white font-semibold py-3 px-6 rounded-lg transition-all duration-200 ease-in-out shadow-md hover:shadow-lg text-lg transform active:scale-95;
-        }
-        .btn-primary {
-            @apply bg-sky-500 hover:bg-sky-600 btn;
-        }
-        .btn-secondary {
-            @apply bg-slate-500 hover:bg-slate-600 btn;
-        }
-        .btn-start {
-            @apply bg-green-500 hover:bg-green-600 btn;
-        }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CONCENAL - Cloud System</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 
+    <!-- IMPORTANTE: Firebase SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 
-        /* Esconde as setas do input number */
-        input[type=number]::-webkit-inner-spin-button,
-        input[type=number]::-webkit-outer-spin-button {
-            -webkit-appearance: none;
-            margin: 0;
-        }
-        input[type=number] {
-            -moz-appearance: textfield; /* Firefox */
-        }
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        school: { green: '#047857', lightGreen: '#10B981', red: '#DC2626', bg: '#F3F4F6' }
+                    }
+                }
+            }
+        }
+    </script>
 
-
-        /* Animações */
-        .scale-up-center {
-            animation: scale-up-center 0.4s cubic-bezier(0.390, 0.575, 0.565, 1.000) both;
-        }
-        @keyframes scale-up-center {
-            0% { transform: scale(0.5); opacity: 0.5; }
-            100% { transform: scale(1); opacity: 1; }
-        }
-
-
-        .slide-in-bottom {
-            animation: slide-in-bottom 0.5s cubic-bezier(0.250, 0.460, 0.450, 0.940) both;
-        }
-        @keyframes slide-in-bottom {
-            0% { transform: translateY(50px); opacity: 0; }
-            100% { transform: translateY(0); opacity: 1; }
-        }
-        
-        .shake-horizontal {
-         animation: shake-horizontal 0.6s cubic-bezier(0.455, 0.030, 0.515, 0.955) both;
-        }
-        @keyframes shake-horizontal {
-            0%,100% { transform: translateX(0); }
-            10%,30%,50%,70% { transform: translateX(-8px); }
-            20%,40%,60% { transform: translateX(8px); }
-            80% { transform: translateX(6px); }
-            90% { transform: translateX(-6px); }
-        }
-
-
-        .pulsate {
-            animation: pulsate 1.5s ease-in-out infinite both;
-        }
-        @keyframes pulsate {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.05); }
-            100% { transform: scale(1); }
-        }
-    </style>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #F3F4F6; }
+        input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #f1f1f1; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        
+        /* Indicador de Status da Conexão */
+        .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
+        .status-online { background-color: #10B981; box-shadow: 0 0 5px #10B981; }
+        .status-offline { background-color: #EF4444; }
+    </style>
 </head>
-<body class="bg-slate-100 flex flex-col items-center justify-center min-h-screen p-4 selection:bg-sky-200 selection:text-sky-700">
+<body class="text-gray-800 h-screen flex flex-col overflow-hidden">
 
+    <!-- SETUP FIREBASE (Obrigatório preencher) -->
+    <div id="setup-screen" class="fixed inset-0 z-[60] flex items-center justify-center bg-gray-900 text-white hidden">
+        <div class="bg-gray-800 p-8 rounded-lg max-w-lg w-full text-center">
+            <h2 class="text-2xl font-bold mb-4 text-yellow-400">Configuração Necessária</h2>
+            <p class="mb-4 text-sm text-gray-300">Para sincronizar entre dispositivos, você precisa colar sua configuração do Firebase no código.</p>
+            <div class="bg-gray-900 p-4 rounded text-left text-xs font-mono mb-4 text-green-400">
+                // Procure por esta linha no código HTML:<br>
+                const firebaseConfig = { ... }
+            </div>
+            <button onclick="location.reload()" class="bg-blue-600 px-6 py-2 rounded hover:bg-blue-500">Já configurei, recarregar</button>
+        </div>
+    </div>
 
-    <div id="user-setup-area" class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-md mb-8 scale-up-center">
-        <h2 class="text-2xl font-bold text-center text-sky-600 mb-6">Bem-vindo(a)!</h2>
-        <input type="text" id="username-input" placeholder="Digite seu nome" class="input-style mb-4">
-        <button id="start-game-button" class="btn-start w-full">Começar a Jogar!</button>
-    </div>
+    <!-- LOGIN -->
+    <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-school-green">
+        <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md mx-4 fade-in relative">
+            <div class="text-center mb-6">
+                <h1 class="text-3xl font-bold text-school-green mb-2">CONCENAL</h1>
+                <p class="text-gray-500 text-sm">Sistema na Nuvem (Firebase)</p>
+                <div class="mt-4 p-2 bg-green-100 text-green-800 rounded text-xs">
+                    <i class="fas fa-info-circle"></i> Login Padrão: <b>admin</b> / <b>1234</b>
+                </div>
+            </div>
+            <form id="login-form" class="space-y-4">
+                <input type="text" id="username" placeholder="Usuário" class="block w-full border border-gray-300 rounded p-2" required>
+                <input type="password" id="password" placeholder="Senha" class="block w-full border border-gray-300 rounded p-2" required>
+                <div id="login-error" class="text-red-600 text-sm hidden">Credenciais inválidas.</div>
+                <button type="submit" class="w-full py-2 bg-school-green text-white rounded hover:bg-green-700 font-bold transition">
+                    <i class="fas fa-cloud"></i> Acessar Sistema
+                </button>
+            </form>
+        </div>
+    </div>
 
+    <!-- APP PRINCIPAL -->
+    <div id="app-screen" class="hidden flex-col h-full relative">
+        <!-- Loading Overlay -->
+        <div id="loading-overlay" class="absolute inset-0 bg-white bg-opacity-80 z-40 flex items-center justify-center hidden">
+            <i class="fas fa-circle-notch fa-spin text-4xl text-school-green"></i>
+        </div>
 
-    <div id="game-container" class="bg-white p-6 md:p-8 rounded-xl shadow-2xl w-full max-w-md hidden">
-        <h1 class="text-3xl md:text-4xl font-bold text-center text-sky-600 mb-2">Desafio da Divisão</h1>
-        <p class="text-center text-slate-600 mb-6 text-lg">Jogador(a): <span id="username-display" class="font-semibold text-sky-500"></span></p>
+        <!-- Header -->
+        <header class="bg-school-green text-white shadow-md z-20 shrink-0">
+            <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <i class="fas fa-globe-americas text-2xl"></i>
+                    <div class="leading-tight">
+                        <h1 class="text-lg font-bold tracking-wide">CONCENAL <span class="text-[10px] bg-green-800 px-1 rounded ml-1">CLOUD</span></h1>
+                        <span class="text-xs text-green-200 block">Prof. Kelvin | <span id="connection-status"><span class="status-dot status-online"></span> Online</span></span>
+                    </div>
+                </div>
+                <div class="hidden md:flex bg-green-800 rounded p-1">
+                    <button onclick="switchMode('grades')" id="nav-grades" class="px-6 py-1.5 rounded text-sm font-bold bg-white text-school-green shadow">Notas</button>
+                    <button onclick="switchMode('attendance')" id="nav-attendance" class="px-6 py-1.5 rounded text-sm font-bold text-green-100 hover:text-white">Frequência</button>
+                </div>
+                <button onclick="logout()" class="text-white hover:text-red-200" title="Sair"><i class="fas fa-sign-out-alt fa-lg"></i></button>
+            </div>
+        </header>
 
+        <!-- Barra de Controle -->
+        <div class="bg-white border-b border-gray-200 shadow-sm shrink-0 z-10">
+            <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row gap-4 justify-between items-center">
+                <div class="flex flex-wrap items-center gap-3 w-full md:w-auto justify-center md:justify-start">
+                    <select id="subject-select" onchange="changeSubject(this.value)" class="bg-green-50 border border-green-200 text-green-800 font-bold py-2 px-3 rounded focus:outline-none cursor-pointer"></select>
+                    <div class="flex space-x-1 overflow-x-auto" id="class-tabs"></div>
+                </div>
+                <div id="action-buttons" class="flex gap-2"></div>
+            </div>
+            <!-- Mobile Nav -->
+            <div class="md:hidden flex justify-around bg-green-50 border-t border-gray-200 p-2 text-xs font-bold">
+                <button onclick="switchMode('grades')" id="mob-grades" class="flex-1 text-center py-1 text-school-green border-b-2 border-school-green">NOTAS</button>
+                <button onclick="switchMode('attendance')" id="mob-attendance" class="flex-1 text-center py-1 text-gray-500">CHAMADA</button>
+            </div>
+        </div>
 
-        <div id="game-content">
-            <div id="game-stats" class="flex justify-between text-base md:text-lg text-slate-600 mb-4">
-                <p>Rodada: <span id="round-display" class="font-semibold text-slate-800">1/15</span></p>
-                <p>Pontuação: <span id="score-display" class="font-semibold text-slate-800">0</span></p>
-            </div>
+        <!-- Conteúdo -->
+        <main class="flex-1 overflow-auto bg-gray-50 p-2 md:p-6" id="main-content">
+            <!-- Tabela Notas -->
+            <div id="view-grades" class="max-w-7xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden fade-in border border-gray-200">
+                <div class="bg-gray-50 px-4 py-2 border-b border-gray-200 flex justify-between items-center">
+                    <h2 class="text-sm font-bold text-gray-600 uppercase" id="table-header-title">Boletim</h2>
+                    <span class="text-xs text-green-600 font-bold flex items-center gap-1"><i class="fas fa-sync-alt"></i> Salvamento Automático</span>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <thead class="bg-gray-100 text-gray-500 font-bold text-xs uppercase text-center sticky top-0 z-10">
+                            <tr>
+                                <th class="px-4 py-3 text-left w-64 sticky left-0 bg-gray-100 shadow-sm border-r">Aluno</th>
+                                <th class="w-16">U1</th><th class="w-16">U2</th><th class="w-16">U3</th><th class="w-16">U4</th><th class="w-16">U5</th><th class="w-16">U6</th>
+                                <th class="w-20 bg-blue-50 text-blue-700 border-l">Faltas</th>
+                                <th class="w-20 bg-gray-50 text-gray-800 border-l">Média</th>
+                                <th class="w-24 text-red-600 border-l">Recup.</th>
+                                <th class="w-32 border-l">Status</th>
+                                <th class="w-12 border-l">...</th>
+                            </tr>
+                        </thead>
+                        <tbody id="grades-body" class="bg-white divide-y divide-gray-200 text-sm"></tbody>
+                    </table>
+                </div>
+                <div id="empty-state-grades" class="hidden p-12 text-center text-gray-500"><i class="fas fa-cloud-upload-alt text-4xl mb-3 text-gray-300"></i><p>Sincronizando ou turma vazia...</p></div>
+            </div>
 
+            <!-- Tabela Chamada -->
+            <div id="view-attendance" class="max-w-4xl mx-auto bg-white rounded-lg shadow-lg overflow-hidden hidden fade-in border border-gray-200">
+                <div class="p-5 border-b bg-gray-50 flex flex-col sm:flex-row justify-between items-center gap-4">
+                    <div class="bg-white p-2 rounded border border-gray-200 shadow-sm">
+                        <label class="block text-[10px] text-gray-500 font-bold uppercase mb-1">Data</label>
+                        <input type="date" id="attendance-date" class="block w-full text-sm font-bold text-gray-800 focus:outline-none">
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full divide-y divide-gray-200">
+                        <tbody id="attendance-body" class="bg-white divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                <div class="p-4 bg-gray-50 border-t flex justify-end">
+                    <button onclick="saveDailyAttendance()" class="bg-school-green hover:bg-green-700 text-white px-8 py-2.5 rounded shadow-sm font-bold transition flex items-center gap-2">
+                        <i class="fas fa-save"></i> Confirmar Chamada
+                    </button>
+                </div>
+                <div id="empty-state-attendance" class="hidden p-10 text-center text-gray-500">Sem alunos.</div>
+            </div>
+        </main>
+    </div>
 
-            <div id="question-area" class="mb-6 text-center">
-                <p class="text-lg md:text-xl text-gray-700 mb-2">Qual divisão resulta em:</p>
-                <p id="target-result-display" class="text-5xl md:text-6xl font-bold text-sky-500 my-3">?</p>
-            </div>
+    <!-- Modais -->
+    <div id="modal-add" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded p-6 w-full max-w-sm">
+            <h3 class="font-bold text-lg mb-4">Novo Aluno <span id="modal-class-name" class="text-school-green"></span></h3>
+            <input type="text" id="new-name" class="w-full border p-2 rounded mb-4" placeholder="Nome Completo">
+            <div class="flex justify-end gap-2">
+                <button onclick="closeModal('modal-add')" class="px-4 py-2 bg-gray-100 rounded">Cancelar</button>
+                <button onclick="addStudent()" class="px-4 py-2 bg-school-green text-white rounded">Salvar na Nuvem</button>
+            </div>
+        </div>
+    </div>
 
+    <!-- Modal Histórico -->
+    <div id="modal-history" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
+            <div class="p-4 border-b flex justify-between items-center">
+                <h3 class="font-bold">Histórico de Faltas</h3>
+                <button onclick="closeModal('modal-history')"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="p-4 overflow-y-auto flex-1"><ul id="history-list" class="space-y-2"></ul></div>
+        </div>
+    </div>
 
-            <div id="input-area" class="space-y-4">
-                <div class="flex items-center space-x-2 md:space-x-3">
-                    <input type="number" id="dividend-input" placeholder="Dividendo" min="0" step="1" class="input-style flex-1">
-                    <span class="text-3xl font-semibold text-gray-500">÷</span>
-                    <input type="number" id="divisor-input" placeholder="Divisor" min="1" step="1" class="input-style flex-1">
-                </div>
-                <button id="submit-answer-button" class="btn-primary w-full">Verificar</button>
-            </div>
-        </div>
+    <!-- LÓGICA -->
+    <script>
+        // =========================================================================
+        // KELVIN, COLE SUA CONFIGURAÇÃO DO FIREBASE ABAIXO
+        // =========================================================================
+        
+        const firebaseConfig = {
+            apiKey: "AIzaSyCBZGHO9APpiZ-8Mgq3TDErFvKW62nnqH0",
+            authDomain: "concenal-sistema.firebaseapp.com",
+            projectId: "concenal-sistema",
+            storageBucket: "concenal-sistema.firebasestorage.app",
+            messagingSenderId: "825709353374",
+            appId: "1:825709353374:web:1dd2657f60fb50b46c5e8f"
+        };
 
+        // =========================================================================
 
-        <div id="message-area" class="mt-6 text-center text-lg min-h-[4em] flex flex-col items-center justify-center p-2 rounded-md">
-            </div>
+        let db; // Referência ao Firestore
+        let unsubscribe = null; // Para parar de ouvir atualizações se necessário
 
+        // Estrutura Local (Espelho do Banco)
+        const today = new Date().toISOString().split('T')[0];
+        const SUBJECTS = ["Matemática", "Português", "Geografia", "História", "Arte", "Educação Física", "Inglês", "Ciências"];
+        
+        let appData = {
+            currentClass: "9A",
+            currentSubject: "Matemática",
+            currentMode: "grades",
+            classes: ["6A", "6B", "7A", "7B", "8A", "8B", "9A", "9B"],
+            students: [] 
+        };
 
-        <div id="end-game-area" class="hidden text-center mt-6">
-            <h2 class="text-2xl md:text-3xl font-bold text-sky-700 mb-3">Fim de Jogo!</h2>
-            <p id="final-score-message" class="text-xl md:text-2xl text-slate-700 mb-6"></p>
-            <button id="restart-button" class="btn-secondary w-full max-w-xs mx-auto">Jogar Novamente</button>
-        </div>
-    </div>
+        function init() {
+            // Verificar se o usuário configurou o Firebase
+            if (!firebaseConfig.apiKey) {
+                document.getElementById('setup-screen').classList.remove('hidden');
+                return;
+            }
 
+            // Inicializar Firebase
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            
+            // Ativar persistência offline (funciona sem internet e sincroniza depois)
+            db.enablePersistence().catch(err => console.log("Persistência offline desativada/erro", err));
 
-    <script>
-        // DOM Elements
-        const userSetupArea = document.getElementById('user-setup-area');
-        const usernameInput = document.getElementById('username-input');
-        const startGameButton = document.getElementById('start-game-button');
-        const gameContainer = document.getElementById('game-container');
-        const usernameDisplay = document.getElementById('username-display');
-        
-        const targetResultDisplay = document.getElementById('target-result-display');
-        const dividendInput = document.getElementById('dividend-input');
-        const divisorInput = document.getElementById('divisor-input');
-        const submitAnswerButton = document.getElementById('submit-answer-button');
-        const messageArea = document.getElementById('message-area');
-        const roundDisplay = document.getElementById('round-display');
-        const scoreDisplay = document.getElementById('score-display');
-        const gameContent = document.getElementById('game-content');
-        const endGameArea = document.getElementById('end-game-area');
-        const finalScoreMessage = document.getElementById('final-score-message');
-        const restartButton = document.getElementById('restart-button');
+            // Checar Login Local (Segurança simples de UI)
+            const isAuth = localStorage.getItem('concenal_auth') === 'true';
+            if(isAuth) showApp();
+            else document.getElementById('login-screen').classList.remove('hidden');
 
+            document.getElementById('attendance-date').value = today;
+            populateSubjectSelect();
+        }
 
-        // Game State
-        let currentTargetResult;
-        let currentRound = 0;
-        let score = 0;
-        const maxRounds = 15;
-        let username = '';
-        let waitingForNextRound = false; // Flag to prevent multiple submissions while message is shown
+        // --- AUTH SIMPLES ---
+        document.getElementById('login-form').addEventListener('submit', (e) => {
+            e.preventDefault();
+            const u = document.getElementById('username').value;
+            const p = document.getElementById('password').value;
+            if (u === "admin" && p === "1234") {
+                localStorage.setItem('concenal_auth', 'true');
+                showApp();
+            } else {
+                document.getElementById('login-error').classList.remove('hidden');
+            }
+        });
 
+        function logout() {
+            localStorage.removeItem('concenal_auth');
+            location.reload();
+        }
 
-        function initializeUserSetup() {
-            userSetupArea.classList.remove('hidden');
-            userSetupArea.classList.add('scale-up-center');
-            gameContainer.classList.add('hidden');
-            endGameArea.classList.add('hidden'); // Garante que a tela de fim de jogo esteja oculta
-            usernameInput.value = ''; // Limpa o campo de nome ao reiniciar
-            usernameInput.focus();
-        }
-        
-        startGameButton.addEventListener('click', () => {
-            username = usernameInput.value.trim();
-            if (username === "") {
-                username = "Jogador(a)";
-            }
-            usernameDisplay.textContent = username;
-            userSetupArea.classList.add('hidden');
-            gameContainer.classList.remove('hidden');
-            gameContainer.classList.add('slide-in-bottom');
-            startGame();
-        });
+        // --- SINCRONIZAÇÃO EM TEMPO REAL (FIREBASE) ---
+        function startRealtimeSync() {
+            document.getElementById('loading-overlay').classList.remove('hidden');
 
+            // Ouvir a coleção 'students'
+            // Filtro: para não baixar a escola inteira de uma vez, podemos filtrar se quiser, 
+            // mas aqui vamos baixar tudo e filtrar no JS para simplicidade do "One File"
+            unsubscribe = db.collection('concenal_students').onSnapshot((snapshot) => {
+                const students = [];
+                snapshot.forEach((doc) => {
+                    students.push({ id: doc.id, ...doc.data() });
+                });
+                
+                appData.students = students;
+                updateUI();
+                document.getElementById('loading-overlay').classList.add('hidden');
+            }, (error) => {
+                console.error("Erro ao sincronizar:", error);
+                alert("Erro ao conectar ao banco de dados. Verifique a internet.");
+            });
+        }
 
-        usernameInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                startGameButton.click();
-            }
-        });
+        function updateUI() {
+            renderClassTabs();
+            if (appData.currentMode === 'grades') renderGradesTable();
+            else renderAttendanceTable();
+        }
 
+        function showApp() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('app-screen').classList.remove('hidden');
+            startRealtimeSync();
+        }
 
-        function startGame() {
-            currentRound = 0;
-            score = 0;
-            updateScoreDisplay();
-            gameContent.classList.remove('hidden');
-            endGameArea.classList.add('hidden');
-            submitAnswerButton.disabled = false;
-            dividendInput.disabled = false;
-            divisorInput.disabled = false;
-            waitingForNextRound = false;
-            nextRound();
-        }
+        // --- ESCRITA NO BANCO (FIREBASE) ---
+        // Toda vez que você muda uma nota, enviamos para o Google
+        async function saveStudentToCloud(student) {
+            try {
+                // Remove o ID do objeto para salvar (o ID é a chave do documento)
+                const { id, ...data } = student; 
+                await db.collection('concenal_students').doc(id).set(data, { merge: true });
+                // Não precisa chamar render(), pois o onSnapshot vai ouvir a mudança e renderizar automaticamente
+            } catch (error) {
+                console.error("Erro ao salvar:", error);
+                alert("Erro ao salvar dados. Tente novamente.");
+            }
+        }
 
+        async function addStudentToCloud(name, className) {
+            const newStudent = {
+                name: name,
+                class: className,
+                subjects: {} 
+            };
+            // Adiciona e gera ID automático
+            await db.collection('concenal_students').add(newStudent);
+        }
 
-        function nextRound() {
-            currentRound++;
-            if (currentRound > maxRounds) {
-                endGame();
-                return;
-            }
-            updateRoundDisplay();
-            clearInputs();
-            clearMessage();
-            
-            targetResultDisplay.classList.remove('scale-up-center', 'pulsate'); // Remove old animations
-            void targetResultDisplay.offsetWidth; // Trigger reflow to restart animation
+        async function deleteStudentFromCloud(id) {
+            if(confirm("Tem certeza? Esta ação apagará o aluno do banco de dados para TODOS os usuários.")) {
+                await db.collection('concenal_students').doc(id).delete();
+            }
+        }
 
+        // --- LÓGICA DE NEGÓCIO ---
 
-            currentTargetResult = Math.floor(Math.random() * 9) + 2; 
-            targetResultDisplay.textContent = currentTargetResult;
-            targetResultDisplay.classList.add('scale-up-center'); // Animação para o novo número
-            setTimeout(() => targetResultDisplay.classList.add('pulsate'), 500); // Adiciona pulsação após aparecer
+        function updateGrade(id, idx, val) {
+            const s = appData.students.find(st => st.id === id);
+            if(s) {
+                const subData = ensureSubjectData(s, appData.currentSubject);
+                subData.units[idx] = val === "" ? null : parseFloat(val);
+                // Salvar no Firebase
+                saveStudentToCloud(s);
+            }
+        }
 
+        function updateRecovery(id, val) {
+            const s = appData.students.find(st => st.id === id);
+            if(s) {
+                const subData = ensureSubjectData(s, appData.currentSubject);
+                subData.recovery = val === "" ? null : parseFloat(val);
+                saveStudentToCloud(s);
+            }
+        }
 
-            dividendInput.focus();
-            waitingForNextRound = false;
-            submitAnswerButton.disabled = false;
-        }
+        function addStudent() {
+            const name = document.getElementById('new-name').value;
+            if (name) {
+                addStudentToCloud(name, appData.currentClass);
+                closeModal('modal-add');
+                document.getElementById('new-name').value = '';
+            }
+        }
 
+        function saveDailyAttendance() {
+            const date = document.getElementById('attendance-date').value;
+            let batch = db.batch(); // Batch para salvar vários de uma vez atomicamente
+            let hasChanges = false;
 
-        function clearInputs() {
-            dividendInput.value = '';
-            divisorInput.value = '';
-        }
+            appData.students.forEach(s => {
+                if (s.class === appData.currentClass && tempAttendance[s.id]) {
+                    const subData = ensureSubjectData(s, appData.currentSubject);
+                    subData.attendance[date] = tempAttendance[s.id];
+                    
+                    const docRef = db.collection('concenal_students').doc(s.id);
+                    // Prepara o update
+                    const updatePath = `subjects.${appData.currentSubject}.attendance.${date}`;
+                    // Firestore update nested field syntax
+                    let updateData = {};
+                    updateData[`subjects.${appData.currentSubject}.attendance`] = subData.attendance;
+                    
+                    batch.update(docRef, updateData);
+                    hasChanges = true;
+                }
+            });
 
+            if (hasChanges) {
+                batch.commit().then(() => {
+                    alert("Chamada salva na nuvem!");
+                    renderAttendanceTable(); // Refresh visual
+                });
+            }
+        }
 
-        function clearMessage() {
-            messageArea.innerHTML = ''; // Usar innerHTML para limpar conteúdo complexo
-            messageArea.className = 'mt-6 text-center text-lg min-h-[4em] flex flex-col items-center justify-center p-2 rounded-md';
-        }
-        
-        function showMessage(text, isCorrect, tip = "") {
-            messageArea.innerHTML = ''; // Limpa mensagens anteriores
-            const p = document.createElement('p');
-            p.textContent = text;
-            
-            messageArea.appendChild(p);
+        // --- AUXILIARES E ESTRUTURA ---
+        function ensureSubjectData(student, subjectName) {
+            if (!student.subjects) student.subjects = {};
+            if (!student.subjects[subjectName]) {
+                student.subjects[subjectName] = { units: [null,null,null,null,null,null], recovery: null, attendance: {} };
+            }
+            return student.subjects[subjectName];
+        }
 
+        function populateSubjectSelect() {
+            const select = document.getElementById('subject-select');
+            select.innerHTML = SUBJECTS.map(sub => `<option value="${sub}">${sub}</option>`).join('');
+            select.value = appData.currentSubject;
+        }
 
-            if (isCorrect === true) {
-                messageArea.className = 'mt-6 text-center text-lg min-h-[4em] flex flex-col items-center justify-center p-2 rounded-md bg-green-100 text-green-700 font-semibold slide-in-bottom';
-            } else if (isCorrect === false) {
-                messageArea.className = 'mt-6 text-center text-lg min-h-[4em] flex flex-col items-center justify-center p-2 rounded-md bg-red-100 text-red-700 font-semibold shake-horizontal';
-                if (tip) {
-                    const tipElement = document.createElement('small');
-                    tipElement.textContent = tip;
-                    tipElement.className = 'block text-sm text-red-600 mt-1';
-                    messageArea.appendChild(tipElement);
-                }
-            } else { 
-                 messageArea.className = 'mt-6 text-center text-lg min-h-[4em] flex flex-col items-center justify-center p-2 rounded-md bg-yellow-100 text-yellow-700 font-semibold slide-in-bottom';
-            }
-        }
+        function switchMode(mode) {
+            appData.currentMode = mode;
+            updateUI(); // Apenas atualiza UI localmente, não precisa ir pro banco
+        }
+        
+        function changeSubject(val) {
+            appData.currentSubject = val;
+            updateUI();
+        }
 
+        function renderClassTabs() {
+            const container = document.getElementById('class-tabs');
+            container.innerHTML = '';
+            appData.classes.forEach(cls => {
+                const isActive = cls === appData.currentClass;
+                const btn = document.createElement('button');
+                btn.className = `px-3 py-2 rounded text-sm font-bold whitespace-nowrap ${isActive ? 'bg-school-green text-white shadow' : 'bg-white text-gray-500 border'}`;
+                btn.innerText = cls;
+                btn.onclick = () => { appData.currentClass = cls; updateUI(); };
+                container.appendChild(btn);
+            });
+        }
 
-        function updateRoundDisplay() {
-            roundDisplay.textContent = `${currentRound}/${maxRounds}`;
-        }
+        function getStudentsByClass() {
+            if(!appData.students) return [];
+            return appData.students.filter(s => s.class === appData.currentClass).sort((a,b) => a.name.localeCompare(b.name));
+        }
 
+        // Renderização Tabelas (Idêntico ao V3, mas chamando as funções acima)
+        function renderGradesTable() {
+            const tbody = document.getElementById('grades-body');
+            tbody.innerHTML = '';
+            document.getElementById('table-header-title').innerText = `Boletim: ${appData.currentSubject}`;
+            document.getElementById('view-grades').classList.remove('hidden');
+            document.getElementById('view-attendance').classList.add('hidden');
+            document.getElementById('action-buttons').innerHTML = `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-2 rounded text-sm font-bold shadow"><i class="fas fa-plus"></i> Aluno</button>`;
 
-        function updateScoreDisplay() {
-            scoreDisplay.textContent = score;
-        }
+            const students = getStudentsByClass();
+            if (students.length === 0) {
+                document.getElementById('empty-state-grades').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('empty-state-grades').classList.add('hidden');
 
+            students.forEach(s => {
+                const subData = ensureSubjectData(s, appData.currentSubject);
+                const calc = calculateStatus(subData);
+                const totalFaults = Object.values(subData.attendance || {}).filter(st => st === 'F').length;
+                
+                let unitsHtml = '';
+                for (let i = 0; i < 6; i++) {
+                    const val = subData.units[i] ?? '';
+                    const color = (val !== '' && val < 6) ? 'text-red-600 font-bold' : (val !== '' ? 'text-green-700' : 'text-gray-400');
+                    unitsHtml += `<td class="px-1 py-2 border-l"><input type="number" step="0.1" class="w-full text-center bg-transparent focus:outline-none ${color}" value="${val}" onchange="updateGrade('${s.id}', ${i}, this.value)"></td>`;
+                }
 
-        function handleSubmit() {
-            if (waitingForNextRound) return; // Impede submissões múltiplas
+                const tr = document.createElement('tr');
+                tr.className = "hover:bg-blue-50 transition";
+                tr.innerHTML = `
+                    <td class="px-4 py-3 font-medium text-gray-900 border-r flex justify-between items-center group">
+                        ${s.name} <button onclick="deleteStudentFromCloud('${s.id}')" class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fas fa-trash"></i></button>
+                    </td>
+                    ${unitsHtml}
+                    <td class="px-1 py-2 bg-blue-50 text-center font-bold text-blue-800 border-l cursor-pointer" onclick="showHistory('${s.id}')">${totalFaults}</td>
+                    <td class="px-2 py-3 text-center font-bold bg-gray-50 border-l ${parseFloat(calc.average) < 6 ? 'text-red-600' : 'text-gray-700'}">${calc.average}</td>
+                    <td class="px-1 py-2 text-center border-l"><input type="number" step="0.1" class="w-full text-center ${calc.average >= 6 ? 'bg-gray-100' : 'bg-red-50 text-red-700'}" value="${subData.recovery ?? ''}" ${calc.average >= 6 ? 'disabled' : ''} onchange="updateRecovery('${s.id}', this.value)"></td>
+                    <td class="px-2 py-3 text-center text-[10px] font-bold uppercase border-l ${calc.statusClass}">${calc.status}</td>
+                    <td class="px-2 py-3 text-center text-xs border-l"><button onclick="showHistory('${s.id}')" class="text-gray-400"><i class="fas fa-list-alt"></i></button></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
+        let tempAttendance = {};
+        function renderAttendanceTable() {
+            const tbody = document.getElementById('attendance-body');
+            tbody.innerHTML = '';
+            document.getElementById('view-grades').classList.add('hidden');
+            document.getElementById('view-attendance').classList.remove('hidden');
+            document.getElementById('action-buttons').innerHTML = '';
 
-            const dividendStr = dividendInput.value;
-            const divisorStr = divisorInput.value;
+            const students = getStudentsByClass();
+            const date = document.getElementById('attendance-date').value;
+            tempAttendance = {};
 
+            if (students.length === 0) {
+                document.getElementById('empty-state-attendance').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('empty-state-attendance').classList.add('hidden');
 
-            if (dividendStr === '' || divisorStr === '') {
-                showMessage('Por favor, preencha os dois campos.', null);
-                return;
-            }
+            students.forEach(s => {
+                const subData = ensureSubjectData(s, appData.currentSubject);
+                const isPresent = subData.attendance[date] !== 'F';
+                tempAttendance[s.id] = isPresent ? 'P' : 'F';
 
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="px-6 py-4 font-bold text-gray-700">${s.name}</td>
+                    <td class="px-6 py-4 text-center">
+                        <button id="btn-att-${s.id}" onclick="toggleAttendance('${s.id}')" 
+                            class="w-32 py-2 rounded shadow text-xs font-bold transition ${isPresent ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}">
+                            ${isPresent ? 'PRESENTE' : 'FALTOU'}
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+            document.getElementById('attendance-date').onchange = renderAttendanceTable;
+        }
 
-            const dividend = parseFloat(dividendStr);
-            const divisor = parseFloat(divisorStr);
-            
-            if (isNaN(dividend) || isNaN(divisor)) {
-                showMessage('Por favor, insira números válidos.', null);
-                return;
-            }
-            if (!Number.isInteger(dividend) || !Number.isInteger(divisor)) {
-                showMessage('Por favor, insira apenas números inteiros.', null);
-                return;
-            }
-            if (divisor === 0) {
-                showMessage('O divisor não pode ser zero!', false, "Zero não pode ser usado como divisor.");
-                return;
-            }
-            if (divisor < 0 || dividend < 0) {
-                 showMessage('Use apenas números naturais (positivos).', false, "Lembre-se: números naturais são inteiros e não negativos.");
-                return;
-            }
+        function toggleAttendance(id) {
+            tempAttendance[id] = tempAttendance[id] === 'P' ? 'F' : 'P';
+            const btn = document.getElementById(`btn-att-${id}`);
+            const isP = tempAttendance[id] === 'P';
+            btn.className = `w-32 py-2 rounded shadow text-xs font-bold transition ${isP ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`;
+            btn.innerText = isP ? 'PRESENTE' : 'FALTOU';
+        }
 
+        function calculateStatus(subData) {
+            let sum = 0;
+            subData.units.forEach(u => { if (u !== null && u !== "") sum += parseFloat(u); });
+            let avg = sum / 6;
+            let status = "Cursando", statusClass = "text-gray-500", final = avg;
 
-            const userResult = dividend / divisor;
+            if (avg < 6.0) {
+                if (subData.recovery !== null && subData.recovery !== "") {
+                    final = (avg + parseFloat(subData.recovery)) / 2;
+                    status = final >= 6.0 ? "Aprovado (Rec)" : "Reprovado";
+                    statusClass = final >= 6.0 ? "text-green-600" : "text-red-600";
+                } else {
+                    status = "Recuperação"; statusClass = "text-orange-500";
+                }
+            } else {
+                status = "Aprovado"; statusClass = "text-green-600";
+            }
+            return { average: avg.toFixed(1), status, statusClass };
+        }
 
+        function showHistory(id) {
+            const s = appData.students.find(st => st.id === id);
+            if(!s) return;
+            const subData = ensureSubjectData(s, appData.currentSubject);
+            const faults = Object.entries(subData.attendance).filter(([d, st]) => st === 'F').sort();
+            const list = document.getElementById('history-list');
+            list.innerHTML = faults.length ? '' : '<li class="text-center text-gray-400">Sem faltas.</li>';
+            faults.forEach(([d]) => {
+                list.innerHTML += `<li class="bg-red-50 p-2 rounded flex justify-between font-bold text-red-700"><span>${d.split('-').reverse().join('/')}</span><span>Falta</span></li>`;
+            });
+            document.getElementById('modal-history').classList.remove('hidden');
+        }
 
-            if (userResult === currentTargetResult) {
-                score++;
-                updateScoreDisplay();
-                showMessage(`Correto! ${dividend} ÷ ${divisor} = ${currentTargetResult}`, true);
-                waitingForNextRound = true;
-                submitAnswerButton.disabled = true; // Desabilita o botão enquanto espera
-                setTimeout(() => {
-                    if (currentRound < maxRounds) {
-                        nextRound();
-                    } else {
-                        endGame();
-                    }
-                }, 2000); // Tempo para ler a mensagem de acerto
-            } else {
-                let tip = "";
-                if (userResult < currentTargetResult) {
-                    tip = `Dica: Seu resultado (${userResult.toFixed(2).replace('.',',')}) foi MENOR que ${currentTargetResult}. Tente números diferentes.`;
-                } else if (userResult > currentTargetResult) {
-                    tip = `Dica: Seu resultado (${userResult.toFixed(2).replace('.',',')}) foi MAIOR que ${currentTargetResult}. Tente outros valores.`;
-                }
-                if (!Number.isInteger(userResult)) {
-                    tip += ` Lembre-se que o resultado deve ser o número inteiro ${currentTargetResult}.`
-                }
-                showMessage(`Incorreto. ${dividend} ÷ ${divisor} = ${userResult.toFixed(2).replace('.',',')}.`, false, tip.trim());
-                dividendInput.focus(); // Foca no primeiro campo para nova tentativa
-                // Não avança para a próxima rodada
-            }
-        }
-
-
-        function endGame() {
-            gameContent.classList.add('hidden');
-            endGameArea.classList.remove('hidden');
-            endGameArea.classList.add('scale-up-center');
-            finalScoreMessage.textContent = `${username}, sua pontuação final: ${score} de ${maxRounds}!`;
-            submitAnswerButton.disabled = true;
-            dividendInput.disabled = true;
-            divisorInput.disabled = true;
-            clearMessage(); 
-        }
-
-
-        // Event Listeners
-        submitAnswerButton.addEventListener('click', handleSubmit);
-        restartButton.addEventListener('click', () => {
-            // Volta para a tela de inserção de nome ao reiniciar
-            gameContainer.classList.add('hidden');
-            gameContainer.classList.remove('slide-in-bottom');
-            endGameArea.classList.add('hidden');
-            endGameArea.classList.remove('scale-up-center');
-            initializeUserSetup();
-        });
-        
-        dividendInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault(); 
-                submitAnswerButton.click();
-            }
-        });
-        divisorInput.addEventListener('keypress', function(event) {
-            if (event.key === 'Enter') {
-                event.preventDefault();
-                submitAnswerButton.click();
-            }
-        });
-
-
-        // Start the game setup on load
-        initializeUserSetup();
-    </script>
-
-
+        function openAddModal() {
+            document.getElementById('modal-class-name').innerText = appData.currentClass;
+            document.getElementById('modal-add').classList.remove('hidden');
+        }
+        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        
+        init();
+    </script>
 </body>
 </html>
