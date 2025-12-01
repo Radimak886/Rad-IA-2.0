@@ -38,6 +38,15 @@
         .status-dot { height: 10px; width: 10px; border-radius: 50%; display: inline-block; }
         .status-online { background-color: #10B981; box-shadow: 0 0 5px #10B981; }
         .status-offline { background-color: #EF4444; }
+
+        /* Estilos de Impressão */
+        @media print {
+            body * { visibility: hidden; }
+            #modal-report, #modal-report * { visibility: visible; }
+            #modal-report { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: white; z-index: 9999; padding: 0; }
+            #modal-report-content { box-shadow: none; max-width: 100%; padding: 20px; }
+            .no-print { display: none !important; }
+        }
     </style>
 </head>
 <body class="text-gray-800 h-screen flex flex-col overflow-hidden">
@@ -135,7 +144,7 @@
                                 <th class="w-20 bg-gray-50 text-gray-800 border-l">Média</th>
                                 <th class="w-24 text-red-600 border-l">Recup.</th>
                                 <th class="w-32 border-l">Status</th>
-                                <th class="w-12 border-l">...</th>
+                                <th class="w-20 border-l">...</th>
                             </tr>
                         </thead>
                         <tbody id="grades-body" class="bg-white divide-y divide-gray-200 text-sm"></tbody>
@@ -179,7 +188,7 @@
         </div>
     </div>
 
-    <!-- Modal Histórico -->
+    <!-- Modal Histórico de Faltas -->
     <div id="modal-history" class="fixed inset-0 bg-black bg-opacity-60 hidden z-50 flex items-center justify-center p-4">
         <div class="bg-white rounded shadow-xl w-full max-w-md max-h-[80vh] flex flex-col">
             <div class="p-4 border-b flex justify-between items-center">
@@ -190,10 +199,88 @@
         </div>
     </div>
 
+    <!-- NOVO MODAL: RELATÓRIO INDIVIDUAL -->
+    <div id="modal-report" class="fixed inset-0 bg-black bg-opacity-70 hidden z-[70] flex items-center justify-center p-4 backdrop-blur-sm overflow-y-auto">
+        <div id="modal-report-content" class="bg-white rounded-lg shadow-2xl w-full max-w-2xl flex flex-col">
+            <!-- Cabeçalho do Relatório -->
+            <div class="p-6 border-b border-gray-200 flex justify-between items-start bg-gray-50 rounded-t-lg">
+                <div class="flex items-center gap-4">
+                    <div class="w-16 h-16 bg-school-green text-white rounded-full flex items-center justify-center text-2xl font-bold" id="report-avatar">KR</div>
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800" id="report-name">Kelvin Radimak</h2>
+                        <p class="text-gray-500">Turma: <span id="report-class" class="font-bold">9A</span> | Disciplina: <span id="report-subject" class="font-bold">Matemática</span></p>
+                        <p class="text-xs text-gray-400 mt-1">CONCENAL - Centro Educacional Contemporâneo</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-report')" class="text-gray-400 hover:text-red-500 no-print"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+
+            <div class="p-6 flex-1 overflow-y-auto">
+                <!-- Resumo de Desempenho -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                    <div class="bg-blue-50 p-4 rounded-lg text-center border border-blue-100">
+                        <span class="block text-xs font-bold text-blue-500 uppercase">Média Final</span>
+                        <span class="text-2xl font-bold text-blue-800" id="report-avg">--</span>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg text-center border border-green-100">
+                        <span class="block text-xs font-bold text-green-500 uppercase">Faltas</span>
+                        <span class="text-2xl font-bold text-green-800" id="report-faults">--</span>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-lg text-center border border-gray-200">
+                        <span class="block text-xs font-bold text-gray-500 uppercase">Status</span>
+                        <span class="text-xl font-bold text-gray-800" id="report-status">--</span>
+                    </div>
+                </div>
+
+                <!-- Detalhamento de Notas -->
+                <h4 class="font-bold text-gray-700 mb-2 border-b pb-1">Desempenho por Unidade</h4>
+                <div class="flex justify-between mb-6 bg-gray-50 p-3 rounded text-sm">
+                    <div class="text-center"><span class="block text-xs text-gray-500">U1</span><strong id="rep-u1">-</strong></div>
+                    <div class="text-center"><span class="block text-xs text-gray-500">U2</span><strong id="rep-u2">-</strong></div>
+                    <div class="text-center"><span class="block text-xs text-gray-500">U3</span><strong id="rep-u3">-</strong></div>
+                    <div class="text-center"><span class="block text-xs text-gray-500">U4</span><strong id="rep-u4">-</strong></div>
+                    <div class="text-center"><span class="block text-xs text-gray-500">U5</span><strong id="rep-u5">-</strong></div>
+                    <div class="text-center"><span class="block text-xs text-gray-500">U6</span><strong id="rep-u6">-</strong></div>
+                    <div class="text-center border-l pl-2"><span class="block text-xs text-red-500">Rec</span><strong id="rep-rec" class="text-red-600">-</strong></div>
+                </div>
+
+                <!-- Observações e IA -->
+                <div class="mb-4">
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-bold text-gray-700">Observações Pedagógicas</h4>
+                        <button onclick="generateAIReport()" id="btn-ai-generate" class="no-print bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded text-xs font-bold shadow flex items-center gap-1 transition">
+                            <i class="fas fa-magic"></i> Gerar com IA
+                        </button>
+                    </div>
+                    
+                    <!-- Campo Oculto para API Key -->
+                    <div id="ai-key-container" class="mb-2 hidden no-print bg-purple-50 p-2 rounded border border-purple-100">
+                        <p class="text-xs text-purple-800 mb-1">Insira sua API Key do Google Gemini (necessário apenas na 1ª vez):</p>
+                        <div class="flex gap-2">
+                            <input type="password" id="gemini-api-key" class="w-full border p-1 text-sm rounded" placeholder="Cole sua chave aqui...">
+                            <button onclick="saveApiKey()" class="bg-purple-600 text-white px-3 rounded text-xs">Salvar</button>
+                        </div>
+                        <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-[10px] text-blue-500 underline mt-1 block">Obter chave grátis</a>
+                    </div>
+
+                    <textarea id="report-observation" rows="6" class="w-full border border-gray-300 rounded p-3 text-sm focus:ring-2 focus:ring-school-green outline-none" placeholder="Digite as observações sobre o aluno ou use a IA para gerar..."></textarea>
+                    <div id="ai-loading" class="hidden text-center py-2 text-purple-600 text-xs font-bold"><i class="fas fa-spinner fa-spin"></i> A Inteligência Artificial está escrevendo o relatório...</div>
+                </div>
+            </div>
+
+            <!-- Rodapé / Ações -->
+            <div class="p-4 bg-gray-50 rounded-b-lg flex justify-end gap-3 border-t no-print">
+                <button onclick="window.print()" class="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded font-bold flex items-center gap-2">
+                    <i class="fas fa-print"></i> Imprimir / PDF
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- LÓGICA -->
     <script>
         // =========================================================================
-        // KELVIN, COLE SUA CONFIGURAÇÃO DO FIREBASE ABAIXO
+        // KELVIN, SUA CONFIGURAÇÃO ESTÁ MANTIDA AQUI
         // =========================================================================
         
         const firebaseConfig = {
@@ -207,10 +294,10 @@
 
         // =========================================================================
 
-        let db; // Referência ao Firestore
-        let unsubscribe = null; // Para parar de ouvir atualizações se necessário
+        let db;
+        let unsubscribe = null;
+        let currentStudentForReport = null; // Armazena aluno atual do relatório
 
-        // Estrutura Local (Espelho do Banco)
         const today = new Date().toISOString().split('T')[0];
         const SUBJECTS = ["Matemática", "Português", "Geografia", "História", "Arte", "Educação Física", "Inglês", "Ciências"];
         
@@ -223,20 +310,15 @@
         };
 
         function init() {
-            // Verificar se o usuário configurou o Firebase
             if (!firebaseConfig.apiKey) {
                 document.getElementById('setup-screen').classList.remove('hidden');
                 return;
             }
 
-            // Inicializar Firebase
             firebase.initializeApp(firebaseConfig);
             db = firebase.firestore();
-            
-            // Ativar persistência offline (funciona sem internet e sincroniza depois)
             db.enablePersistence().catch(err => console.log("Persistência offline desativada/erro", err));
 
-            // Checar Login Local (Segurança simples de UI)
             const isAuth = localStorage.getItem('concenal_auth') === 'true';
             if(isAuth) showApp();
             else document.getElementById('login-screen').classList.remove('hidden');
@@ -245,7 +327,6 @@
             populateSubjectSelect();
         }
 
-        // --- AUTH SIMPLES ---
         document.getElementById('login-form').addEventListener('submit', (e) => {
             e.preventDefault();
             const u = document.getElementById('username').value;
@@ -263,25 +344,19 @@
             location.reload();
         }
 
-        // --- SINCRONIZAÇÃO EM TEMPO REAL (FIREBASE) ---
         function startRealtimeSync() {
             document.getElementById('loading-overlay').classList.remove('hidden');
-
-            // Ouvir a coleção 'students'
-            // Filtro: para não baixar a escola inteira de uma vez, podemos filtrar se quiser, 
-            // mas aqui vamos baixar tudo e filtrar no JS para simplicidade do "One File"
             unsubscribe = db.collection('concenal_students').onSnapshot((snapshot) => {
                 const students = [];
                 snapshot.forEach((doc) => {
                     students.push({ id: doc.id, ...doc.data() });
                 });
-                
                 appData.students = students;
                 updateUI();
                 document.getElementById('loading-overlay').classList.add('hidden');
             }, (error) => {
                 console.error("Erro ao sincronizar:", error);
-                alert("Erro ao conectar ao banco de dados. Verifique a internet.");
+                alert("Erro ao conectar ao banco de dados.");
             });
         }
 
@@ -297,44 +372,31 @@
             startRealtimeSync();
         }
 
-        // --- ESCRITA NO BANCO (FIREBASE) ---
-        // Toda vez que você muda uma nota, enviamos para o Google
         async function saveStudentToCloud(student) {
             try {
-                // Remove o ID do objeto para salvar (o ID é a chave do documento)
                 const { id, ...data } = student; 
                 await db.collection('concenal_students').doc(id).set(data, { merge: true });
-                // Não precisa chamar render(), pois o onSnapshot vai ouvir a mudança e renderizar automaticamente
             } catch (error) {
                 console.error("Erro ao salvar:", error);
-                alert("Erro ao salvar dados. Tente novamente.");
             }
         }
 
         async function addStudentToCloud(name, className) {
-            const newStudent = {
-                name: name,
-                class: className,
-                subjects: {} 
-            };
-            // Adiciona e gera ID automático
+            const newStudent = { name: name, class: className, subjects: {} };
             await db.collection('concenal_students').add(newStudent);
         }
 
         async function deleteStudentFromCloud(id) {
-            if(confirm("Tem certeza? Esta ação apagará o aluno do banco de dados para TODOS os usuários.")) {
+            if(confirm("Tem certeza? Esta ação apagará o aluno do banco.")) {
                 await db.collection('concenal_students').doc(id).delete();
             }
         }
-
-        // --- LÓGICA DE NEGÓCIO ---
 
         function updateGrade(id, idx, val) {
             const s = appData.students.find(st => st.id === id);
             if(s) {
                 const subData = ensureSubjectData(s, appData.currentSubject);
                 subData.units[idx] = val === "" ? null : parseFloat(val);
-                // Salvar no Firebase
                 saveStudentToCloud(s);
             }
         }
@@ -359,21 +421,16 @@
 
         function saveDailyAttendance() {
             const date = document.getElementById('attendance-date').value;
-            let batch = db.batch(); // Batch para salvar vários de uma vez atomicamente
+            let batch = db.batch();
             let hasChanges = false;
 
             appData.students.forEach(s => {
                 if (s.class === appData.currentClass && tempAttendance[s.id]) {
                     const subData = ensureSubjectData(s, appData.currentSubject);
                     subData.attendance[date] = tempAttendance[s.id];
-                    
                     const docRef = db.collection('concenal_students').doc(s.id);
-                    // Prepara o update
-                    const updatePath = `subjects.${appData.currentSubject}.attendance.${date}`;
-                    // Firestore update nested field syntax
                     let updateData = {};
                     updateData[`subjects.${appData.currentSubject}.attendance`] = subData.attendance;
-                    
                     batch.update(docRef, updateData);
                     hasChanges = true;
                 }
@@ -382,12 +439,112 @@
             if (hasChanges) {
                 batch.commit().then(() => {
                     alert("Chamada salva na nuvem!");
-                    renderAttendanceTable(); // Refresh visual
+                    renderAttendanceTable();
                 });
             }
         }
 
-        // --- AUXILIARES E ESTRUTURA ---
+        // --- FUNÇÕES DE RELATÓRIO E IA ---
+
+        function openReportModal(studentId) {
+            const s = appData.students.find(st => st.id === studentId);
+            if (!s) return;
+            currentStudentForReport = s;
+
+            const subData = ensureSubjectData(s, appData.currentSubject);
+            const calc = calculateStatus(subData);
+            const totalFaults = Object.values(subData.attendance || {}).filter(st => st === 'F').length;
+
+            // Popula dados no modal
+            document.getElementById('report-name').innerText = s.name;
+            document.getElementById('report-avatar').innerText = getInitials(s.name);
+            document.getElementById('report-class').innerText = s.class;
+            document.getElementById('report-subject').innerText = appData.currentSubject;
+            document.getElementById('report-avg').innerText = calc.average;
+            document.getElementById('report-faults').innerText = totalFaults;
+            document.getElementById('report-status').innerText = calc.status;
+
+            // Notas detalhadas
+            for(let i=0; i<6; i++) {
+                document.getElementById(`rep-u${i+1}`).innerText = subData.units[i] !== null ? subData.units[i] : '-';
+            }
+            document.getElementById('rep-rec').innerText = subData.recovery !== null ? subData.recovery : '-';
+
+            // Observação existente? (Poderíamos salvar no banco futuramente, por enquanto é gerado na hora ou limpo)
+            document.getElementById('report-observation').value = ""; 
+            
+            // Esconde input de key se já tiver
+            if (localStorage.getItem('gemini_api_key')) {
+                document.getElementById('ai-key-container').classList.add('hidden');
+            }
+
+            document.getElementById('modal-report').classList.remove('hidden');
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('gemini-api-key').value.trim();
+            if (key) {
+                localStorage.setItem('gemini_api_key', key);
+                document.getElementById('ai-key-container').classList.add('hidden');
+                alert("Chave salva! Agora tente gerar o relatório novamente.");
+            }
+        }
+
+        async function generateAIReport() {
+            const apiKey = localStorage.getItem('gemini_api_key');
+            
+            // Se não tiver chave, mostra o campo para inserir
+            if (!apiKey) {
+                document.getElementById('ai-key-container').classList.remove('hidden');
+                alert("Para usar a IA, insira sua Chave de API do Google Gemini (é gratuita).");
+                return;
+            }
+
+            const s = currentStudentForReport;
+            const subData = ensureSubjectData(s, appData.currentSubject);
+            const calc = calculateStatus(subData);
+            const faults = Object.values(subData.attendance || {}).filter(st => st === 'F').length;
+            const gradesStr = subData.units.map((u, i) => `U${i+1}: ${u ?? 'N/A'}`).join(', ');
+
+            // Prompt para a IA
+            const prompt = `Atue como um coordenador pedagógico profissional. Escreva um relatório descritivo curto (máximo 4 parágrafos) sobre o aluno ${s.name} na disciplina de ${appData.currentSubject}.
+            Dados: Notas [${gradesStr}], Média Final: ${calc.average}, Faltas: ${faults}, Situação: ${calc.status}.
+            Instruções:
+            1. Seja educado e construtivo.
+            2. Se as notas forem boas, elogie o esforço.
+            3. Se houver muitas faltas, mencione a importância da frequência.
+            4. Se as notas forem baixas, sugira reforço escolar e dedicação.
+            5. Não invente comportamentos, baseie-se apenas nos dados numéricos.`;
+
+            document.getElementById('ai-loading').classList.remove('hidden');
+            document.getElementById('report-observation').value = "Gerando texto inteligente...";
+
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+                });
+
+                const data = await response.json();
+                
+                if (data.error) {
+                    throw new Error(data.error.message);
+                }
+
+                const text = data.candidates[0].content.parts[0].text;
+                document.getElementById('report-observation').value = text;
+
+            } catch (error) {
+                console.error(error);
+                alert("Erro ao chamar a IA. Verifique sua chave de API ou conexão.\n\n" + error.message);
+                document.getElementById('report-observation').value = "Erro na geração. Tente escrever manualmente.";
+            } finally {
+                document.getElementById('ai-loading').classList.add('hidden');
+            }
+        }
+
+        // --- AUXILIARES ---
         function ensureSubjectData(student, subjectName) {
             if (!student.subjects) student.subjects = {};
             if (!student.subjects[subjectName]) {
@@ -404,7 +561,7 @@
 
         function switchMode(mode) {
             appData.currentMode = mode;
-            updateUI(); // Apenas atualiza UI localmente, não precisa ir pro banco
+            updateUI(); 
         }
         
         function changeSubject(val) {
@@ -430,7 +587,6 @@
             return appData.students.filter(s => s.class === appData.currentClass).sort((a,b) => a.name.localeCompare(b.name));
         }
 
-        // Renderização Tabelas (Idêntico ao V3, mas chamando as funções acima)
         function renderGradesTable() {
             const tbody = document.getElementById('grades-body');
             tbody.innerHTML = '';
@@ -462,7 +618,13 @@
                 tr.className = "hover:bg-blue-50 transition";
                 tr.innerHTML = `
                     <td class="px-4 py-3 font-medium text-gray-900 border-r flex justify-between items-center group">
-                        ${s.name} <button onclick="deleteStudentFromCloud('${s.id}')" class="text-gray-300 hover:text-red-500 opacity-0 group-hover:opacity-100"><i class="fas fa-trash"></i></button>
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <span class="truncate">${s.name}</span>
+                        </div>
+                        <div class="flex items-center opacity-0 group-hover:opacity-100 transition">
+                            <button onclick="openReportModal('${s.id}')" class="text-gray-400 hover:text-blue-600 mr-2" title="Gerar Relatório"><i class="fas fa-file-alt"></i></button>
+                            <button onclick="deleteStudentFromCloud('${s.id}')" class="text-gray-300 hover:text-red-500"><i class="fas fa-trash"></i></button>
+                        </div>
                     </td>
                     ${unitsHtml}
                     <td class="px-1 py-2 bg-blue-50 text-center font-bold text-blue-800 border-l cursor-pointer" onclick="showHistory('${s.id}')">${totalFaults}</td>
@@ -559,6 +721,7 @@
             document.getElementById('modal-add').classList.remove('hidden');
         }
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function getInitials(name) { return name.split(' ').map((n,i,a) => i===0 || i===a.length-1 ? n[0] : '').join('').toUpperCase(); }
         
         init();
     </script>
