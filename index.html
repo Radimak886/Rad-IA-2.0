@@ -73,6 +73,7 @@
     <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-school-green">
         <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md mx-4 fade-in relative">
             <div class="text-center mb-6">
+                <!-- Logo Concenal -->
                 <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" onerror="this.src='https://placehold.co/150x50/png?text=CONCENAL'" alt="CONCENAL" class="mx-auto mb-4 w-40 h-auto">
                 <h1 class="text-xl font-bold text-gray-800 leading-tight uppercase font-serif">Diário Escolar</h1>
                 <p class="text-gray-400 text-[10px] mt-2 uppercase tracking-widest font-bold border-t pt-2">Acesso Restrito - CONCENAL</p>
@@ -147,6 +148,7 @@
                 </div>
                 <div id="action-buttons" class="flex gap-2"></div>
             </div>
+            <!-- Abas (Tabs) -->
             <div class="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto hide-scroll-x mt-1">
                 <button onclick="switchMode('grades')" id="nav-grades" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Notas e Médias</button>
                 <button onclick="switchMode('attendance')" id="nav-attendance" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Frequência</button>
@@ -452,7 +454,7 @@
                 <!-- Sidebar Contatos -->
                 <div id="chat-sidebar" class="w-full md:w-72 border-r bg-gray-50 overflow-y-auto flex flex-col z-10 hidden md:flex absolute md:static inset-0">
                     <div class="p-3">
-                        <button onclick="setChatRecipient('global', 'Mural Geral')" class="w-full text-left p-4 rounded-xl border-2 border-transparent transition hover:border-green-300 bg-white shadow-sm flex items-center gap-3 mb-4 relative" id="chat-btn-global">
+                        <button onclick="setChatRecipient('global', 'Avisos Gerais')" class="w-full text-left p-4 rounded-xl border-2 border-transparent transition hover:border-green-300 bg-white shadow-sm flex items-center gap-3 mb-4 relative" id="chat-btn-global">
                             <div class="w-10 h-10 bg-green-100 text-school-green rounded-full flex items-center justify-center"><i class="fas fa-bullhorn"></i></div>
                             <div class="flex-1">
                                 <div class="text-sm font-bold text-gray-700 leading-none flex justify-between">Mural Geral</div>
@@ -604,6 +606,7 @@
         let currentActivityFile = null;
         let unsubscribe = null;
         let activitiesUnsubscribe = null;
+        let userProfileUnsubscribe = null; // Listener exclusivo para o perfil
 
         // --- INICIALIZAÇÃO FIREBASE REFORÇADA ---
         const initFirebase = async () => {
@@ -744,16 +747,19 @@
             }
         }
 
+        // --- POPULATE DROPDOWNS ---
         function populateSubjectSelect() {
             const ss = document.getElementById('subject-select');
-            if (!ss || !currentUser) return;
+            if (!ss || !currentUser || currentUser.role === 'parent') return;
             
             let allowedSubjects = [...appData.allSubjects].sort();
             
             if (currentUser.role === 'teacher') {
-                if (currentUser.assignments) {
-                    allowedSubjects = Object.keys(currentUser.assignments).sort();
+                if (currentUser.assignments && Object.keys(currentUser.assignments).length > 0) {
+                    // Pega apenas as chaves (matérias) que possuam turmas vinculadas a ela
+                    allowedSubjects = Object.keys(currentUser.assignments).filter(s => currentUser.assignments[s].length > 0).sort();
                 } else if (currentUser.subjects) {
+                    // Fallback para legados
                     allowedSubjects = [...currentUser.subjects].sort();
                 } else {
                     allowedSubjects = [];
@@ -765,8 +771,8 @@
             if(appData.currentSubject && allowedSubjects.includes(appData.currentSubject)) {
                 ss.value = appData.currentSubject;
             } else if (allowedSubjects.length > 0) {
-                ss.value = allowedSubjects[0];
                 appData.currentSubject = allowedSubjects[0];
+                ss.value = allowedSubjects[0];
             } else {
                 appData.currentSubject = '';
             }
@@ -774,14 +780,14 @@
 
         function populateClassSelect() {
             const s = document.getElementById('class-select'); 
-            if(!s || !currentUser) return;
+            if(!s || !currentUser || currentUser.role === 'parent') return;
             
             let allowedClasses = [...appData.allClasses];
             
             if (currentUser.role === 'teacher') {
-                if (currentUser.assignments && currentUser.assignments[appData.currentSubject]) {
-                    allowedClasses = currentUser.assignments[appData.currentSubject];
-                } else if (currentUser.classes?.length) {
+                if (currentUser.assignments && Object.keys(currentUser.assignments).length > 0) {
+                    allowedClasses = currentUser.assignments[appData.currentSubject] || [];
+                } else if (currentUser.classes) {
                     allowedClasses = currentUser.classes;
                 } else {
                     allowedClasses = [];
@@ -793,8 +799,8 @@
             if(appData.currentClass && allowedClasses.includes(appData.currentClass)) {
                 s.value = appData.currentClass;
             } else if (allowedClasses.length > 0) {
-                s.value = allowedClasses[0];
                 appData.currentClass = allowedClasses[0];
+                s.value = allowedClasses[0];
             } else {
                 appData.currentClass = '';
             }
@@ -973,22 +979,33 @@
                 document.getElementById('class-select').parentElement.classList.remove('hidden');
             }
 
-            populateSubjectSelect();
-            populateClassSelect();
-
-            if (isAdmin || isCoord) {
-                document.getElementById('subject-select').disabled = false;
-            } else if (!isParent) {
-                document.getElementById('subject-select').disabled = (document.getElementById('subject-select').options.length <= 1);
+            if (currentUser.id === 'admin_master') {
+                 populateSubjectSelect();
+                 populateClassSelect();
+                 startRealtimeSync();
+            } else {
+                 // Listener ao vivo no usuário atual para forçar reload de permissões
+                 if (userProfileUnsubscribe) userProfileUnsubscribe();
+                 userProfileUnsubscribe = getCollection('concenal_users').doc(currentUser.id).onSnapshot(doc => {
+                     if (doc.exists) {
+                         currentUser = { id: doc.id, ...doc.data() };
+                         localStorage.setItem('concenal_v29_session', JSON.stringify(currentUser));
+                         
+                         populateSubjectSelect();
+                         populateClassSelect();
+                         updateUI();
+                     } else {
+                         logout();
+                     }
+                 });
+                 startRealtimeSync();
             }
-            startRealtimeSync();
         }
 
         // --- NOTIFICATION & TOAST LOGIC ---
         function playSound() {
-            // Um pequeno "Pop" para notificar mensagens
             const audio = new Audio('data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExEAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExIAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq');
-            audio.play().catch(() => {}); // catch previne erro se navegador bloquear autoplay
+            audio.play().catch(() => {});
         }
 
         function showToast(title, msg) {
@@ -1078,7 +1095,7 @@
                 if(appData.currentMode === 'activities') renderActivitiesView();
             });
 
-            // NOVO CHAT SYNC COM NOTIFICAÇÕES
+            // NOVO CHAT SYNC COM NOTIFICAÇÕES E LIMITES LOCAIS
             getCollection('concenal_chat').onSnapshot(snap => {
                 let messages = [];
                 let newMessagesArrived = false;
@@ -1088,7 +1105,6 @@
                     const docId = doc.id;
                     messages.push({ docId, ...m });
                     
-                    // Lógica de Notificações
                     if (!isFirstChatLoad && !knownMessages.has(docId)) {
                         const isForMe = (m.to === 'global' || m.to === currentUser?.id || currentUser?.role === 'admin' || currentUser?.role === 'coord');
                         const isFromMe = m.from === currentUser?.id;
@@ -1097,7 +1113,6 @@
                             newMessagesArrived = true;
                             const senderId = m.to === 'global' ? 'global' : m.from;
                             
-                            // Mostrar Toast e Somar badge se o chat correspondente não estiver aberto no momento
                             const isChatModalOpen = !document.getElementById('modal-chat').classList.contains('hidden');
                             if (!isChatModalOpen || chatRecipient !== senderId) {
                                 showToast(`Nova mensagem de ${m.fromName}`, m.text || "Anexo enviado");
@@ -1113,11 +1128,8 @@
                 isFirstChatLoad = false;
 
                 messages.sort((a, b) => a.timestamp - b.timestamp);
-                
-                // Manteve as últimas 200 mensagens na memória
                 const allMessages = messages.slice(-200); 
 
-                // Processa a UI apenas para o chat que está atualmente selecionado
                 renderChatMessages(allMessages);
             });
         }
@@ -1127,10 +1139,8 @@
             if(!div) return;
             div.innerHTML = '';
             
-            // Filtra as mensagens ativas na conversa atual
             currentChatMessages = allMessages.filter(m => {
                 if (chatRecipient === 'global') return m.to === 'global';
-                // Conversa Privada: De mim pra ele, ou dele pra mim
                 return (m.from === currentUser?.id && m.to === chatRecipient) || 
                        (m.to === currentUser?.id && m.from === chatRecipient);
             });
@@ -1147,17 +1157,11 @@
                 const isAdminOrCoord = (currentUser?.role === 'admin' || currentUser?.role === 'coord');
                 const isTeacher = currentUser?.role === 'teacher';
                 
-                // REGRAS DE EXCLUSÃO
-                // 1. Apenas Coord/Dir apagam mensagens definitivas
                 const canDelete = isAdminOrCoord;
-                
-                // 2. Professores podem "Solicitar Exclusão" nas suas próprias mensagens (que não sejam no mural e não tenham sido pedidas já)
                 const canReqDelete = isTeacher && isSent && m.to !== 'global' && !m.deleteRequested;
                 
                 let reqDelHtml = canReqDelete ? `<button onclick="requestDeleteMsg('${m.docId}')" class="text-[9px] text-orange-500 hover:text-orange-700 transition mt-1 block w-full text-right uppercase font-bold"><i class="fas fa-exclamation-triangle"></i> Pedir Exclusão</button>` : '';
-                
                 let badgeHtml = m.deleteRequested ? `<div class="absolute -top-2 -left-2 bg-red-500 text-white text-[8px] px-2 py-0.5 rounded-full shadow-sm animate-pulse border border-white font-bold tracking-widest z-10">EXCLUSÃO SOLICITADA</div>` : '';
-                
                 let delBtnHtml = canDelete ? `<button onclick="deleteMsg('${m.docId}')" class="absolute -top-2 -right-2 text-red-500 bg-white rounded-full opacity-0 group-hover:opacity-100 transition z-10 w-6 h-6 flex items-center justify-center shadow-md border border-gray-100 hover:bg-red-50"><i class="fas fa-times"></i></button>` : '';
 
                 const extraBorder = m.deleteRequested ? "border-2 border-red-400" : (isSent ? "border border-green-200" : "border border-gray-200");
@@ -1179,11 +1183,6 @@
 
         function updateUI() {
             if (!currentUser) return; 
-
-            const cs = document.getElementById('class-select');
-            if(cs && cs.value !== appData.currentClass) {
-                 cs.value = appData.currentClass;
-            }
 
             // Tabs UI update
             ['nav-grades','nav-attendance','nav-daily', 'nav-activities'].forEach(id => {
@@ -1234,7 +1233,15 @@
 
         // --- RENDER VIEWS ---
         function renderGradesTable() {
-            const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || (currentUser.role === 'teacher' && currentUser.assignments && currentUser.assignments[appData.currentSubject] && currentUser.assignments[appData.currentSubject].includes(appData.currentClass))); 
+            // Regra: Professor sempre pode gerenciar as turmas que lhe foram assinadas
+            const canEdit = currentUser && (
+                currentUser.role === 'admin' || 
+                currentUser.role === 'coord' || 
+                (currentUser.role === 'teacher' && 
+                 currentUser.assignments && 
+                 currentUser.assignments[appData.currentSubject] && 
+                 currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
+            ); 
             
             const readOnlyMsg = document.getElementById('read-only-msg');
             if (readOnlyMsg) readOnlyMsg.classList.toggle('hidden', canEdit || (currentUser && currentUser.role === 'parent'));
@@ -1273,10 +1280,16 @@
             const dateInput = document.getElementById('attendance-date');
             if(!dateInput) return;
             const date = dateInput.value; 
-            const canE = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || (currentUser.role === 'teacher' && currentUser.assignments && currentUser.assignments[appData.currentSubject] && currentUser.assignments[appData.currentSubject].includes(appData.currentClass)));
+            const canE = currentUser && (
+                currentUser.role === 'admin' || 
+                currentUser.role === 'coord' || 
+                (currentUser.role === 'teacher' && 
+                 currentUser.assignments && 
+                 currentUser.assignments[appData.currentSubject] && 
+                 currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
+            ); 
             const students = getStudentsByClass();
             
-            // Render History Strip
             let savedDates = new Set();
             students.forEach(s => {
                 const sub = ensureSubjectData(s, appData.currentSubject);
@@ -1293,7 +1306,6 @@
                 if(savedDates.size === 0) strip.innerHTML = '<span class="text-[10px] text-gray-400 italic py-1.5">Nenhum registro encontrado para esta matéria/turma.</span>';
             }
 
-            // Render Table
             const tbody=document.getElementById('attendance-body'); 
             if(!tbody) return;
             tbody.innerHTML=''; 
@@ -1336,7 +1348,15 @@
             if(!tbody) return;
             tbody.innerHTML = '';
             
-            const canE = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || (currentUser.role === 'teacher' && currentUser.assignments && currentUser.assignments[appData.currentSubject] && currentUser.assignments[appData.currentSubject].includes(appData.currentClass)));
+            const canE = currentUser && (
+                currentUser.role === 'admin' || 
+                currentUser.role === 'coord' || 
+                (currentUser.role === 'teacher' && 
+                 currentUser.assignments && 
+                 currentUser.assignments[appData.currentSubject] && 
+                 currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
+            ); 
+
             getStudentsByClass().forEach(s => {
                 const l = tempDaily[s.id] || { homework: false, behavior: 'Normal' };
                 tbody.innerHTML += `<tr class="border-b border-gray-50">
@@ -1358,7 +1378,15 @@
         }
 
         function renderActivitiesView() {
-            const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || (currentUser.role === 'teacher' && currentUser.assignments && currentUser.assignments[appData.currentSubject] && currentUser.assignments[appData.currentSubject].includes(appData.currentClass)));
+            const canEdit = currentUser && (
+                currentUser.role === 'admin' || 
+                currentUser.role === 'coord' || 
+                (currentUser.role === 'teacher' && 
+                 currentUser.assignments && 
+                 currentUser.assignments[appData.currentSubject] && 
+                 currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
+            ); 
+
             const btnNewAct = document.getElementById('btn-new-activity');
             if (btnNewAct) btnNewAct.classList.toggle('hidden', !canEdit);
 
@@ -1731,7 +1759,6 @@
             document.getElementById('new-u-role').value = data.role || 'teacher';
             
             let assignments = data.assignments || {};
-            // Retrofit em dados antigos se não houver o mapeamento
             if (Object.keys(assignments).length === 0 && data.subjects && data.classes) {
                 data.subjects.forEach(s => assignments[s] = data.classes);
             }
@@ -1796,7 +1823,6 @@
             document.querySelectorAll('[id^="chat-btn-"]').forEach(b => b.classList.remove('border-green-300'));
             const aB = document.getElementById(`chat-btn-${id}`); if(aB) aB.classList.add('border-green-300');
 
-            // Regra do Mural para Professores
             const inputArea = document.getElementById('chat-input-area');
             if (id === 'global' && currentUser && currentUser.role === 'teacher') {
                 inputArea.classList.add('hidden');
@@ -1804,7 +1830,6 @@
                 inputArea.classList.remove('hidden');
             }
             
-            // Regra: Limpar Conversa
             const clearBtn = document.getElementById('btn-clear-chat');
             if(id !== 'global' && currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord')) {
                 clearBtn.classList.remove('hidden');
@@ -1812,7 +1837,6 @@
                 clearBtn.classList.add('hidden');
             }
 
-            // Ao entrar, limpar os unreads e atualizar visualização
             if(unreadCounts[id]) {
                 unreadCounts[id] = 0;
                 updateUnreadBadges();
@@ -1885,7 +1909,6 @@
             const batch = db.batch();
             let count = 0;
             currentChatMessages.forEach(msg => {
-                // Apenas apagar as mensagens da conversa atual privada
                 if(msg.to !== 'global') {
                     batch.delete(getCollection('concenal_chat').doc(msg.docId));
                     count++;
