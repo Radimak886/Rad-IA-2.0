@@ -148,7 +148,7 @@
                 </div>
                 <div id="action-buttons" class="flex gap-2"></div>
             </div>
-            <!-- Abas (Tabs) Movidar para ca -->
+            <!-- Abas (Tabs) -->
             <div class="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto hide-scroll-x mt-1">
                 <button onclick="switchMode('grades')" id="nav-grades" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Notas e Médias</button>
                 <button onclick="switchMode('attendance')" id="nav-attendance" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Frequência</button>
@@ -570,7 +570,20 @@
         const initFirebase = async () => {
             const setupScreen = document.getElementById('setup-screen');
             try {
-                const firebaseConfig = JSON.parse(__firebase_config);
+                let firebaseConfig;
+                if (typeof __firebase_config !== 'undefined') {
+                    firebaseConfig = JSON.parse(__firebase_config);
+                } else {
+                    firebaseConfig = {
+                        apiKey: "AIzaSyAqeEtvS5mnYffNj1VLgxSbxX1NJ1n7u7c",
+                        authDomain: "concenal.firebaseapp.com",
+                        projectId: "concenal",
+                        storageBucket: "concenal.firebasestorage.app",
+                        messagingSenderId: "1021506175689",
+                        appId: "1:1021506175689:web:15b7af6919ac02bbc88318"
+                    };
+                }
+
                 const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
                 window.APP_ID = appId;
 
