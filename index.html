@@ -134,12 +134,12 @@
             <div class="max-w-7xl mx-auto px-4 pt-3 flex flex-col md:flex-row gap-4 justify-between items-center border-b border-gray-50 pb-3">
                 <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     <div class="flex items-center gap-2">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Turma</label>
-                        <select id="class-select" onchange="changeClass(this.value)" class="bg-gray-50 border border-gray-200 text-gray-800 font-bold py-1.5 px-3 rounded-lg text-sm focus:ring-1 focus:ring-school-green outline-none cursor-pointer"></select>
-                    </div>
-                    <div class="flex items-center gap-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Matéria</label>
                         <select id="subject-select" onchange="changeSubject(this.value)" class="bg-green-50 border border-green-200 text-school-green font-bold py-1.5 px-3 rounded-lg text-sm focus:ring-1 focus:ring-school-green outline-none cursor-pointer"></select>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Turma</label>
+                        <select id="class-select" onchange="changeClass(this.value)" class="bg-gray-50 border border-gray-200 text-gray-800 font-bold py-1.5 px-3 rounded-lg text-sm focus:ring-1 focus:ring-school-green outline-none cursor-pointer"></select>
                     </div>
                     <div id="class-tabs" class="ml-2"></div>
                 </div>
@@ -368,7 +368,7 @@
                 <h3 class="font-bold text-gray-800 uppercase text-xs tracking-widest">Controle de Usuários</h3>
                 <button onclick="closeModal('modal-users')" class="text-gray-300 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
             </div>
-            <div class="p-4 overflow-y-auto">
+            <div class="p-4 overflow-y-auto flex-1">
                 <div class="flex gap-2 mb-4 bg-gray-100 p-1 rounded-lg">
                     <button onclick="switchUserTab('teacher')" id="tab-teacher" class="flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition bg-white shadow-sm text-gray-800">Staff / Professores</button>
                     <button onclick="switchUserTab('parent')" id="tab-parent" class="flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition text-gray-400">Pais / Alunos</button>
@@ -386,18 +386,17 @@
                         </div>
                         
                         <div id="field-teacher-subj">
-                            <label class="text-[9px] font-bold text-gray-400 uppercase ml-1">Nível de Acesso</label>
-                            <select id="new-u-role" class="w-full border p-2.5 rounded-lg text-sm bg-white mb-2 font-bold text-gray-700 shadow-sm">
+                            <label class="text-[9px] font-bold text-gray-400 uppercase ml-1 mb-1 block">Nível de Acesso</label>
+                            <select id="new-u-role" class="w-full border p-2.5 rounded-lg text-sm bg-white mb-3 font-bold text-gray-700 shadow-sm">
                                 <option value="teacher">Professor(a)</option>
                                 <option value="coord">Coordenador(a)</option>
                                 <option value="admin">Administrador(a)</option>
                             </select>
 
-                            <label class="text-[9px] font-bold text-gray-400 uppercase ml-1">Disciplinas Associadas</label>
-                            <div id="subject-checkboxes" class="grid grid-cols-2 gap-1 text-xs bg-white p-3 border rounded-lg max-h-32 overflow-y-auto mb-2 shadow-sm"></div>
-                            
-                            <label class="text-[9px] font-bold text-gray-400 uppercase ml-1">Turmas Autorizadas</label>
-                            <div id="class-checkboxes" class="grid grid-cols-3 gap-1 text-xs bg-white p-3 border rounded-lg max-h-32 overflow-y-auto shadow-sm"></div>
+                            <label class="text-[9px] font-bold text-gray-400 uppercase ml-1 block mb-1">Atribuições (Matéria -> Turmas)</label>
+                            <div id="assignments-container" class="max-h-48 overflow-y-auto bg-white p-1 border rounded-lg shadow-sm mb-2">
+                                <!-- Preenchido dinamicamente via JS -->
+                            </div>
                         </div>
                         
                         <div id="field-parent-student" class="hidden">
@@ -583,7 +582,7 @@
             isProcessing: false
         };
         
-        // Variáveis temporárias para o novo Modal de Configuração
+        // Variáveis temporárias para o Modal de Configuração
         let tempConfigClasses = [];
         let tempConfigSubjects = [];
 
@@ -604,14 +603,12 @@
         const initFirebase = async () => {
             const setupScreen = document.getElementById('setup-screen');
             try {
-                // Checagem Segura do Firebase Config (Evita ReferenceError de "is not defined")
                 let firebaseConfig = null;
                 if (typeof window !== 'undefined' && window.__firebase_config) {
                     firebaseConfig = JSON.parse(window.__firebase_config);
                 } else if (typeof __firebase_config !== 'undefined') {
                     firebaseConfig = JSON.parse(__firebase_config);
                 } else {
-                    // Fallback nativo
                     firebaseConfig = {
                         apiKey: "AIzaSyAqeEtvS5mnYffNj1VLgxSbxX1NJ1n7u7c",
                         authDomain: "concenal.firebaseapp.com",
@@ -664,23 +661,19 @@
                     if(!appData.currentSubject && appData.allSubjects.length > 0) appData.currentSubject = appData.allSubjects[0];
                     if(!appData.currentClass && appData.allClasses.length > 0) appData.currentClass = appData.allClasses[0];
 
-                    populateSubjectSelect();
-                    populateClassSelect();
-                    
                     if(currentUser) {
+                        populateSubjectSelect();
+                        populateClassSelect();
                         updateUI();
                     }
                     
                     if(!document.getElementById('modal-users').classList.contains('hidden')) {
-                       document.getElementById('subject-checkboxes').innerHTML = appData.allSubjects.map(s=>`<label class="flex items-center gap-1"><input type="checkbox" value="${s}"> ${s}</label>`).join('');
-                       document.getElementById('class-checkboxes').innerHTML = appData.allClasses.map(c=>`<label class="flex items-center gap-1"><input type="checkbox" value="${c}"> ${c}</label>`).join('');
+                       renderAssignmentsUI();
                     }
                 });
 
                 auth.onAuthStateChanged(user => {
-                    if (user) {
-                        checkLocalSession();
-                    }
+                    if (user) checkLocalSession();
                 });
 
                 document.getElementById('attendance-date').value = today;
@@ -696,7 +689,6 @@
             }
         };
 
-        // --- HELPER: PATHS ---
         function getCollection(name) {
             return db.collection('artifacts').doc(window.APP_ID).collection('public').doc('data').collection(name);
         }
@@ -711,7 +703,8 @@
                     displayName: 'Direção',
                     role: 'admin',
                     subjects: DEFAULT_SUBJECTS,
-                    classes: DEFAULT_CLASSES
+                    classes: DEFAULT_CLASSES,
+                    assignments: {}
                 });
             }
         }
@@ -719,7 +712,13 @@
         // --- GLOBAL SCOPE FUNCTIONS ---
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function switchMode(m) { appData.currentMode = m; updateUI(); }
-        function changeSubject(v) { if (currentUser && currentUser.role !== 'parent') { appData.currentSubject = v; updateUI(); } }
+        function changeSubject(v) { 
+            if (currentUser && currentUser.role !== 'parent') { 
+                appData.currentSubject = v; 
+                populateClassSelect(); 
+                updateUI(); 
+            } 
+        }
         function changeClass(v) { appData.currentClass = v; updateUI(); }
         function openAddModal() { document.getElementById('modal-add').classList.remove('hidden'); }
         function showHistory(id) { openReportModal(id); }
@@ -768,7 +767,6 @@
         function addConfigSubject() {
             const input = document.getElementById('config-new-subject');
             const val = input.value.trim();
-            // Mantém formatação com a primeira letra maiúscula
             const formattedVal = val.charAt(0).toUpperCase() + val.slice(1);
             if(formattedVal && !tempConfigSubjects.includes(formattedVal)) {
                 tempConfigSubjects.push(formattedVal);
@@ -817,37 +815,59 @@
             }
         }
 
-        function populateClassSelect() {
-            const s = document.getElementById('class-select'); 
-            if(s) {
-                let allowedClasses = appData.allClasses;
-                if (currentUser && currentUser.role === 'teacher' && currentUser.classes?.length) {
-                    allowedClasses = currentUser.classes;
+        function populateSubjectSelect() {
+            const ss = document.getElementById('subject-select');
+            if (!ss || !currentUser) return;
+            
+            let allowedSubjects = [...appData.allSubjects].sort();
+            
+            if (currentUser.role === 'teacher') {
+                if (currentUser.assignments) {
+                    allowedSubjects = Object.keys(currentUser.assignments).sort();
+                } else if (currentUser.subjects) {
+                    allowedSubjects = [...currentUser.subjects].sort();
+                } else {
+                    allowedSubjects = [];
                 }
-                s.innerHTML = allowedClasses.map(c => `<option value="${c}">${c}</option>`).join('');
-                if(appData.currentClass && allowedClasses.includes(appData.currentClass)) {
-                    s.value = appData.currentClass;
-                } else if (allowedClasses.length > 0) {
-                    s.value = allowedClasses[0];
-                    appData.currentClass = allowedClasses[0];
-                }
+            }
+            
+            ss.innerHTML = allowedSubjects.map(s => `<option value="${s}">${s}</option>`).join('');
+            
+            if(appData.currentSubject && allowedSubjects.includes(appData.currentSubject)) {
+                ss.value = appData.currentSubject;
+            } else if (allowedSubjects.length > 0) {
+                ss.value = allowedSubjects[0];
+                appData.currentSubject = allowedSubjects[0];
+            } else {
+                appData.currentSubject = '';
             }
         }
 
-        function populateSubjectSelect() {
-            const ss = document.getElementById('subject-select');
-            if (appData.allSubjects.length > 0) {
-                 let allowedSubjects = [...appData.allSubjects].sort();
-                 if (currentUser && currentUser.role === 'teacher' && currentUser.subjects?.length) {
-                     allowedSubjects = currentUser.subjects.sort();
-                 }
-                 ss.innerHTML = allowedSubjects.map(s => `<option value="${s}">${s}</option>`).join('');
-                 if(appData.currentSubject && allowedSubjects.includes(appData.currentSubject)) {
-                     ss.value = appData.currentSubject;
-                 } else if (allowedSubjects.length > 0) {
-                     ss.value = allowedSubjects[0];
-                     appData.currentSubject = allowedSubjects[0];
-                 }
+        function populateClassSelect() {
+            const s = document.getElementById('class-select'); 
+            if(!s || !currentUser) return;
+            
+            let allowedClasses = [...appData.allClasses];
+            
+            if (currentUser.role === 'teacher') {
+                if (currentUser.assignments && currentUser.assignments[appData.currentSubject]) {
+                    allowedClasses = currentUser.assignments[appData.currentSubject];
+                } else if (currentUser.classes?.length) {
+                    allowedClasses = currentUser.classes;
+                } else {
+                    allowedClasses = [];
+                }
+            }
+            
+            s.innerHTML = allowedClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+            
+            if(appData.currentClass && allowedClasses.includes(appData.currentClass)) {
+                s.value = appData.currentClass;
+            } else if (allowedClasses.length > 0) {
+                s.value = allowedClasses[0];
+                appData.currentClass = allowedClasses[0];
+            } else {
+                appData.currentClass = '';
             }
         }
 
@@ -954,12 +974,13 @@
                 document.getElementById('class-select').parentElement.classList.remove('hidden');
             }
 
+            populateSubjectSelect();
+            populateClassSelect();
+
             if (isAdmin || isCoord) {
                 document.getElementById('subject-select').disabled = false;
             } else if (!isParent) {
-                appData.currentSubject = (currentUser.subjects && currentUser.subjects.length > 0) ? currentUser.subjects[0] : appData.allSubjects[0];
-                document.getElementById('subject-select').value = appData.currentSubject;
-                document.getElementById('subject-select').disabled = !(currentUser.subjects?.length > 1);
+                document.getElementById('subject-select').disabled = (document.getElementById('subject-select').options.length <= 1);
             }
             startRealtimeSync();
         }
@@ -1033,14 +1054,12 @@
         }
 
         function updateUI() {
-            if (!currentUser) return; // FIX DE SEGURANÇA QUE FALTAVA (Impede TypeError Role of Null)
+            if (!currentUser) return; 
 
-            if(currentUser.role !== 'parent') {
-                const allowed = (currentUser.role === 'teacher' && currentUser.classes?.length) ? currentUser.classes : appData.allClasses;
-                const cs = document.getElementById('class-select');
-                if(cs && (!cs.value || !allowed.includes(cs.value))) {
-                    populateClassSelect();
-                }
+            // Update Class Select safely implicitly just in case subject bounds updated it
+            const cs = document.getElementById('class-select');
+            if(cs && cs.value !== appData.currentClass) {
+                 cs.value = appData.currentClass;
             }
 
             // Tabs UI update
@@ -1092,7 +1111,7 @@
 
         // --- RENDER VIEWS ---
         function renderGradesTable() {
-            const canEdit = currentUser && (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects && currentUser.subjects.includes(appData.currentSubject))); 
+            const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || (currentUser.role === 'teacher' && currentUser.assignments && currentUser.assignments[appData.currentSubject] && currentUser.assignments[appData.currentSubject].includes(appData.currentClass))); 
             
             const readOnlyMsg = document.getElementById('read-only-msg');
             if (readOnlyMsg) readOnlyMsg.classList.toggle('hidden', canEdit || (currentUser && currentUser.role === 'parent'));
@@ -1109,7 +1128,7 @@
             const list = getStudentsByClass();
             const emptyState = document.getElementById('empty-state');
             
-            if(list.length === 0) { 
+            if(list.length === 0 || !appData.currentClass) { 
                 if (emptyState) emptyState.classList.remove('hidden'); 
                 return; 
             }
@@ -1131,7 +1150,7 @@
             const dateInput = document.getElementById('attendance-date');
             if(!dateInput) return;
             const date = dateInput.value; 
-            const canE = currentUser && (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects && currentUser.subjects.includes(appData.currentSubject)));
+            const canE = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || (currentUser.role === 'teacher' && currentUser.assignments && currentUser.assignments[appData.currentSubject] && currentUser.assignments[appData.currentSubject].includes(appData.currentClass)));
             const students = getStudentsByClass();
             
             // Render History Strip
@@ -1194,7 +1213,7 @@
             if(!tbody) return;
             tbody.innerHTML = '';
             
-            const canE = currentUser && (currentUser.role === 'admin' || currentUser.role === 'teacher');
+            const canE = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || (currentUser.role === 'teacher' && currentUser.assignments && currentUser.assignments[appData.currentSubject] && currentUser.assignments[appData.currentSubject].includes(appData.currentClass)));
             getStudentsByClass().forEach(s => {
                 const l = tempDaily[s.id] || { homework: false, behavior: 'Normal' };
                 tbody.innerHTML += `<tr class="border-b border-gray-50">
@@ -1216,7 +1235,7 @@
         }
 
         function renderActivitiesView() {
-            const canEdit = currentUser && (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects && currentUser.subjects.includes(appData.currentSubject)));
+            const canEdit = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || (currentUser.role === 'teacher' && currentUser.assignments && currentUser.assignments[appData.currentSubject] && currentUser.assignments[appData.currentSubject].includes(appData.currentClass)));
             const btnNewAct = document.getElementById('btn-new-activity');
             if (btnNewAct) btnNewAct.classList.toggle('hidden', !canEdit);
 
@@ -1234,7 +1253,6 @@
                 return;
             }
 
-            // Ordenar por data decrescente
             filteredActs.sort((a,b) => b.timestamp - a.timestamp).forEach(act => {
                 const date = new Date(act.timestamp).toLocaleDateString('pt-BR');
                 listEl.innerHTML += `
@@ -1346,7 +1364,7 @@
             const d=document.getElementById('attendance-date').value; let b=db.batch(); 
             getStudentsByClass().forEach(s=>{ const sub=ensureSubjectData(s, appData.currentSubject); sub.attendance[d]=tempAttendance[s.id]; b.set(getCollection('concenal_students').doc(s.id), {subjects:{[appData.currentSubject]:{attendance:sub.attendance}}},{merge:true}); }); 
             await b.commit(); alert("Chamada salva!"); 
-            renderAttendanceTable(); // Refresh history strip
+            renderAttendanceTable(); 
         }
         async function saveDailyLog(){ 
             const d=document.getElementById('daily-date').value; let b=db.batch(); 
@@ -1370,7 +1388,6 @@
             document.getElementById('report-days-count').innerText=`${c.faults} Faltas registradas`;
             document.getElementById('report-freq-bar').style.width = c.freq+'%';
             
-            // Populate Unit Grid
             for(let i=0; i<6; i++) document.getElementById(`rep-u${i+1}`).innerText = d.units[i] || '-';
             document.getElementById('rep-rec').innerText = d.recovery || '-';
             
@@ -1407,7 +1424,6 @@
             const save = (b64) => {
                 const s = appData.students.find(x => x.id === currentJustificationStudentId);
                 const d = ensureSubjectData(s, appData.currentSubject);
-                // Mark as absent but with pending justification
                 d.attendance[currentJustificationDate] = { 
                     status: 'F', 
                     justified: false, 
@@ -1438,20 +1454,18 @@
 
         function openCoordPanel() {
             document.getElementById('modal-coord').classList.remove('hidden');
-            // Teachers Online
             getCollection('concenal_users').get().then(snap => {
                 let h = '';
                 snap.forEach(doc => {
                     const d = doc.data();
                     if (d.role === 'teacher') {
-                        const isOnline = (Date.now() - (d.lastActive || 0)) < 300000; // 5 mins
+                        const isOnline = (Date.now() - (d.lastActive || 0)) < 300000; 
                         h += `<div class="flex justify-between items-center p-2 border-b text-sm"><span>${d.displayName || d.name}</span><span class="${isOnline?'online-dot':'offline-dot'}"></span></div>`;
                     }
                 });
                 document.getElementById('coord-teachers-list').innerHTML = h || '<div class="text-xs text-gray-400">Nenhum professor cadastrado.</div>';
             });
 
-            // Pending Justifications
             let pending = '';
             appData.students.forEach(s => {
                 if(s.subjects) {
@@ -1499,7 +1513,7 @@
 
         function viewDoc(b64){const w=window.open(""); w.document.write(`<img src="${b64}" style="max-width:100%">`);}
 
-        // --- GESTÃO USUÁRIOS ---
+        // --- GESTÃO USUÁRIOS E ASSIGNMENTS ---
         function switchUserTab(t){ 
             creatingUserType=t; 
             document.getElementById('tab-teacher').className=t==='teacher'?"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition bg-white shadow-sm text-gray-800":"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition text-gray-400";
@@ -1507,9 +1521,42 @@
             document.getElementById('field-teacher-subj').classList.toggle('hidden', t!=='teacher');
             document.getElementById('field-parent-student').classList.toggle('hidden', t!=='parent');
             
-            document.getElementById('subject-checkboxes').innerHTML = appData.allSubjects.map(s=>`<label class="flex items-center gap-1"><input type="checkbox" value="${s}"> ${s}</label>`).join('');
-            document.getElementById('class-checkboxes').innerHTML = appData.allClasses.map(c=>`<label class="flex items-center gap-1"><input type="checkbox" value="${c}"> ${c}</label>`).join('');
+            if(t === 'teacher') renderAssignmentsUI();
             loadUsersList();
+        }
+
+        function toggleSubjClasses(checkbox, safeSubj) {
+            const div = document.getElementById(`classes-for-${safeSubj}`);
+            if (checkbox.checked) {
+                div.classList.remove('hidden');
+            } else {
+                div.classList.add('hidden');
+                div.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+            }
+        }
+
+        function renderAssignmentsUI(existingAssignments = {}) {
+            const container = document.getElementById('assignments-container');
+            if(!container) return;
+            container.innerHTML = appData.allSubjects.map(subj => {
+                const safeSubj = subj.replace(/[^a-zA-Z0-9]/g, '');
+                const isChecked = existingAssignments[subj] ? 'checked' : '';
+                const classes = existingAssignments[subj] || [];
+                const classCheckboxes = appData.allClasses.map(c => `
+                    <label class="flex items-center gap-1 cursor-pointer"><input type="checkbox" value="${c}" class="cls-cb-${safeSubj}" ${classes.includes(c) ? 'checked' : ''}> ${c}</label>
+                `).join('');
+                
+                return `
+                    <div class="border border-gray-100 rounded-lg p-3 bg-gray-50 mb-2 shadow-sm transition hover:border-green-200">
+                        <label class="font-bold text-sm text-school-green flex items-center gap-2 cursor-pointer w-full">
+                            <input type="checkbox" class="subj-main-cb w-4 h-4 text-school-green" value="${subj}" onchange="toggleSubjClasses(this, '${safeSubj}')" ${isChecked}> ${subj}
+                        </label>
+                        <div id="classes-for-${safeSubj}" class="grid grid-cols-2 sm:grid-cols-3 gap-2 text-[10px] mt-3 pl-4 border-l-2 border-green-200 ${isChecked ? '' : 'hidden'}">
+                            ${classCheckboxes}
+                        </div>
+                    </div>
+                `;
+            }).join('');
         }
 
         async function saveUserOps() {
@@ -1524,9 +1571,23 @@
             if(p) data.password = p;
 
             if(creatingUserType === 'teacher'){
-                data.subjects = Array.from(document.querySelectorAll('#subject-checkboxes input:checked')).map(c=>c.value);
-                data.classes = Array.from(document.querySelectorAll('#class-checkboxes input:checked')).map(c=>c.value);
-            } else { data.studentId = document.getElementById('new-u-student-id').value; }
+                let assignments = {};
+                document.querySelectorAll('.subj-main-cb:checked').forEach(cb => {
+                    const subj = cb.value;
+                    const safeSubj = subj.replace(/[^a-zA-Z0-9]/g, '');
+                    const clsChecked = Array.from(document.querySelectorAll(`.cls-cb-${safeSubj}:checked`)).map(c=>c.value);
+                    assignments[subj] = clsChecked;
+                });
+                
+                data.assignments = assignments;
+                data.subjects = Object.keys(assignments);
+                
+                let uniqueClasses = new Set();
+                Object.values(assignments).forEach(clist => clist.forEach(c => uniqueClasses.add(c)));
+                data.classes = Array.from(uniqueClasses);
+            } else { 
+                data.studentId = document.getElementById('new-u-student-id').value; 
+            }
 
             if(!n || !l) return alert("Preencha os campos obrigatórios.");
 
@@ -1545,8 +1606,15 @@
             document.getElementById('new-u-login').value = data.username;
             document.getElementById('new-u-pass').value = '';
             document.getElementById('new-u-role').value = data.role || 'teacher';
-            if(data.subjects) document.querySelectorAll('#subject-checkboxes input').forEach(cb => cb.checked = data.subjects.includes(cb.value));
-            if(data.classes) document.querySelectorAll('#class-checkboxes input').forEach(cb => cb.checked = data.classes.includes(cb.value));
+            
+            let assignments = data.assignments || {};
+            // Retrofit em dados antigos se não houver o mapeamento
+            if (Object.keys(assignments).length === 0 && data.subjects && data.classes) {
+                data.subjects.forEach(s => assignments[s] = data.classes);
+            }
+            
+            renderAssignmentsUI(assignments);
+
             if(data.studentId) document.getElementById('new-u-student-id').value = data.studentId;
             document.getElementById('btn-save-user').innerText = "Atualizar Cadastro";
             document.getElementById('btn-cancel-edit').classList.remove('hidden');
@@ -1555,7 +1623,7 @@
         function cancelEdit() {
             document.getElementById('edit-user-id').value = '';
             document.querySelectorAll('#modal-users input[type=text], #modal-users input[type=password]').forEach(i=>i.value='');
-            document.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
+            renderAssignmentsUI({});
             document.getElementById('btn-save-user').innerText = "Salvar Cadastro";
             document.getElementById('btn-cancel-edit').classList.add('hidden');
         }
@@ -1649,5 +1717,3 @@
     </script>
 </body>
 </html>
-
-
