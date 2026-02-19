@@ -51,6 +51,10 @@
         .chat-msg.received { align-self: flex-start; background-color: #ffffff; border-bottom-left-radius: 0; border: 1px solid #e0e0e0; }
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
+        
+        /* Oculta barra de rolagem horizontal mas permite scroll */
+        .hide-scroll-x::-webkit-scrollbar { height: 0px; background: transparent; }
+        .hide-scroll-x { scrollbar-width: none; }
     </style>
 </head>
 <body class="text-gray-800 min-h-screen flex flex-col bg-gray-50">
@@ -58,8 +62,8 @@
     <!-- SETUP SCREEN -->
     <div id="setup-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900 text-white hidden">
         <div class="bg-gray-800 p-8 rounded-lg max-w-lg w-full text-center">
-            <h2 class="text-2xl font-bold mb-4 text-yellow-400">A Verificar Ligação</h2>
-            <p class="text-sm mb-4 text-gray-300">A ligar à base de dados...</p>
+            <h2 class="text-2xl font-bold mb-4 text-yellow-400">Verificando Conexão</h2>
+            <p class="text-sm mb-4 text-gray-300">Conectando ao banco de dados...</p>
             <i class="fas fa-circle-notch fa-spin text-3xl"></i>
         </div>
     </div>
@@ -80,7 +84,7 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 ml-1">Senha</label>
-                    <input type="password" id="password" class="block w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-school-green outline-none bg-gray-50 transition" placeholder="Sua senha" required>
+                    <input type="password" id="password" class="block w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-school-green outline-none bg-gray-50 transition" placeholder="Digite sua senha" required>
                 </div>
                 <div id="login-error" class="text-red-600 text-xs hidden bg-red-50 p-3 rounded-lg border border-red-100 text-center font-bold">
                     <i class="fas fa-exclamation-circle mr-1"></i> Credenciais inválidas.
@@ -102,7 +106,7 @@
         </div>
 
         <!-- Header -->
-        <header class="bg-school-green text-white shadow-md z-30 sticky top-0 border-b border-green-800">
+        <header class="bg-school-green text-white shadow-md z-30 sticky top-0">
             <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
                 <div class="flex items-center gap-3">
                     <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" onerror="this.src='https://placehold.co/150x50/png?text=CONCENAL'" alt="CONCENAL" class="h-10 bg-white p-1 rounded shadow-sm cursor-pointer" onclick="location.reload()">
@@ -120,30 +124,23 @@
                     
                     <button onclick="openCoordPanel()" id="btn-coord" class="hidden bg-white text-school-green px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-white hover:bg-green-50 transition"><i class="fas fa-eye mr-1"></i> Coordenação</button>
                     <button onclick="openUsersModal()" id="btn-admin" class="hidden bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-orange-600 hover:bg-orange-600 transition"><i class="fas fa-users-cog mr-1"></i> Gestão</button>
-
-                    <div class="flex bg-green-900 bg-opacity-40 rounded-lg p-1 ml-2" id="main-nav">
-                        <button onclick="switchMode('grades')" id="nav-grades" class="px-3 py-1 rounded-md text-[11px] font-bold uppercase transition">Notas</button>
-                        <button onclick="switchMode('attendance')" id="nav-attendance" class="px-3 py-1 rounded-md text-[11px] font-bold uppercase transition">Freq.</button>
-                        <button onclick="switchMode('daily')" id="nav-daily" class="px-3 py-1 rounded-md text-[11px] font-bold uppercase transition">Diário</button>
-                    </div>
-                    
                     <button onclick="logout()" class="text-white hover:text-red-300 ml-2 p-2"><i class="fas fa-sign-out-alt fa-lg"></i></button>
                 </div>
             </div>
         </header>
 
-        <!-- Barra de Controle -->
+        <!-- Barra de Controle e Abas -->
         <div id="control-bar" class="bg-white border-b border-gray-200 shadow-sm z-20 sticky top-16">
-            <div class="max-w-7xl mx-auto px-4 py-3 flex flex-col md:flex-row gap-4 justify-between items-center">
+            <div class="max-w-7xl mx-auto px-4 pt-3 flex flex-col md:flex-row gap-4 justify-between items-center border-b border-gray-50 pb-3">
                 <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     <div class="flex items-center gap-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Turma</label>
                         <select id="class-select" onchange="changeClass(this.value)" class="bg-gray-50 border border-gray-200 text-gray-800 font-bold py-1.5 px-3 rounded-lg text-sm focus:ring-1 focus:ring-school-green outline-none cursor-pointer"></select>
                     </div>
                     <div class="flex items-center gap-2">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Disciplina</label>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Matéria</label>
                         <select id="subject-select" onchange="changeSubject(this.value)" class="bg-green-50 border border-green-200 text-school-green font-bold py-1.5 px-3 rounded-lg text-sm focus:ring-1 focus:ring-school-green outline-none cursor-pointer"></select>
-                        <button id="btn-add-subject" onclick="openManageSubjectsModal()" class="hidden bg-gray-100 text-gray-600 border border-gray-200 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-200 hover:text-school-green transition shadow-sm" title="Gerenciar Disciplinas">
+                        <button id="btn-add-subject" onclick="openManageSubjectsModal()" class="hidden bg-gray-100 text-gray-600 border border-gray-200 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-200 hover:text-school-green transition shadow-sm" title="Gerenciar Matérias">
                             <i class="fas fa-cog text-xs"></i>
                         </button>
                     </div>
@@ -151,15 +148,23 @@
                 </div>
                 <div id="action-buttons" class="flex gap-2"></div>
             </div>
+            <!-- Abas (Tabs) Movidar para ca -->
+            <div class="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto hide-scroll-x mt-1">
+                <button onclick="switchMode('grades')" id="nav-grades" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Notas e Médias</button>
+                <button onclick="switchMode('attendance')" id="nav-attendance" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Frequência</button>
+                <button onclick="switchMode('daily')" id="nav-daily" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Diário de Bordo</button>
+                <button onclick="switchMode('activities')" id="nav-activities" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Atividades e Materiais</button>
+            </div>
         </div>
 
         <!-- Conteúdo Principal -->
         <main class="w-full max-w-7xl mx-auto p-2 md:p-6" id="main-content">
+            
             <!-- Tabela de Notas -->
             <div id="view-grades" class="bg-white rounded-xl shadow-xl overflow-hidden fade-in border border-gray-200">
                 <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest" id="grades-title">Acompanhamento de Notas</h2>
-                    <div id="read-only-msg" class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded hidden">APENAS LEITURA</div>
+                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Acompanhamento de Notas</h2>
+                    <div id="read-only-msg" class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded hidden">APENAS CONSULTA</div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-center">
@@ -184,11 +189,24 @@
 
             <!-- Tabela de Frequência -->
             <div id="view-attendance" class="max-w-4xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden hidden fade-in border border-gray-200">
-                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                    <input type="date" id="attendance-date" onchange="renderAttendanceTable()" class="border border-gray-200 rounded-lg p-2 text-sm font-bold bg-white focus:ring-1 focus:ring-school-green outline-none">
-                    <div class="flex gap-4">
-                        <span class="flex items-center gap-1 text-[10px] font-bold text-gray-500 uppercase tracking-tighter"><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div> Presente</span>
-                        <span class="flex items-center gap-1 text-[10px] font-bold text-gray-500 uppercase tracking-tighter"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div> Falta</span>
+                <div class="p-4 border-b bg-gray-50">
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="flex items-center gap-3">
+                            <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Data da Chamada:</label>
+                            <input type="date" id="attendance-date" onchange="renderAttendanceTable()" class="border border-gray-200 rounded-lg p-2 text-sm font-bold bg-white focus:ring-1 focus:ring-school-green outline-none">
+                        </div>
+                        <div class="flex gap-4">
+                            <span class="flex items-center gap-1 text-[10px] font-bold text-gray-500 uppercase tracking-tighter"><div class="w-2.5 h-2.5 rounded-full bg-green-500"></div> Presente</span>
+                            <span class="flex items-center gap-1 text-[10px] font-bold text-gray-500 uppercase tracking-tighter"><div class="w-2.5 h-2.5 rounded-full bg-red-500"></div> Falta</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Histórico de Chamadas -->
+                    <div class="border-t border-gray-200 pt-3">
+                        <label class="text-[9px] font-bold text-school-green uppercase tracking-widest mb-2 block"><i class="fas fa-history mr-1"></i> Histórico de Chamadas Salvas</label>
+                        <div id="attendance-history-strip" class="flex gap-2 overflow-x-auto hide-scroll-x pb-1">
+                            <!-- Preenchido via JS -->
+                        </div>
                     </div>
                 </div>
                 <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-100"><tbody id="attendance-body" class="bg-white"></tbody></table></div>
@@ -206,20 +224,59 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100">
                         <thead class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase text-center">
-                            <tr><th class="px-4 py-4 text-left">Estudante</th><th class="w-32">TPC</th><th class="w-48">Comportamento</th></tr>
+                            <tr><th class="px-4 py-4 text-left">Estudante</th><th class="w-32">Dever</th><th class="w-48">Comportamento</th></tr>
                         </thead>
                         <tbody id="daily-body" class="bg-white text-sm"></tbody>
                     </table>
                 </div>
                 <div class="p-4 bg-gray-50 border-t flex justify-end" id="daily-actions">
-                    <button onclick="saveDailyLog()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition flex items-center gap-2"><i class="fas fa-book"></i> Salvar Diário</button>
+                    <button onclick="saveDailyLog()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition flex items-center gap-2"><i class="fas fa-book"></i> Gravar Diário</button>
                 </div>
             </div>
+
+            <!-- Tabela Atividades -->
+            <div id="view-activities" class="max-w-5xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden hidden fade-in border border-gray-200">
+                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-gray-700 text-sm uppercase tracking-widest">Material e Atividades em PDF</h3>
+                        <p class="text-[10px] text-gray-500 uppercase mt-1">Materiais disponíveis para download</p>
+                    </div>
+                    <button onclick="openSendActivityModal()" id="btn-new-activity" class="bg-school-green text-white px-4 py-2 rounded-lg text-xs font-bold uppercase flex items-center gap-2 shadow-sm hover:bg-green-700 transition hidden"><i class="fas fa-upload"></i> Enviar Arquivo</button>
+                </div>
+                <div class="p-6">
+                    <div id="activities-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Carregado via JS -->
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
-    <!-- MODAIS V29 -->
-    <!-- Justificar -->
+    <!-- MODAL: ENVIAR ATIVIDADE PDF -->
+    <div id="modal-send-activity" class="fixed inset-0 bg-black bg-opacity-70 hidden z-[80] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
+            <h3 class="font-bold text-lg mb-1 text-school-green uppercase tracking-widest border-b pb-2">Nova Atividade PDF</h3>
+            <p class="text-[10px] text-gray-500 mb-4 uppercase">Para: <span id="act-class-display" class="font-bold">--</span> | <span id="act-subj-display" class="font-bold">--</span></p>
+            
+            <label class="block text-[10px] font-bold text-gray-600 uppercase mb-1">Título da Atividade</label>
+            <input type="text" id="act-title" class="w-full border p-2.5 rounded-lg text-sm mb-3 outline-none focus:ring-1 focus:ring-school-green" placeholder="Ex: Lista de Exercícios 01">
+            
+            <label class="block text-[10px] font-bold text-gray-600 uppercase mb-1">Arquivo PDF (Max: 800KB)</label>
+            <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition cursor-pointer mb-4 relative">
+                <input type="file" id="act-file" accept="application/pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="previewActivityFile(this)">
+                <i class="fas fa-file-pdf text-3xl text-red-400 mb-2"></i>
+                <p id="act-file-name" class="text-xs text-gray-500 font-bold truncate">Clique ou arraste o PDF aqui</p>
+            </div>
+
+            <div class="flex justify-end gap-2 border-t pt-4">
+                <button onclick="closeModal('modal-send-activity')" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-sm font-bold uppercase hover:bg-gray-200">Cancelar</button>
+                <button onclick="submitActivity()" class="px-4 py-2 bg-school-green text-white rounded-lg text-sm font-bold shadow uppercase hover:bg-green-700 flex items-center gap-2"><i class="fas fa-paper-plane"></i> Enviar para Turma</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: JUSTIFICAR -->
     <div id="modal-justification" class="fixed inset-0 bg-black bg-opacity-70 hidden z-[80] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-lg p-6 w-full max-w-sm shadow-2xl">
             <h3 class="font-bold text-lg mb-2 text-school-green">Justificar Falta</h3>
@@ -236,7 +293,7 @@
         </div>
     </div>
 
-    <!-- Coordenação -->
+    <!-- MODAL: COORDENAÇÃO -->
     <div id="modal-coord" class="fixed inset-0 bg-black bg-opacity-70 hidden z-[90] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-lg w-full max-w-4xl h-[90vh] flex flex-col shadow-2xl">
             <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-lg">
@@ -326,13 +383,13 @@
     <div id="modal-manage-subjects" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[96] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]">
             <div class="p-4 border-b bg-gray-50 rounded-t-xl flex justify-between items-center">
-                <h3 class="font-bold text-gray-700 uppercase text-xs tracking-widest">Gerenciar Disciplinas</h3>
+                <h3 class="font-bold text-gray-700 uppercase text-xs tracking-widest">Gerenciar Matérias</h3>
                 <button onclick="closeModal('modal-manage-subjects')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
             </div>
             
             <div class="p-4 border-b bg-white">
                 <div class="flex gap-2">
-                    <input type="text" id="manage-new-subject" class="flex-1 border-2 border-gray-100 rounded-lg p-2 text-sm font-bold uppercase outline-none focus:border-green-200" placeholder="NOVA DISCIPLINA">
+                    <input type="text" id="manage-new-subject" class="flex-1 border-2 border-gray-100 rounded-lg p-2 text-sm font-bold uppercase outline-none focus:border-green-200" placeholder="NOVA MATÉRIA">
                     <button onclick="addSubject()" class="bg-school-green text-white px-4 rounded-lg font-bold hover:bg-green-700 transition"><i class="fas fa-plus"></i></button>
                 </div>
             </div>
@@ -489,6 +546,7 @@
         let db, auth, currentUser = null;
         let appData = {
             students: [],
+            activities: [],
             currentClass: CLASSES[0],
             currentSubject: '',
             currentMode: 'grades',
@@ -504,37 +562,37 @@
         let currentStudentForReport = null;
         let currentJustificationStudentId = null;
         let currentJustificationDate = null;
+        let currentActivityFile = null;
         let unsubscribe = null;
+        let activitiesUnsubscribe = null;
 
         // --- INICIALIZAÇÃO FIREBASE REFORÇADA ---
         const initFirebase = async () => {
             const setupScreen = document.getElementById('setup-screen');
             try {
-                // Hardcoded Firebase Config for user's specific project
-                const firebaseConfig = {
-                    apiKey: "AIzaSyAqeEtvS5mnYffNj1VLgxSbxX1NJ1n7u7c",
-                    authDomain: "concenal.firebaseapp.com",
-                    projectId: "concenal",
-                    storageBucket: "concenal.firebasestorage.app",
-                    messagingSenderId: "1021506175689",
-                    appId: "1:1021506175689:web:15b7af6919ac02bbc88318",
-                    measurementId: "G-TD79L232NL"
-                };
-
-                // ID do App for structure
-                window.APP_ID = 'concenal-sys-v1'; 
+                const firebaseConfig = JSON.parse(__firebase_config);
+                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                window.APP_ID = appId;
 
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
+                
+                try {
+                    db.settings({ experimentalForceLongPolling: true, useFetchStreams: false });
+                } catch (e) {
+                    console.warn("Firestore settings error:", e);
+                }
+                
                 auth = firebase.auth();
                 
-                // Login Anónimo para acesso imediato
-                await auth.signInAnonymously().catch(e => console.log("Auth warning:", e));
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await auth.signInWithCustomToken(__initial_auth_token);
+                } else {
+                    await auth.signInAnonymously();
+                }
 
-                // Initial Seed Check (Create Admin if empty)
                 await ensureAdminUser();
 
-                // Listen for Subjects Config
                 getCollection('concenal_config').doc('general').onSnapshot(doc => {
                     if(appData.isProcessing) return;
 
@@ -551,7 +609,7 @@
                        document.getElementById('subject-checkboxes').innerHTML = appData.allSubjects.map(s=>`<label class="flex items-center gap-1"><input type="checkbox" value="${s}"> ${s}</label>`).join('');
                     }
                     if(!document.getElementById('modal-manage-subjects').classList.contains('hidden')) {
-                        renderManageSubjectsList();
+                       renderManageSubjectsList();
                     }
                 });
 
@@ -577,12 +635,11 @@
 
         // --- HELPER: PATHS ---
         function getCollection(name) {
-            // Using scoped paths as requested by strict instructions even with custom key
             return db.collection('artifacts').doc(window.APP_ID).collection('public').doc('data').collection(name);
         }
 
         async function ensureAdminUser() {
-            const snapshot = await getCollection('concenal_users').limit(1).get();
+            const snapshot = await getCollection('concenal_users').get();
             if (snapshot.empty) {
                 await getCollection('concenal_users').add({
                     username: 'admin',
@@ -593,7 +650,6 @@
                     subjects: DEFAULT_SUBJECTS,
                     classes: CLASSES
                 });
-                console.log("Admin default created");
             }
         }
 
@@ -687,97 +743,6 @@
             }).length;
         }
 
-        // --- SUBJECT MANAGEMENT ---
-        function openManageSubjectsModal() {
-            document.getElementById('manage-new-subject').value = '';
-            renderManageSubjectsList();
-            document.getElementById('modal-manage-subjects').classList.remove('hidden');
-        }
-
-        function renderManageSubjectsList() {
-            const listEl = document.getElementById('manage-subjects-list');
-            listEl.innerHTML = '';
-            const sorted = [...appData.allSubjects].sort();
-            sorted.forEach(s => {
-                const safeName = s.replace(/'/g, "\\'"); 
-                listEl.innerHTML += `
-                    <div class="flex justify-between items-center p-3 bg-white border border-gray-100 rounded-lg mb-2 shadow-sm">
-                        <span class="font-bold text-gray-700 text-sm">${s}</span>
-                        <div class="flex gap-2">
-                            <button onclick="startRenameSubject('${safeName}')" class="text-blue-400 hover:text-blue-600 p-1"><i class="fas fa-edit"></i></button>
-                            <button onclick="removeSubject('${safeName}')" class="text-red-300 hover:text-red-500 p-1"><i class="fas fa-trash"></i></button>
-                        </div>
-                    </div>`;
-            });
-        }
-
-        async function addSubject() {
-            const name = document.getElementById('manage-new-subject').value.trim().toUpperCase();
-            if(!name) return;
-            if(appData.allSubjects.includes(name)) return alert("Esta disciplina já existe.");
-            try {
-                const newSubjects = [...appData.allSubjects, name];
-                await getCollection('concenal_config').doc('general').set({ subjects: newSubjects }, { merge: true });
-                document.getElementById('manage-new-subject').value = '';
-            } catch(e) { console.error(e); alert("Erro ao adicionar."); }
-        }
-
-        async function removeSubject(name) {
-            if(!confirm(`Remover ${name}? Dados antigos serão preservados.`)) return;
-            try {
-                const newSubjects = appData.allSubjects.filter(s => s !== name);
-                await getCollection('concenal_config').doc('general').set({ subjects: newSubjects }, { merge: true });
-            } catch(e) { console.error(e); alert("Erro ao remover."); }
-        }
-
-        async function startRenameSubject(oldName) {
-            const newName = prompt(`Renomear "${oldName}" para:`, oldName);
-            if(newName && newName !== oldName) {
-                const formattedName = newName.trim(); 
-                if(appData.allSubjects.includes(formattedName)) return alert("Nome já existe.");
-                if(confirm("Migrar notas e presenças para o novo nome?")) await executeRename(oldName, formattedName);
-            }
-        }
-
-        async function executeRename(oldName, newName) {
-            appData.isProcessing = true;
-            document.getElementById('manage-subjects-list').innerHTML = '<div class="text-center p-8"><i class="fas fa-circle-notch fa-spin text-school-green"></i></div>';
-            const newSubjList = appData.allSubjects.map(s => s === oldName ? newName : s);
-            try {
-                await getCollection('concenal_config').doc('general').set({ subjects: newSubjList }, { merge: true });
-                appData.allSubjects = newSubjList;
-                const snap = await getCollection('concenal_students').get();
-                const docsToUpdate = [];
-                snap.forEach(doc => {
-                    const data = doc.data();
-                    if (data.subjects && data.subjects[oldName]) docsToUpdate.push({ id: doc.id, data: data.subjects[oldName] });
-                });
-                const CHUNK_SIZE = 450; 
-                for (let i = 0; i < docsToUpdate.length; i += CHUNK_SIZE) {
-                    const chunk = docsToUpdate.slice(i, i + CHUNK_SIZE);
-                    const batch = db.batch();
-                    chunk.forEach(item => {
-                        const docRef = getCollection('concenal_students').doc(item.id);
-                        const updateData = {};
-                        updateData[`subjects.${newName}`] = item.data;
-                        updateData[`subjects.${oldName}`] = firebase.firestore.FieldValue.delete();
-                        batch.update(docRef, updateData);
-                    });
-                    await batch.commit();
-                }
-                alert("Renomeado com sucesso!");
-            } catch(e) { console.error(e); alert("Erro ao renomear."); } 
-            finally {
-                appData.isProcessing = false;
-                renderManageSubjectsList();
-                if(appData.currentSubject === oldName) {
-                    appData.currentSubject = newName;
-                    populateSubjectSelect();
-                    updateUI();
-                }
-            }
-        }
-
         // Login Logic
         document.getElementById('login-form').addEventListener('submit', async (e) => {
             e.preventDefault();
@@ -791,10 +756,13 @@
                 if (u === "admin" && p === "1234") {
                      foundUser = { id: 'admin_master', name: "Admin Geral", displayName: "Direção Geral", role: "admin", subjects: appData.allSubjects, classes: [] };
                 } else {
-                    const snap = await getCollection('concenal_users').where('username', '==', u).where('password', '==', p).limit(1).get();
-                    if (!snap.empty) {
-                        const d = snap.docs[0].data();
-                        foundUser = { id: snap.docs[0].id, ...d };
+                    const snap = await getCollection('concenal_users').get();
+                    const foundDoc = snap.docs.find(doc => {
+                        const d = doc.data();
+                        return d.username === u && d.password === p;
+                    });
+                    if (foundDoc) {
+                        foundUser = { id: foundDoc.id, ...foundDoc.data() };
                     }
                 }
 
@@ -824,13 +792,11 @@
 
             document.getElementById('btn-admin').classList.toggle('hidden', !isAdmin);
             document.getElementById('btn-coord').classList.toggle('hidden', !isAdmin && !isCoord);
-            document.getElementById('control-bar').classList.toggle('hidden', isParent);
             document.getElementById('btn-add-subject').classList.toggle('hidden', !isAdmin && !isCoord);
             
-            // Adjust header based on role
             const classTabs = document.getElementById('class-tabs');
             if(isParent) {
-                classTabs.innerHTML = '<span class="text-sm font-bold text-gray-500 p-2 uppercase tracking-wide">Área do Responsável</span>';
+                classTabs.innerHTML = '<span class="text-sm font-bold text-gray-500 p-2 uppercase tracking-wide border rounded-lg bg-gray-50 ml-2">Área do Responsável</span>';
                 document.getElementById('class-select').parentElement.classList.add('hidden');
             } else {
                 classTabs.innerHTML = '';
@@ -871,13 +837,26 @@
                 document.getElementById('loading-overlay').classList.add('hidden');
             });
 
+            if (activitiesUnsubscribe) activitiesUnsubscribe();
+            activitiesUnsubscribe = getCollection('concenal_activities').onSnapshot(snap => {
+                let acts = [];
+                snap.forEach(doc => acts.push({ id: doc.id, ...doc.data() }));
+                appData.activities = acts;
+                if(appData.currentMode === 'activities') renderActivitiesView();
+            });
+
             // Chat Sync
-            getCollection('concenal_chat').orderBy('timestamp', 'asc').limitToLast(100).onSnapshot(snap => {
+            getCollection('concenal_chat').onSnapshot(snap => {
                 const div = document.getElementById('chat-messages');
                 if(!div) return;
                 div.innerHTML = '';
-                snap.forEach(doc => {
-                    const m = doc.data();
+                
+                let messages = [];
+                snap.forEach(doc => messages.push({ docId: doc.id, ...doc.data() }));
+                messages.sort((a, b) => a.timestamp - b.timestamp);
+                messages = messages.slice(-100);
+
+                messages.forEach(m => {
                     const isForMe = (m.to === 'global' || m.to === currentUser.id || m.from === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'coord');
                     if (isForMe) {
                         const isSent = m.from === currentUser.id;
@@ -893,7 +872,7 @@
                                 ${fH}
                                 <div class="text-xs leading-relaxed text-gray-800">${m.text}</div>
                                 <div class="text-[7px] text-right mt-1 opacity-40">${date}</div>
-                                ${(currentUser.role === 'admin' || currentUser.role === 'coord') ? `<button onclick="deleteMsg('${doc.id}')" class="absolute -top-2 -right-2 text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times-circle"></i></button>` : ''}
+                                ${(currentUser.role === 'admin' || currentUser.role === 'coord') ? `<button onclick="deleteMsg('${m.docId}')" class="absolute -top-2 -right-2 text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times-circle"></i></button>` : ''}
                             </div>
                         `;
                     }
@@ -913,23 +892,28 @@
                 }
             }
 
-            ['nav-grades','nav-attendance','nav-daily'].forEach(id => {
+            // Tabs UI update
+            ['nav-grades','nav-attendance','nav-daily', 'nav-activities'].forEach(id => {
                 const el = document.getElementById(id);
                 const isActive = `nav-${appData.currentMode}` === id;
-                el.classList.toggle('bg-white', isActive);
-                el.classList.toggle('text-school-green', isActive);
-                el.classList.toggle('text-green-100', !isActive);
+                if(isActive) {
+                    el.classList.add('border-school-green', 'text-school-green');
+                    el.classList.remove('border-transparent', 'text-gray-500');
+                } else {
+                    el.classList.remove('border-school-green', 'text-school-green');
+                    el.classList.add('border-transparent', 'text-gray-500');
+                }
             });
 
-            ['view-grades', 'view-attendance', 'view-daily'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            ['view-grades', 'view-attendance', 'view-daily', 'view-activities'].forEach(id => document.getElementById(id).classList.add('hidden'));
             document.getElementById(`view-${appData.currentMode}`).classList.remove('hidden');
 
             if (appData.currentMode === 'grades') renderGradesTable();
             else if (appData.currentMode === 'attendance') renderAttendanceTable();
             else if (appData.currentMode === 'daily') loadDailyData();
+            else if (appData.currentMode === 'activities') renderActivitiesView();
         }
 
-        // --- DATA PROCESSING UTILS ---
         function getStudentsByClass() {
             if (currentUser.role === 'parent') return appData.students;
             return appData.students.filter(s => s.class === appData.currentClass).sort((a,b) => a.name.localeCompare(b.name));
@@ -940,7 +924,6 @@
             if (!student.subjects[subject]) {
                 student.subjects[subject] = { units: [null,null,null,null,null,null], attendance: {}, dailyLogs: {}, recovery: null, observations: [] };
             } else {
-                // Retrofit existing data
                 const d = student.subjects[subject];
                 if (!d.units || !Array.isArray(d.units)) d.units = [null,null,null,null,null,null];
                 if (!d.attendance) d.attendance = {};
@@ -950,7 +933,7 @@
             return student.subjects[subject];
         }
 
-        // --- RENDER TABLES ---
+        // --- RENDER VIEWS ---
         function renderGradesTable() {
             const canEdit = (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects.includes(appData.currentSubject))); 
             document.getElementById('read-only-msg').classList.toggle('hidden', canEdit || currentUser.role === 'parent');
@@ -976,21 +959,45 @@
         }
 
         function renderAttendanceTable(){
-            const tbody=document.getElementById('attendance-body'); tbody.innerHTML=''; const date=document.getElementById('attendance-date').value; const canE=(currentUser.role==='admin' || (currentUser.role==='teacher'&&currentUser.subjects.includes(appData.currentSubject)));
-            getStudentsByClass().forEach(s=>{
+            const date = document.getElementById('attendance-date').value; 
+            const canE = (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects.includes(appData.currentSubject)));
+            const students = getStudentsByClass();
+            
+            // Render History Strip
+            let savedDates = new Set();
+            students.forEach(s => {
+                const sub = ensureSubjectData(s, appData.currentSubject);
+                if(sub.attendance) Object.keys(sub.attendance).forEach(d => savedDates.add(d));
+            });
+            const strip = document.getElementById('attendance-history-strip');
+            strip.innerHTML = '';
+            Array.from(savedDates).sort((a,b) => b.localeCompare(a)).forEach(d => {
+                const isSelected = d === date;
+                const fmtDate = d.split('-').reverse().join('/');
+                strip.innerHTML += `<button onclick="changeAttendanceDate('${d}')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap transition ${isSelected ? 'bg-school-green text-white border-school-green' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}">${fmtDate}</button>`;
+            });
+            if(savedDates.size === 0) strip.innerHTML = '<span class="text-[10px] text-gray-400 italic py-1.5">Nenhum registro encontrado para esta matéria/turma.</span>';
+
+            // Render Table
+            const tbody=document.getElementById('attendance-body'); tbody.innerHTML=''; 
+            students.forEach(s=>{
                 const sub=ensureSubjectData(s, appData.currentSubject); const r=sub.attendance[date]; 
                 let st='P', j=false, doc=null; if(r){ if(typeof r==='string') st=r; else {st=r.status; j=r.justified; doc=r.doc;} }
                 tempAttendance[s.id] = r || 'P';
                 let btnCls = st==='P'?"bg-green-100 text-green-800 border-green-200": (j?"bg-blue-100 text-blue-800 border-blue-200":"bg-red-100 text-red-800 border-red-200");
                 let btnTxt = st==='P'?"PRESENTE": (j?"JUSTIFICADO":"FALTOU");
                 
-                // Allow justification if absent
                 let act = (st === 'F' && currentUser.role === 'parent') ? 
                     `<button onclick="openJustifyModal('${s.id}')" class="ml-2 text-[10px] text-blue-600 underline font-bold uppercase tracking-tighter">Justificar</button>` : 
                     ((j && doc) ? `<button onclick="viewDoc('${doc}')" class="ml-2 text-blue-500 hover:scale-110 transition"><i class="fas fa-paperclip"></i></button>` : '');
                 
                 tbody.innerHTML += `<tr class="border-b border-gray-50"><td class="px-6 py-4 font-bold text-gray-700 flex justify-between items-center">${s.name} ${act}</td><td class="px-6 py-4 text-center"><button id="btn-att-${s.id}" onclick="toggleAtt('${s.id}')" ${!canE?'disabled':''} class="w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition ${btnCls}">${btnTxt}</button></td></tr>`;
             });
+        }
+        
+        function changeAttendanceDate(dateStr) {
+            document.getElementById('attendance-date').value = dateStr;
+            renderAttendanceTable();
         }
 
         function loadDailyData() {
@@ -1027,13 +1034,106 @@
             });
         }
 
+        function renderActivitiesView() {
+            const canEdit = (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects.includes(appData.currentSubject)));
+            document.getElementById('btn-new-activity').classList.toggle('hidden', !canEdit);
+
+            const listEl = document.getElementById('activities-list');
+            listEl.innerHTML = '';
+
+            const filteredActs = appData.activities.filter(a => a.class === appData.currentClass && a.subject === appData.currentSubject);
+            
+            if(filteredActs.length === 0) {
+                listEl.innerHTML = `<div class="col-span-full p-12 text-center text-gray-400">
+                    <i class="fas fa-file-pdf text-4xl mb-3 opacity-50"></i>
+                    <p class="text-xs uppercase tracking-widest font-bold">Nenhum material cadastrado</p>
+                </div>`;
+                return;
+            }
+
+            // Ordenar por data decrescente
+            filteredActs.sort((a,b) => b.timestamp - a.timestamp).forEach(act => {
+                const date = new Date(act.timestamp).toLocaleDateString('pt-BR');
+                listEl.innerHTML += `
+                    <div class="bg-gray-50 border border-gray-200 rounded-xl p-4 flex flex-col justify-between hover:shadow-md transition">
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-bold text-gray-800 text-sm leading-tight pr-2">${act.title}</h4>
+                                <i class="fas fa-file-pdf text-red-500 text-xl"></i>
+                            </div>
+                            <p class="text-[10px] text-gray-500 font-bold uppercase tracking-wide mb-4">Enviado por ${act.teacherName} • ${date}</p>
+                        </div>
+                        <div class="flex gap-2">
+                            <a href="${act.fileData}" download="${act.fileName}" class="flex-1 bg-blue-600 text-white text-center py-2 rounded-lg text-xs font-bold shadow hover:bg-blue-700 transition">Baixar PDF</a>
+                            ${canEdit ? `<button onclick="deleteActivity('${act.id}')" class="bg-red-100 text-red-600 px-3 rounded-lg hover:bg-red-200 transition"><i class="fas fa-trash"></i></button>` : ''}
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        // --- ATIVIDADES PDF ACTIONS ---
+        function openSendActivityModal() {
+            document.getElementById('act-title').value = '';
+            document.getElementById('act-file').value = '';
+            currentActivityFile = null;
+            document.getElementById('act-file-name').innerText = 'Clique ou arraste o PDF aqui';
+            document.getElementById('act-class-display').innerText = appData.currentClass;
+            document.getElementById('act-subj-display').innerText = appData.currentSubject;
+            document.getElementById('modal-send-activity').classList.remove('hidden');
+        }
+
+        function previewActivityFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            if (file.type !== 'application/pdf') return alert("Apenas arquivos PDF são permitidos.");
+            if (file.size > 800 * 1024) {
+                input.value = '';
+                return alert("O arquivo excede o limite de 800KB. Compacte o PDF antes de enviar.");
+            }
+            document.getElementById('act-file-name').innerText = file.name;
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = e => {
+                currentActivityFile = { name: file.name, data: e.target.result };
+            };
+        }
+
+        async function submitActivity() {
+            const title = document.getElementById('act-title').value.trim();
+            if(!title || !currentActivityFile) return alert("Preencha o título e selecione um arquivo PDF.");
+            
+            try {
+                await getCollection('concenal_activities').add({
+                    class: appData.currentClass,
+                    subject: appData.currentSubject,
+                    title: title,
+                    fileName: currentActivityFile.name,
+                    fileData: currentActivityFile.data,
+                    teacherName: currentUser.displayName || currentUser.name,
+                    teacherId: currentUser.id,
+                    timestamp: Date.now()
+                });
+                closeModal('modal-send-activity');
+                alert("Atividade enviada com sucesso!");
+            } catch(e) {
+                console.error(e);
+                alert("Erro ao enviar atividade: " + e.message);
+            }
+        }
+
+        function deleteActivity(id) {
+            if(confirm("Remover esta atividade para todos os alunos?")) {
+                getCollection('concenal_activities').doc(id).delete();
+            }
+        }
+
         // --- ACTIONS ---
         function toggleAtt(id) { 
             let c = tempAttendance[id];
             let st = typeof c === 'string' ? c : c.status;
             let nw = st === 'P' ? 'F' : 'P';
             
-            // Atualiza estado local
             if (typeof c === 'object') { 
                 c.status = nw; 
                 tempAttendance[id] = c; 
@@ -1041,7 +1141,6 @@
                 tempAttendance[id] = nw; 
             }
 
-            // Atualiza UI diretamente sem recarregar tabela
             const btn = document.getElementById(`btn-att-${id}`);
             const isJustified = (typeof tempAttendance[id] === 'object' && tempAttendance[id].justified);
 
@@ -1064,6 +1163,7 @@
             const d=document.getElementById('attendance-date').value; let b=db.batch(); 
             getStudentsByClass().forEach(s=>{ const sub=ensureSubjectData(s, appData.currentSubject); sub.attendance[d]=tempAttendance[s.id]; b.set(getCollection('concenal_students').doc(s.id), {subjects:{[appData.currentSubject]:{attendance:sub.attendance}}},{merge:true}); }); 
             await b.commit(); alert("Chamada salva!"); 
+            renderAttendanceTable(); // Refresh history strip
         }
         async function saveDailyLog(){ 
             const d=document.getElementById('daily-date').value; let b=db.batch(); 
@@ -1141,7 +1241,6 @@
             if (f) {
                 const r = new FileReader(); r.readAsDataURL(f);
                 r.onload = e => {
-                    // Simple Compression
                     const i = new Image(); i.src = e.target.result;
                     i.onload = () => {
                         const c = document.createElement('canvas'); 
@@ -1157,12 +1256,14 @@
         function openCoordPanel() {
             document.getElementById('modal-coord').classList.remove('hidden');
             // Teachers Online
-            getCollection('concenal_users').where('role', '==', 'teacher').get().then(snap => {
+            getCollection('concenal_users').get().then(snap => {
                 let h = '';
                 snap.forEach(doc => {
                     const d = doc.data();
-                    const isOnline = (Date.now() - (d.lastActive || 0)) < 300000; // 5 mins
-                    h += `<div class="flex justify-between items-center p-2 border-b text-sm"><span>${d.displayName || d.name}</span><span class="${isOnline?'online-dot':'offline-dot'}"></span></div>`;
+                    if (d.role === 'teacher') {
+                        const isOnline = (Date.now() - (d.lastActive || 0)) < 300000; // 5 mins
+                        h += `<div class="flex justify-between items-center p-2 border-b text-sm"><span>${d.displayName || d.name}</span><span class="${isOnline?'online-dot':'offline-dot'}"></span></div>`;
+                    }
                 });
                 document.getElementById('coord-teachers-list').innerHTML = h || '<div class="text-xs text-gray-400">Nenhum professor cadastrado.</div>';
             });
@@ -1170,8 +1271,6 @@
             // Pending Justifications
             let pending = '';
             appData.students.forEach(s => {
-                // Check all subjects for this student (only locally loaded ones mostly, but we iterate what we have)
-                // Note: In a real app we'd query "pendingReview == true". Here we scan loaded data.
                 if(s.subjects) {
                     Object.entries(s.subjects).forEach(([subjName, subjData]) => {
                         if(subjData.attendance) {
@@ -1209,10 +1308,10 @@
                 d.attendance[date].pendingReview = false;
                 d.attendance[date].justified = true;
             } else {
-                d.attendance[date] = 'F'; // Revert to plain Fault
+                d.attendance[date] = 'F'; 
             }
             await getCollection('concenal_students').doc(sid).set({subjects:{[subj]:{attendance:d.attendance}}},{merge:true});
-            openCoordPanel(); // Refresh
+            openCoordPanel(); 
         }
 
         function viewDoc(b64){const w=window.open(""); w.document.write(`<img src="${b64}" style="max-width:100%">`);}
@@ -1220,8 +1319,8 @@
         // --- GESTÃO USUÁRIOS ---
         function switchUserTab(t){ 
             creatingUserType=t; 
-            document.getElementById('tab-teacher').className=t==='teacher'?"px-3 py-1 font-bold border-b-2 border-school-green":"px-3 py-1 text-gray-500";
-            document.getElementById('tab-parent').className=t==='parent'?"px-3 py-1 font-bold border-b-2 border-school-green":"px-3 py-1 text-gray-500";
+            document.getElementById('tab-teacher').className=t==='teacher'?"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition bg-white shadow-sm text-gray-800":"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition text-gray-400";
+            document.getElementById('tab-parent').className=t==='parent'?"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition bg-white shadow-sm text-gray-800":"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition text-gray-400";
             document.getElementById('field-teacher-subj').classList.toggle('hidden', t!=='teacher');
             document.getElementById('field-parent-student').classList.toggle('hidden', t!=='parent');
             
@@ -1274,21 +1373,21 @@
             document.getElementById('edit-user-id').value = '';
             document.querySelectorAll('#modal-users input[type=text], #modal-users input[type=password]').forEach(i=>i.value='');
             document.querySelectorAll('input[type=checkbox]').forEach(cb => cb.checked = false);
-            document.getElementById('btn-save-user').innerText = "Criar Acesso";
+            document.getElementById('btn-save-user').innerText = "Salvar Cadastro";
             document.getElementById('btn-cancel-edit').classList.add('hidden');
         }
 
         function loadUsersList() {
             const list = document.getElementById('users-list'); list.innerHTML = '<div class="p-8 text-center"><i class="fas fa-circle-notch fa-spin"></i></div>';
-            let query = getCollection('concenal_users');
-            if (creatingUserType === 'parent') query = query.where('role', '==', 'parent');
-            else query = query.where('role', '!=', 'parent');
-
-            query.get().then(snap => {
+            
+            getCollection('concenal_users').get().then(snap => {
                 list.innerHTML = '';
                 snap.forEach(doc => {
                     const u = doc.data();
-                    if(creatingUserType === 'teacher' && u.role === 'parent') return; 
+                    
+                    if (creatingUserType === 'parent' && u.role !== 'parent') return;
+                    if (creatingUserType === 'teacher' && u.role === 'parent') return;
+
                     const dataStr = encodeURIComponent(JSON.stringify(u));
                     list.innerHTML += `
                         <div class="flex justify-between items-center p-3 border bg-white rounded-xl shadow-sm border-gray-100">
