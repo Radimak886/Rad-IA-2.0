@@ -58,8 +58,8 @@
     <!-- SETUP SCREEN -->
     <div id="setup-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900 text-white hidden">
         <div class="bg-gray-800 p-8 rounded-lg max-w-lg w-full text-center">
-            <h2 class="text-2xl font-bold mb-4 text-yellow-400">Verificando Conexão</h2>
-            <p class="text-sm mb-4 text-gray-300">Conectando ao banco de dados...</p>
+            <h2 class="text-2xl font-bold mb-4 text-yellow-400">A Verificar Ligação</h2>
+            <p class="text-sm mb-4 text-gray-300">A ligar à base de dados...</p>
             <i class="fas fa-circle-notch fa-spin text-3xl"></i>
         </div>
     </div>
@@ -80,7 +80,7 @@
                 </div>
                 <div>
                     <label class="block text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1 ml-1">Senha</label>
-                    <input type="password" id="password" class="block w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-school-green outline-none bg-gray-50 transition" placeholder="Digite sua senha" required>
+                    <input type="password" id="password" class="block w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-school-green outline-none bg-gray-50 transition" placeholder="Sua senha" required>
                 </div>
                 <div id="login-error" class="text-red-600 text-xs hidden bg-red-50 p-3 rounded-lg border border-red-100 text-center font-bold">
                     <i class="fas fa-exclamation-circle mr-1"></i> Credenciais inválidas.
@@ -141,9 +141,9 @@
                         <select id="class-select" onchange="changeClass(this.value)" class="bg-gray-50 border border-gray-200 text-gray-800 font-bold py-1.5 px-3 rounded-lg text-sm focus:ring-1 focus:ring-school-green outline-none cursor-pointer"></select>
                     </div>
                     <div class="flex items-center gap-2">
-                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Matéria</label>
+                        <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Disciplina</label>
                         <select id="subject-select" onchange="changeSubject(this.value)" class="bg-green-50 border border-green-200 text-school-green font-bold py-1.5 px-3 rounded-lg text-sm focus:ring-1 focus:ring-school-green outline-none cursor-pointer"></select>
-                        <button id="btn-add-subject" onclick="openManageSubjectsModal()" class="hidden bg-gray-100 text-gray-600 border border-gray-200 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-200 hover:text-school-green transition shadow-sm" title="Gerenciar Matérias">
+                        <button id="btn-add-subject" onclick="openManageSubjectsModal()" class="hidden bg-gray-100 text-gray-600 border border-gray-200 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-200 hover:text-school-green transition shadow-sm" title="Gerenciar Disciplinas">
                             <i class="fas fa-cog text-xs"></i>
                         </button>
                     </div>
@@ -159,7 +159,7 @@
             <div id="view-grades" class="bg-white rounded-xl shadow-xl overflow-hidden fade-in border border-gray-200">
                 <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
                     <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest" id="grades-title">Acompanhamento de Notas</h2>
-                    <div id="read-only-msg" class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded hidden">APENAS CONSULTA</div>
+                    <div id="read-only-msg" class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded hidden">APENAS LEITURA</div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-center">
@@ -206,13 +206,13 @@
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100">
                         <thead class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase text-center">
-                            <tr><th class="px-4 py-4 text-left">Estudante</th><th class="w-32">Dever</th><th class="w-48">Comportamento</th></tr>
+                            <tr><th class="px-4 py-4 text-left">Estudante</th><th class="w-32">TPC</th><th class="w-48">Comportamento</th></tr>
                         </thead>
                         <tbody id="daily-body" class="bg-white text-sm"></tbody>
                     </table>
                 </div>
                 <div class="p-4 bg-gray-50 border-t flex justify-end" id="daily-actions">
-                    <button onclick="saveDailyLog()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition flex items-center gap-2"><i class="fas fa-book"></i> Gravar Diário</button>
+                    <button onclick="saveDailyLog()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition flex items-center gap-2"><i class="fas fa-book"></i> Salvar Diário</button>
                 </div>
             </div>
         </main>
@@ -326,13 +326,13 @@
     <div id="modal-manage-subjects" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[96] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]">
             <div class="p-4 border-b bg-gray-50 rounded-t-xl flex justify-between items-center">
-                <h3 class="font-bold text-gray-700 uppercase text-xs tracking-widest">Gerenciar Matérias</h3>
+                <h3 class="font-bold text-gray-700 uppercase text-xs tracking-widest">Gerenciar Disciplinas</h3>
                 <button onclick="closeModal('modal-manage-subjects')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
             </div>
             
             <div class="p-4 border-b bg-white">
                 <div class="flex gap-2">
-                    <input type="text" id="manage-new-subject" class="flex-1 border-2 border-gray-100 rounded-lg p-2 text-sm font-bold uppercase outline-none focus:border-green-200" placeholder="NOVA MATÉRIA">
+                    <input type="text" id="manage-new-subject" class="flex-1 border-2 border-gray-100 rounded-lg p-2 text-sm font-bold uppercase outline-none focus:border-green-200" placeholder="NOVA DISCIPLINA">
                     <button onclick="addSubject()" class="bg-school-green text-white px-4 rounded-lg font-bold hover:bg-green-700 transition"><i class="fas fa-plus"></i></button>
                 </div>
             </div>
@@ -510,21 +510,26 @@
         const initFirebase = async () => {
             const setupScreen = document.getElementById('setup-screen');
             try {
-                // Environment variables provided by system
-                const firebaseConfig = JSON.parse(__firebase_config);
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
-                window.APP_ID = appId; // Global access for helper
+                // Hardcoded Firebase Config for user's specific project
+                const firebaseConfig = {
+                    apiKey: "AIzaSyAqeEtvS5mnYffNj1VLgxSbxX1NJ1n7u7c",
+                    authDomain: "concenal.firebaseapp.com",
+                    projectId: "concenal",
+                    storageBucket: "concenal.firebasestorage.app",
+                    messagingSenderId: "1021506175689",
+                    appId: "1:1021506175689:web:15b7af6919ac02bbc88318",
+                    measurementId: "G-TD79L232NL"
+                };
+
+                // ID do App for structure
+                window.APP_ID = 'concenal-sys-v1'; 
 
                 firebase.initializeApp(firebaseConfig);
                 db = firebase.firestore();
                 auth = firebase.auth();
                 
-                // Auth Flow Mandatory Rule
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await auth.signInWithCustomToken(__initial_auth_token);
-                } else {
-                    await auth.signInAnonymously();
-                }
+                // Login Anónimo para acesso imediato
+                await auth.signInAnonymously().catch(e => console.log("Auth warning:", e));
 
                 // Initial Seed Check (Create Admin if empty)
                 await ensureAdminUser();
@@ -570,8 +575,9 @@
             }
         };
 
-        // --- HELPER: PATHS (MANDATORY RULE) ---
+        // --- HELPER: PATHS ---
         function getCollection(name) {
+            // Using scoped paths as requested by strict instructions even with custom key
             return db.collection('artifacts').doc(window.APP_ID).collection('public').doc('data').collection(name);
         }
 
@@ -708,7 +714,7 @@
         async function addSubject() {
             const name = document.getElementById('manage-new-subject').value.trim().toUpperCase();
             if(!name) return;
-            if(appData.allSubjects.includes(name)) return alert("Esta matéria já existe.");
+            if(appData.allSubjects.includes(name)) return alert("Esta disciplina já existe.");
             try {
                 const newSubjects = [...appData.allSubjects, name];
                 await getCollection('concenal_config').doc('general').set({ subjects: newSubjects }, { merge: true });
