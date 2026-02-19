@@ -66,6 +66,7 @@
             <h2 class="text-2xl font-bold mb-4 text-yellow-400">Iniciando Sistema</h2>
             <p class="text-sm mb-4 text-gray-300">Conectando ao servidor seguro...</p>
             <i class="fas fa-circle-notch fa-spin text-3xl text-school-lightGreen"></i>
+            <div id="setup-error-log" class="text-xs text-red-400 mt-4 break-words"></div>
         </div>
     </div>
 
@@ -125,7 +126,7 @@
                     
                     <button onclick="openCoordPanel()" id="btn-coord" class="hidden bg-white text-school-green px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-white hover:bg-green-50 transition"><i class="fas fa-eye mr-1"></i> Coordenação</button>
                     <button onclick="openUsersModal()" id="btn-admin" class="hidden bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-orange-600 hover:bg-orange-600 transition"><i class="fas fa-users-cog mr-1"></i> Gestão</button>
-                    <button onclick="openConfigModal()" id="btn-config" class="hidden bg-gray-700 bg-opacity-30 text-white border border-white border-opacity-20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-opacity-50 transition"><i class="fas fa-sliders-h mr-1"></i> Config.</button>
+                    <button onclick="openConfigModal()" id="btn-config" class="hidden bg-gray-700 bg-opacity-30 text-white border border-white border-opacity-20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-opacity-50 transition"><i class="fas fa-sliders-h mr-1"></i> Currículo/Config.</button>
                     
                     <button onclick="logout()" class="text-white hover:text-red-300 ml-2 p-2" title="Sair"><i class="fas fa-sign-out-alt fa-lg"></i></button>
                 </div>
@@ -251,45 +252,78 @@
         </main>
     </div>
 
-    <!-- MODAIS -->
+    <!-- MODAIS GERAIS -->
 
     <!-- MODAL: CONFIGURAÇÕES GLOBAIS (ADMIN PROFISSIONAL) -->
     <div id="modal-config" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
-            <div class="p-4 border-b bg-gray-50 rounded-t-xl flex justify-between items-center">
+        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col max-h-[90vh] overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center z-10">
                 <div class="flex items-center gap-3">
                     <div class="bg-school-green p-2 rounded-lg text-white"><i class="fas fa-sliders-h"></i></div>
                     <div>
                         <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm leading-tight">Configurações Globais</h3>
-                        <p class="text-[10px] text-gray-500 uppercase">Ajuste de Matérias e Turmas</p>
+                        <p class="text-[10px] text-gray-500 uppercase">Ajuste de Matérias, Turmas e Currículo</p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-config')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
             </div>
             
-            <div class="p-6 overflow-y-auto flex-1 bg-white">
-                <div class="mb-8">
-                    <h4 class="text-xs font-bold text-school-green uppercase tracking-widest border-b pb-2 mb-4 flex items-center gap-2"><i class="fas fa-users"></i> Gestão de Turmas</h4>
-                    <div class="flex gap-2 mb-3">
-                        <input type="text" id="config-new-class" class="flex-1 border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:border-school-green bg-gray-50" placeholder="Ex: 6º Ano A" onkeypress="if(event.key === 'Enter') addConfigClass()">
-                        <button onclick="addConfigClass()" class="bg-blue-600 text-white px-5 rounded-lg font-bold shadow hover:bg-blue-700 transition"><i class="fas fa-plus"></i></button>
+            <div class="flex border-b bg-white">
+                <button id="cfg-tab-btn-classes" onclick="switchConfigTab('classes')" class="flex-1 py-3 text-xs font-bold border-b-2 border-school-green text-school-green uppercase tracking-widest transition">1. Turmas</button>
+                <button id="cfg-tab-btn-subjects" onclick="switchConfigTab('subjects')" class="flex-1 py-3 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-school-green uppercase tracking-widest transition">2. Disciplinas</button>
+                <button id="cfg-tab-btn-curriculum" onclick="switchConfigTab('curriculum')" class="flex-1 py-3 text-xs font-bold border-b-2 border-transparent text-gray-500 hover:text-school-green uppercase tracking-widest transition">3. Matriz Curricular</button>
+            </div>
+
+            <div class="p-6 overflow-y-auto flex-1 bg-gray-50">
+                <!-- Aba Turmas -->
+                <div id="cfg-tab-classes" class="space-y-4">
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <label class="text-xs font-bold text-gray-700 uppercase mb-2 block"><i class="fas fa-plus-circle text-school-green mr-1"></i> Adicionar Turma</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="config-new-class" class="flex-1 border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:border-school-green bg-gray-50" placeholder="Ex: 6º Ano A" onkeypress="if(event.key === 'Enter') addConfigClass()">
+                            <button onclick="addConfigClass()" class="bg-blue-600 text-white px-5 rounded-lg font-bold shadow hover:bg-blue-700 transition">Adicionar</button>
+                        </div>
                     </div>
-                    <div id="container-classes" class="flex flex-wrap gap-2 p-4 bg-gray-50 border border-gray-100 rounded-xl min-h-[80px]"></div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <label class="text-xs font-bold text-gray-700 uppercase mb-3 block"><i class="fas fa-list text-school-green mr-1"></i> Turmas Cadastradas</label>
+                        <div id="config-classes-list" class="space-y-2"></div>
+                    </div>
                 </div>
 
-                <div>
-                    <h4 class="text-xs font-bold text-school-green uppercase tracking-widest border-b pb-2 mb-4 flex items-center gap-2"><i class="fas fa-book"></i> Gestão de Matérias</h4>
-                    <div class="flex gap-2 mb-3">
-                        <input type="text" id="config-new-subject" class="flex-1 border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:border-school-green bg-gray-50" placeholder="Ex: Matemática" onkeypress="if(event.key === 'Enter') addConfigSubject()">
-                        <button onclick="addConfigSubject()" class="bg-blue-600 text-white px-5 rounded-lg font-bold shadow hover:bg-blue-700 transition"><i class="fas fa-plus"></i></button>
+                <!-- Aba Disciplinas -->
+                <div id="cfg-tab-subjects" class="space-y-4 hidden">
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <label class="text-xs font-bold text-gray-700 uppercase mb-2 block"><i class="fas fa-plus-circle text-school-green mr-1"></i> Adicionar Disciplina</label>
+                        <div class="flex gap-2">
+                            <input type="text" id="config-new-subject" class="flex-1 border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:border-school-green bg-gray-50" placeholder="Ex: Robótica" onkeypress="if(event.key === 'Enter') addConfigSubject()">
+                            <button onclick="addConfigSubject()" class="bg-blue-600 text-white px-5 rounded-lg font-bold shadow hover:bg-blue-700 transition">Adicionar</button>
+                        </div>
                     </div>
-                    <div id="container-subjects" class="flex flex-wrap gap-2 p-4 bg-gray-50 border border-gray-100 rounded-xl min-h-[80px]"></div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <label class="text-xs font-bold text-gray-700 uppercase mb-3 block"><i class="fas fa-list text-school-green mr-1"></i> Disciplinas Cadastradas</label>
+                        <div id="config-subjects-list" class="space-y-2"></div>
+                    </div>
+                </div>
+
+                <!-- Aba Matriz Curricular -->
+                <div id="cfg-tab-curriculum" class="space-y-4 hidden">
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <p class="text-xs text-gray-500 mb-4 leading-relaxed">Selecione uma turma para definir quais disciplinas são ensinadas nela. Isso reflete no aplicativo dos pais para que eles só vejam o que o aluno realmente cursa.</p>
+                        <label class="text-xs font-bold text-gray-700 uppercase mb-2 block">Selecione a Turma</label>
+                        <select id="config-curriculum-class" onchange="renderCurriculumCheckboxes()" class="w-full border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:border-school-green bg-gray-50 font-bold text-school-green mb-4"></select>
+                        
+                        <label class="text-xs font-bold text-gray-700 uppercase mb-3 block border-t pt-4">Disciplinas da Turma</label>
+                        <div id="config-curriculum-checkboxes" class="grid grid-cols-2 sm:grid-cols-3 gap-3"></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end gap-2">
-                <button onclick="closeModal('modal-config')" class="px-5 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold uppercase hover:bg-gray-100 transition">Cancelar</button>
-                <button onclick="saveGlobalConfig()" class="px-6 py-2.5 bg-school-green text-white rounded-lg font-bold shadow-lg hover:bg-green-700 transition uppercase text-xs flex items-center gap-2"><i class="fas fa-save"></i> Salvar Alterações</button>
+            <div class="p-4 border-t bg-white rounded-b-2xl flex justify-between items-center gap-2">
+                <span class="text-[10px] text-gray-400 italic" id="cfg-unsaved-warn"></span>
+                <div class="flex gap-2">
+                    <button onclick="closeModal('modal-config')" class="px-5 py-2.5 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold uppercase hover:bg-gray-200 transition">Fechar</button>
+                    <button onclick="saveGlobalConfig()" class="px-6 py-2.5 bg-school-green text-white rounded-lg font-bold shadow-lg hover:bg-green-700 transition uppercase text-xs flex items-center gap-2"><i class="fas fa-save"></i> Salvar Tudo</button>
+                </div>
             </div>
         </div>
     </div>
@@ -375,7 +409,7 @@
                         </div>
                         <div class="grid grid-cols-2 gap-2">
                             <input type="text" id="new-u-login" placeholder="Login" class="border p-2.5 rounded-lg text-sm bg-white">
-                            <input type="text" id="new-u-pass" placeholder="Nova Senha" class="border p-2.5 rounded-lg text-sm bg-white">
+                            <input type="text" id="new-u-pass" placeholder="Nova Senha (deixe em branco para manter)" class="border p-2.5 rounded-lg text-sm bg-white">
                         </div>
                         
                         <div id="field-teacher-subj">
@@ -582,11 +616,14 @@
             currentMode: 'grades',
             allSubjects: [],
             allClasses: [],
+            curriculum: {}, // Mapeamento Turma -> Matérias
             isProcessing: false
         };
         
         let tempConfigClasses = [];
         let tempConfigSubjects = [];
+        let tempCurriculum = {};
+
         let tempAttendance = {};
         let tempDaily = {};
         let creatingUserType = 'teacher';
@@ -594,7 +631,7 @@
         // Chat State
         let currentChatFile = null;
         let chatRecipient = 'global';
-        let chatRecipientName = 'Mural Geral';
+        let chatRecipientName = 'Avisos Gerais';
         let currentChatMessages = [];
         let knownMessages = new Set();
         let isFirstChatLoad = true;
@@ -606,18 +643,25 @@
         let currentActivityFile = null;
         let unsubscribe = null;
         let activitiesUnsubscribe = null;
-        let userProfileUnsubscribe = null; // Listener exclusivo para o perfil
+        let userProfileUnsubscribe = null;
 
         // --- INICIALIZAÇÃO FIREBASE REFORÇADA ---
         const initFirebase = async () => {
             const setupScreen = document.getElementById('setup-screen');
+            const setupErrorLog = document.getElementById('setup-error-log');
             try {
                 let firebaseConfig = null;
-                if (typeof window !== 'undefined' && window.__firebase_config) {
-                    firebaseConfig = JSON.parse(window.__firebase_config);
-                } else if (typeof __firebase_config !== 'undefined') {
-                    firebaseConfig = JSON.parse(__firebase_config);
-                } else {
+                try {
+                    if (typeof window !== 'undefined' && window.__firebase_config) {
+                        firebaseConfig = JSON.parse(window.__firebase_config);
+                    } else if (typeof __firebase_config !== 'undefined') {
+                        firebaseConfig = JSON.parse(__firebase_config);
+                    }
+                } catch(err) {
+                    console.log("Config nativa do ambiente não encontrada, utilizando fallback manual.");
+                }
+
+                if (!firebaseConfig) {
                     firebaseConfig = {
                         apiKey: "AIzaSyAqeEtvS5mnYffNj1VLgxSbxX1NJ1n7u7c",
                         authDomain: "concenal.firebaseapp.com",
@@ -628,7 +672,14 @@
                     };
                 }
 
-                const appId = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
+                let appId = 'default-app-id';
+                try {
+                    if (typeof window !== 'undefined' && window.__app_id) {
+                        appId = window.__app_id;
+                    } else if (typeof __app_id !== 'undefined') {
+                        appId = __app_id;
+                    }
+                } catch(e) {}
                 window.APP_ID = appId;
 
                 if(!firebase.apps.length) {
@@ -644,7 +695,14 @@
                 
                 auth = firebase.auth();
                 
-                let customToken = (typeof window !== 'undefined' && window.__initial_auth_token) ? window.__initial_auth_token : (typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null);
+                let customToken = null;
+                try {
+                    if (typeof window !== 'undefined' && window.__initial_auth_token) {
+                        customToken = window.__initial_auth_token;
+                    } else if (typeof __initial_auth_token !== 'undefined') {
+                        customToken = __initial_auth_token;
+                    }
+                } catch(e) {}
                 
                 if (customToken) {
                     await auth.signInWithCustomToken(customToken);
@@ -660,19 +718,19 @@
                     if (doc.exists) {
                         appData.allSubjects = doc.data().subjects || DEFAULT_SUBJECTS;
                         appData.allClasses = doc.data().classes || DEFAULT_CLASSES;
+                        appData.curriculum = doc.data().curriculum || {};
                     } else {
                         appData.allSubjects = DEFAULT_SUBJECTS;
                         appData.allClasses = DEFAULT_CLASSES;
-                        getCollection('concenal_config').doc('general').set({ subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES }, { merge: true });
+                        appData.curriculum = {};
+                        getCollection('concenal_config').doc('general').set({ subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES, curriculum: {} }, { merge: true });
                     }
                     
                     if(!appData.currentSubject && appData.allSubjects.length > 0) appData.currentSubject = appData.allSubjects[0];
                     if(!appData.currentClass && appData.allClasses.length > 0) appData.currentClass = appData.allClasses[0];
 
                     if(currentUser) {
-                        populateSubjectSelect();
-                        populateClassSelect();
-                        updateUI();
+                        loadParentSubjectsAndPopulate();
                     }
                     
                     if(!document.getElementById('modal-users').classList.contains('hidden')) {
@@ -692,7 +750,7 @@
 
             } catch (e) {
                 console.error("Firebase Initialization Critical Error:", e);
-                setupScreen.innerHTML = `<div class="bg-red-800 p-8 rounded text-white">Erro Crítico: ${e.message}</div>`;
+                if(setupErrorLog) setupErrorLog.innerText = e.message;
                 setupScreen.classList.remove('hidden');
             }
         };
@@ -702,18 +760,27 @@
         }
 
         async function ensureAdminUser() {
-            const snapshot = await getCollection('concenal_users').get();
-            if (snapshot.empty) {
-                await getCollection('concenal_users').add({
-                    username: 'admin',
-                    password: '123',
-                    name: 'Administrador Padrão',
-                    displayName: 'Direção',
-                    role: 'admin',
-                    subjects: DEFAULT_SUBJECTS,
-                    classes: DEFAULT_CLASSES,
-                    assignments: {}
+            try {
+                const snapshot = await getCollection('concenal_users').get();
+                let hasAdmin = false;
+                snapshot.forEach(doc => {
+                    if (doc.data().username === 'admin') hasAdmin = true;
                 });
+                
+                if (!hasAdmin) {
+                    await getCollection('concenal_users').add({
+                        username: 'admin',
+                        password: '123',
+                        name: 'Administrador Padrão',
+                        displayName: 'Direção',
+                        role: 'admin',
+                        subjects: DEFAULT_SUBJECTS,
+                        classes: DEFAULT_CLASSES,
+                        assignments: {}
+                    });
+                }
+            } catch(e) {
+                console.error("Erro ao verificar admin:", e);
             }
         }
 
@@ -721,17 +788,16 @@
         function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
         function switchMode(m) { appData.currentMode = m; updateUI(); }
         function changeSubject(v) { 
-            if (currentUser && currentUser.role !== 'parent') { 
-                appData.currentSubject = v; 
-                populateClassSelect(); 
-                updateUI(); 
-            } 
+            appData.currentSubject = v; 
+            if(currentUser && currentUser.role !== 'parent') populateClassSelect(); 
+            updateUI(); 
         }
         function changeClass(v) { appData.currentClass = v; updateUI(); }
         function openAddModal() { document.getElementById('modal-add').classList.remove('hidden'); }
         function showHistory(id) { openReportModal(id); }
         function openUsersModal() { document.getElementById('modal-users').classList.remove('hidden'); loadUsersList(); switchUserTab('teacher'); }
-        
+        function openChat() { document.getElementById('modal-chat').classList.remove('hidden'); loadChatUsers(); setChatRecipient('global', 'Avisos Gerais'); }
+
         function checkLocalSession() {
             const s = localStorage.getItem('concenal_v29_session');
             if(s) { 
@@ -747,25 +813,38 @@
             }
         }
 
-        // --- POPULATE DROPDOWNS ---
-        function populateSubjectSelect() {
+        // --- POPULATE DROPDOWNS & DYNAMIC PARENT DATA ---
+        async function loadParentSubjectsAndPopulate() {
             const ss = document.getElementById('subject-select');
             if (!ss || !currentUser) return;
-            
-            let allowedSubjects = [...appData.allSubjects].sort();
-            
+
+            let allowedSubjects = [];
+
             if (currentUser.role === 'teacher') {
                 if (currentUser.assignments && Object.keys(currentUser.assignments).length > 0) {
-                    // Pega apenas as chaves (matérias) que possuam turmas vinculadas a ela
                     allowedSubjects = Object.keys(currentUser.assignments).filter(s => currentUser.assignments[s].length > 0).sort();
                 } else if (currentUser.subjects) {
-                    // Fallback para legados
                     allowedSubjects = [...currentUser.subjects].sort();
                 } else {
                     allowedSubjects = [];
                 }
+            } else if (currentUser.role === 'parent') {
+                // Filtro para os pais usando a Matriz Curricular
+                const student = appData.students.find(s => s.id === currentUser.studentId);
+                const stClass = student ? student.class : appData.currentClass;
+                
+                let parentSubjectsSet = new Set(appData.curriculum[stClass] || []);
+                
+                // Incluir matérias que já tenham histórico para evitar sumir com o boletim se a coordenação remover a matéria do currículo depois
+                if (student && student.subjects) {
+                    Object.keys(student.subjects).forEach(s => parentSubjectsSet.add(s));
+                }
+
+                allowedSubjects = Array.from(parentSubjectsSet).sort();
+            } else {
+                allowedSubjects = [...appData.allSubjects].sort();
             }
-            
+
             ss.innerHTML = allowedSubjects.map(s => `<option value="${s}">${s}</option>`).join('');
             
             if(appData.currentSubject && allowedSubjects.includes(appData.currentSubject)) {
@@ -775,7 +854,13 @@
                 ss.value = allowedSubjects[0];
             } else {
                 appData.currentSubject = '';
+                ss.innerHTML = '<option value="">Nenhuma disciplina</option>';
             }
+
+            if(currentUser.role !== 'parent') {
+                populateClassSelect();
+            }
+            updateUI();
         }
 
         function populateClassSelect() {
@@ -810,24 +895,90 @@
         function openConfigModal() {
             tempConfigClasses = [...appData.allClasses];
             tempConfigSubjects = [...appData.allSubjects];
-            renderConfigTags();
+            tempCurriculum = JSON.parse(JSON.stringify(appData.curriculum));
+            
+            switchConfigTab('classes');
             document.getElementById('modal-config').classList.remove('hidden');
         }
 
-        function renderConfigTags() {
-            const clsContainer = document.getElementById('container-classes');
-            clsContainer.innerHTML = tempConfigClasses.map((c, i) => `
-                <span class="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-sm">
-                    ${c} <button onclick="removeConfigClass(${i})" class="ml-2 text-red-400 hover:text-red-600 transition"><i class="fas fa-times"></i></button>
-                </span>
-            `).join('');
+        function switchConfigTab(tab) {
+            ['classes', 'subjects', 'curriculum'].forEach(t => {
+                const btn = document.getElementById(`cfg-tab-btn-${t}`);
+                const pane = document.getElementById(`cfg-tab-${t}`);
+                if(btn && pane) {
+                    if(t === tab) {
+                        btn.classList.add('border-school-green', 'text-school-green');
+                        btn.classList.remove('border-transparent', 'text-gray-500');
+                        pane.classList.remove('hidden');
+                    } else {
+                        btn.classList.remove('border-school-green', 'text-school-green');
+                        btn.classList.add('border-transparent', 'text-gray-500');
+                        pane.classList.add('hidden');
+                    }
+                }
+            });
 
-            const subjContainer = document.getElementById('container-subjects');
-            subjContainer.innerHTML = tempConfigSubjects.map((s, i) => `
-                <span class="bg-school-green text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-sm">
-                    ${s} <button onclick="removeConfigSubject(${i})" class="ml-2 text-green-200 hover:text-white transition"><i class="fas fa-times"></i></button>
-                </span>
+            if (tab === 'classes') renderConfigClasses();
+            if (tab === 'subjects') renderConfigSubjects();
+            if (tab === 'curriculum') {
+                const select = document.getElementById('config-curriculum-class');
+                select.innerHTML = tempConfigClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+                renderCurriculumCheckboxes();
+            }
+        }
+
+        function renderConfigClasses() {
+            const list = document.getElementById('config-classes-list');
+            list.innerHTML = tempConfigClasses.map((c, i) => `
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <span class="font-bold text-gray-700 text-sm">${c}</span>
+                    <div class="flex gap-2">
+                        <button onclick="renameConfigClass(${i})" class="text-blue-500 hover:text-blue-700 transition" title="Renomear"><i class="fas fa-edit"></i></button>
+                        <button onclick="removeConfigClass(${i})" class="text-red-400 hover:text-red-600 transition" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
             `).join('');
+            if(tempConfigClasses.length === 0) list.innerHTML = '<div class="text-xs text-gray-400 italic">Nenhuma turma cadastrada.</div>';
+        }
+
+        function renderConfigSubjects() {
+            const list = document.getElementById('config-subjects-list');
+            list.innerHTML = tempConfigSubjects.map((s, i) => `
+                <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
+                    <span class="font-bold text-gray-700 text-sm">${s}</span>
+                    <div class="flex gap-2">
+                        <button onclick="renameConfigSubject(${i})" class="text-blue-500 hover:text-blue-700 transition" title="Renomear"><i class="fas fa-edit"></i></button>
+                        <button onclick="removeConfigSubject(${i})" class="text-red-400 hover:text-red-600 transition" title="Excluir"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
+            `).join('');
+            if(tempConfigSubjects.length === 0) list.innerHTML = '<div class="text-xs text-gray-400 italic">Nenhuma disciplina cadastrada.</div>';
+        }
+
+        function renderCurriculumCheckboxes() {
+            const cClass = document.getElementById('config-curriculum-class').value;
+            const container = document.getElementById('config-curriculum-checkboxes');
+            if(!cClass) { container.innerHTML = ''; return; }
+            
+            const currentSubjInClass = tempCurriculum[cClass] || [];
+            
+            container.innerHTML = tempConfigSubjects.map(s => `
+                <label class="flex items-center gap-2 p-2 bg-gray-50 border rounded-lg cursor-pointer hover:bg-green-50 transition ${currentSubjInClass.includes(s) ? 'border-green-200' : 'border-gray-100'}">
+                    <input type="checkbox" value="${s}" onchange="updateTempCurriculum('${cClass}', this.value, this.checked)" ${currentSubjInClass.includes(s) ? 'checked' : ''} class="w-4 h-4 text-school-green">
+                    <span class="text-xs font-bold text-gray-700">${s}</span>
+                </label>
+            `).join('');
+        }
+
+        function updateTempCurriculum(cClass, subj, isChecked) {
+            if(!tempCurriculum[cClass]) tempCurriculum[cClass] = [];
+            if(isChecked && !tempCurriculum[cClass].includes(subj)) {
+                tempCurriculum[cClass].push(subj);
+            } else if (!isChecked) {
+                tempCurriculum[cClass] = tempCurriculum[cClass].filter(s => s !== subj);
+            }
+            renderCurriculumCheckboxes(); // Force visual border update
+            document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
         }
 
         function addConfigClass() {
@@ -836,13 +987,36 @@
             if(val && !tempConfigClasses.includes(val)) {
                 tempConfigClasses.push(val);
                 input.value = '';
-                renderConfigTags();
+                renderConfigClasses();
+                document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
             }
         }
 
         function removeConfigClass(idx) {
-            tempConfigClasses.splice(idx, 1);
-            renderConfigTags();
+            const cName = tempConfigClasses[idx];
+            if(confirm(`Remover turma ${cName}? Isso afetará a visão do sistema, mas não apagará notas antigas já lançadas.`)) {
+                tempConfigClasses.splice(idx, 1);
+                delete tempCurriculum[cName];
+                renderConfigClasses();
+                document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
+            }
+        }
+
+        async function renameConfigClass(idx) {
+            const oldName = tempConfigClasses[idx];
+            const newName = prompt("Novo nome para a turma:", oldName)?.trim().toUpperCase();
+            if(!newName || newName === oldName) return;
+            if(tempConfigClasses.includes(newName)) return alert("Este nome já existe!");
+            
+            if(confirm(`Tem certeza? Essa ação vai renomear em todas as configurações globais.`)) {
+                tempConfigClasses[idx] = newName;
+                if(tempCurriculum[oldName]) {
+                    tempCurriculum[newName] = tempCurriculum[oldName];
+                    delete tempCurriculum[oldName];
+                }
+                renderConfigClasses();
+                document.getElementById('cfg-unsaved-warn').innerText = '* Renomeação aguardando salvamento.';
+            }
         }
 
         function addConfigSubject() {
@@ -852,21 +1026,97 @@
             if(formattedVal && !tempConfigSubjects.includes(formattedVal)) {
                 tempConfigSubjects.push(formattedVal);
                 input.value = '';
-                renderConfigTags();
+                renderConfigSubjects();
+                document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
             }
         }
 
         function removeConfigSubject(idx) {
-            tempConfigSubjects.splice(idx, 1);
-            renderConfigTags();
+            const sName = tempConfigSubjects[idx];
+            if(confirm(`Remover disciplina ${sName}?`)) {
+                tempConfigSubjects.splice(idx, 1);
+                // Remove from curriculum
+                Object.keys(tempCurriculum).forEach(c => {
+                    tempCurriculum[c] = tempCurriculum[c].filter(s => s !== sName);
+                });
+                renderConfigSubjects();
+                document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
+            }
+        }
+
+        async function renameConfigSubject(idx) {
+            const oldName = tempConfigSubjects[idx];
+            const rawNew = prompt("Novo nome para a disciplina:", oldName)?.trim();
+            if(!rawNew || rawNew === oldName) return;
+            const newName = rawNew.charAt(0).toUpperCase() + rawNew.slice(1);
+            if(tempConfigSubjects.includes(newName)) return alert("Este nome já existe!");
+
+            if(confirm(`ATENÇÃO! Renomear a disciplina vai iniciar uma operação pesada no banco de dados para migrar as notas antigas para o novo nome. Deseja prosseguir?`)) {
+                try {
+                    document.getElementById('modal-config').classList.add('opacity-50', 'pointer-events-none');
+                    document.getElementById('cfg-unsaved-warn').innerText = 'Aplicando migração no banco de dados... Aguarde.';
+                    
+                    // 1. Atualizar configs locais temp
+                    tempConfigSubjects[idx] = newName;
+                    Object.keys(tempCurriculum).forEach(c => {
+                        tempCurriculum[c] = tempCurriculum[c].map(s => s === oldName ? newName : s);
+                    });
+
+                    // 2. Atualizar todos os alunos
+                    const snap = await getCollection('concenal_students').get();
+                    const docsToUpdate = [];
+                    snap.forEach(doc => {
+                        const data = doc.data();
+                        if (data.subjects && data.subjects[oldName]) docsToUpdate.push({ id: doc.id, data: data.subjects[oldName] });
+                    });
+                    
+                    const CHUNK_SIZE = 450; 
+                    for (let i = 0; i < docsToUpdate.length; i += CHUNK_SIZE) {
+                        const chunk = docsToUpdate.slice(i, i + CHUNK_SIZE);
+                        const batch = db.batch();
+                        chunk.forEach(item => {
+                            const docRef = getCollection('concenal_students').doc(item.id);
+                            const updateData = {};
+                            updateData[`subjects.${newName}`] = item.data;
+                            updateData[`subjects.${oldName}`] = firebase.firestore.FieldValue.delete();
+                            batch.update(docRef, updateData);
+                        });
+                        await batch.commit();
+                    }
+
+                    // 3. Atualizar configurações gerais no DB
+                    await getCollection('concenal_config').doc('general').set({ 
+                        subjects: tempConfigSubjects, 
+                        classes: tempConfigClasses,
+                        curriculum: tempCurriculum
+                    }, { merge: true });
+
+                    alert("Disciplina renomeada e notas migradas com sucesso!");
+                    renderConfigSubjects();
+                    document.getElementById('cfg-unsaved-warn').innerText = '';
+
+                } catch (e) {
+                    alert("Erro na migração: " + e.message);
+                } finally {
+                    document.getElementById('modal-config').classList.remove('opacity-50', 'pointer-events-none');
+                }
+            }
         }
 
         async function saveGlobalConfig() {
             try {
                 appData.isProcessing = true;
                 document.getElementById('modal-config').classList.add('opacity-50', 'pointer-events-none');
-                await getCollection('concenal_config').doc('general').set({ subjects: tempConfigSubjects, classes: tempConfigClasses }, { merge: true });
+                document.getElementById('cfg-unsaved-warn').innerText = 'Salvando...';
+                
+                await getCollection('concenal_config').doc('general').set({ 
+                    subjects: tempConfigSubjects, 
+                    classes: tempConfigClasses,
+                    curriculum: tempCurriculum 
+                }, { merge: true });
+                
                 alert("Configurações atualizadas no sistema!");
+                document.getElementById('cfg-unsaved-warn').innerText = '';
                 closeModal('modal-config');
             } catch(e) {
                 alert("Erro ao salvar: " + e.message);
@@ -969,7 +1219,9 @@
             document.getElementById('btn-admin').classList.toggle('hidden', !isAdmin);
             document.getElementById('btn-coord').classList.toggle('hidden', !isAdmin && !isCoord);
             document.getElementById('btn-config').classList.toggle('hidden', !isAdmin);
-            document.getElementById('btn-chat').classList.toggle('hidden', isParent);
+            
+            const btnChat = document.getElementById('btn-chat');
+            if (btnChat) btnChat.classList.toggle('hidden', isParent);
             
             const classTabs = document.getElementById('class-tabs');
             if(isParent) {
@@ -981,31 +1233,21 @@
             }
 
             if (currentUser.id === 'admin_master') {
-                 populateSubjectSelect();
-                 populateClassSelect();
+                 loadParentSubjectsAndPopulate();
                  startRealtimeSync();
             } else {
-                 // Listener ao vivo no usuário atual para forçar reload de permissões
                  if (userProfileUnsubscribe) userProfileUnsubscribe();
                  userProfileUnsubscribe = getCollection('concenal_users').doc(currentUser.id).onSnapshot(doc => {
                      if (doc.exists) {
                          currentUser = { id: doc.id, ...doc.data() };
                          localStorage.setItem('concenal_v29_session', JSON.stringify(currentUser));
                          
-                         populateSubjectSelect();
-                         populateClassSelect();
-                         updateUI();
+                         loadParentSubjectsAndPopulate();
                      } else {
                          logout();
                      }
                  });
                  startRealtimeSync();
-            }
-            
-            if (isAdmin || isCoord || isParent) {
-                document.getElementById('subject-select').disabled = false;
-            } else if (!isParent) {
-                document.getElementById('subject-select').disabled = (document.getElementById('subject-select').options.length <= 1);
             }
         }
 
@@ -1036,7 +1278,6 @@
         function updateUnreadBadges() {
             let totalUnread = 0;
             
-            // Badge Mural
             const globalBtn = document.getElementById('chat-btn-global');
             if(globalBtn) {
                 const c = unreadCounts['global'] || 0;
@@ -1048,7 +1289,6 @@
                 }
             }
 
-            // Badge Outros Usuários
             Object.entries(unreadCounts).forEach(([uid, count]) => {
                 if(uid === 'global') return;
                 totalUnread += count;
@@ -1062,7 +1302,6 @@
                 }
             });
 
-            // Ícone Cabeçalho
             const mainBadge = document.getElementById('chat-badge');
             if(mainBadge) {
                 if(totalUnread > 0) mainBadge.classList.remove('hidden');
@@ -1080,14 +1319,20 @@
                     if (currentUser && currentUser.role === 'parent') {
                         if (data.studentId === currentUser.studentId || doc.id === currentUser.studentId) { 
                             list.push({id: doc.id, ...data});
-                            appData.currentClass = data.class;
+                            if (!appData.currentClass) appData.currentClass = data.class;
                         }
                     } else {
                         list.push({id: doc.id, ...data});
                     }
                 });
                 appData.students = list;
-                updateUI();
+                
+                if (currentUser && currentUser.role === 'parent') {
+                    loadParentSubjectsAndPopulate();
+                } else {
+                    updateUI();
+                }
+                
                 document.getElementById('loading-overlay').classList.add('hidden');
             }, error => {
                 console.error("Firestore sync error:", error);
@@ -1104,6 +1349,8 @@
 
             // NOVO CHAT SYNC COM NOTIFICAÇÕES E LIMITES LOCAIS
             getCollection('concenal_chat').onSnapshot(snap => {
+                if(currentUser && currentUser.role === 'parent') return; // Pais não rodam o chat engine
+                
                 let messages = [];
                 let newMessagesArrived = false;
 
@@ -1191,6 +1438,11 @@
         function updateUI() {
             if (!currentUser) return; 
 
+            const cs = document.getElementById('class-select');
+            if(cs && cs.value !== appData.currentClass && currentUser.role !== 'parent') {
+                 cs.value = appData.currentClass;
+            }
+
             // Tabs UI update
             ['nav-grades','nav-attendance','nav-daily', 'nav-activities'].forEach(id => {
                 const el = document.getElementById(id);
@@ -1240,7 +1492,6 @@
 
         // --- RENDER VIEWS ---
         function renderGradesTable() {
-            // Regra: Professor sempre pode gerenciar as turmas que lhe foram assinadas
             const canEdit = currentUser && (
                 currentUser.role === 'admin' || 
                 currentUser.role === 'coord' || 
@@ -1265,7 +1516,7 @@
             const list = getStudentsByClass();
             const emptyState = document.getElementById('empty-state');
             
-            if(list.length === 0 || !appData.currentClass) { 
+            if(list.length === 0 || (!appData.currentClass && currentUser.role !== 'parent')) { 
                 if (emptyState) emptyState.classList.remove('hidden'); 
                 return; 
             }
@@ -1759,7 +2010,7 @@
             if(!n || !l) return alert("Preencha os campos obrigatórios.");
 
             try {
-                if(id) { await getCollection('concenal_users').doc(id).update(data); } 
+                if(id) { await getCollection('concenal_users').doc(id).set(data, { merge: true }); } 
                 else { if(!p) return alert("Defina uma senha"); await getCollection('concenal_users').add(data); }
                 alert("Operação concluída!"); loadUsersList(); cancelEdit();
             } catch(e) { alert(e.message); }
