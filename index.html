@@ -51,8 +51,6 @@
         .chat-msg.received { align-self: flex-start; background-color: #ffffff; border-bottom-left-radius: 0; border: 1px solid #e0e0e0; }
         
         .no-scrollbar::-webkit-scrollbar { display: none; }
-        
-        /* Oculta barra de rolagem horizontal mas permite scroll */
         .hide-scroll-x::-webkit-scrollbar { height: 0px; background: transparent; }
         .hide-scroll-x { scrollbar-width: none; }
     </style>
@@ -61,10 +59,10 @@
 
     <!-- SETUP SCREEN -->
     <div id="setup-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900 text-white hidden">
-        <div class="bg-gray-800 p-8 rounded-lg max-w-lg w-full text-center">
-            <h2 class="text-2xl font-bold mb-4 text-yellow-400">Verificando Conexão</h2>
-            <p class="text-sm mb-4 text-gray-300">Conectando ao banco de dados...</p>
-            <i class="fas fa-circle-notch fa-spin text-3xl"></i>
+        <div class="bg-gray-800 p-8 rounded-lg max-w-lg w-full text-center shadow-2xl">
+            <h2 class="text-2xl font-bold mb-4 text-yellow-400">Iniciando Sistema</h2>
+            <p class="text-sm mb-4 text-gray-300">Conectando ao servidor seguro...</p>
+            <i class="fas fa-circle-notch fa-spin text-3xl text-school-lightGreen"></i>
         </div>
     </div>
 
@@ -124,6 +122,8 @@
                     
                     <button onclick="openCoordPanel()" id="btn-coord" class="hidden bg-white text-school-green px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-white hover:bg-green-50 transition"><i class="fas fa-eye mr-1"></i> Coordenação</button>
                     <button onclick="openUsersModal()" id="btn-admin" class="hidden bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-orange-600 hover:bg-orange-600 transition"><i class="fas fa-users-cog mr-1"></i> Gestão</button>
+                    <button onclick="openConfigModal()" id="btn-config" class="hidden bg-gray-700 bg-opacity-30 text-white border border-white border-opacity-20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-opacity-50 transition"><i class="fas fa-sliders-h mr-1"></i> Config.</button>
+                    
                     <button onclick="logout()" class="text-white hover:text-red-300 ml-2 p-2"><i class="fas fa-sign-out-alt fa-lg"></i></button>
                 </div>
             </div>
@@ -140,9 +140,6 @@
                     <div class="flex items-center gap-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Matéria</label>
                         <select id="subject-select" onchange="changeSubject(this.value)" class="bg-green-50 border border-green-200 text-school-green font-bold py-1.5 px-3 rounded-lg text-sm focus:ring-1 focus:ring-school-green outline-none cursor-pointer"></select>
-                        <button id="btn-add-subject" onclick="openManageSubjectsModal()" class="hidden bg-gray-100 text-gray-600 border border-gray-200 w-8 h-8 rounded-lg flex items-center justify-center hover:bg-gray-200 hover:text-school-green transition shadow-sm" title="Gerenciar Matérias">
-                            <i class="fas fa-cog text-xs"></i>
-                        </button>
                     </div>
                     <div id="class-tabs" class="ml-2"></div>
                 </div>
@@ -253,6 +250,57 @@
         </main>
     </div>
 
+    <!-- MODAIS GERAIS -->
+
+    <!-- MODAL: CONFIGURAÇÕES GLOBAIS (ADMIN PROFISSIONAL) -->
+    <div id="modal-config" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-xl w-full max-w-2xl shadow-2xl flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b bg-gray-50 rounded-t-xl flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-school-green p-2 rounded-lg text-white"><i class="fas fa-sliders-h"></i></div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm leading-tight">Configurações Globais</h3>
+                        <p class="text-[10px] text-gray-500 uppercase">Ajuste de Matérias e Turmas</p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-config')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            
+            <div class="p-6 overflow-y-auto flex-1 bg-white">
+                <!-- Seção Turmas -->
+                <div class="mb-8">
+                    <h4 class="text-xs font-bold text-school-green uppercase tracking-widest border-b pb-2 mb-4 flex items-center gap-2"><i class="fas fa-users"></i> Gestão de Turmas</h4>
+                    
+                    <div class="flex gap-2 mb-3">
+                        <input type="text" id="config-new-class" class="flex-1 border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:border-school-green bg-gray-50" placeholder="Ex: 6º Ano A" onkeypress="if(event.key === 'Enter') addConfigClass()">
+                        <button onclick="addConfigClass()" class="bg-blue-600 text-white px-5 rounded-lg font-bold shadow hover:bg-blue-700 transition"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="container-classes" class="flex flex-wrap gap-2 p-4 bg-gray-50 border border-gray-100 rounded-xl min-h-[80px]">
+                        <!-- Chips Renderizados aqui -->
+                    </div>
+                </div>
+
+                <!-- Seção Matérias -->
+                <div>
+                    <h4 class="text-xs font-bold text-school-green uppercase tracking-widest border-b pb-2 mb-4 flex items-center gap-2"><i class="fas fa-book"></i> Gestão de Matérias</h4>
+                    
+                    <div class="flex gap-2 mb-3">
+                        <input type="text" id="config-new-subject" class="flex-1 border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:border-school-green bg-gray-50" placeholder="Ex: Matemática" onkeypress="if(event.key === 'Enter') addConfigSubject()">
+                        <button onclick="addConfigSubject()" class="bg-blue-600 text-white px-5 rounded-lg font-bold shadow hover:bg-blue-700 transition"><i class="fas fa-plus"></i></button>
+                    </div>
+                    <div id="container-subjects" class="flex flex-wrap gap-2 p-4 bg-gray-50 border border-gray-100 rounded-xl min-h-[80px]">
+                        <!-- Chips Renderizados aqui -->
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-4 border-t bg-gray-50 rounded-b-xl flex justify-end gap-2">
+                <button onclick="closeModal('modal-config')" class="px-5 py-2.5 bg-white border border-gray-200 text-gray-600 rounded-lg text-xs font-bold uppercase hover:bg-gray-100 transition">Cancelar</button>
+                <button onclick="saveGlobalConfig()" class="px-6 py-2.5 bg-school-green text-white rounded-lg font-bold shadow-lg hover:bg-green-700 transition uppercase text-xs flex items-center gap-2"><i class="fas fa-save"></i> Salvar Alterações</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: ENVIAR ATIVIDADE PDF -->
     <div id="modal-send-activity" class="fixed inset-0 bg-black bg-opacity-70 hidden z-[80] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-xl p-6 w-full max-w-md shadow-2xl">
@@ -313,7 +361,7 @@
         </div>
     </div>
 
-    <!-- MODAL: GESTÃO (ADMIN) -->
+    <!-- MODAL: GESTÃO DE USUÁRIOS (ADMIN) -->
     <div id="modal-users" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[90] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh]">
             <div class="p-4 border-b flex justify-between items-center bg-gray-50 rounded-t-2xl">
@@ -367,7 +415,7 @@
         </div>
     </div>
 
-    <!-- MODAL: ADD ALUNO -->
+    <!-- MODAL: ADD ALUNO / IMPORTAR -->
     <div id="modal-add" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[95] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-sm p-6">
             <h3 class="font-bold text-gray-700 mb-4">Adicionar Aluno</h3>
@@ -379,26 +427,6 @@
         </div>
     </div>
     
-    <!-- MODAL: GERENCIAR MATÉRIAS -->
-    <div id="modal-manage-subjects" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[96] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh]">
-            <div class="p-4 border-b bg-gray-50 rounded-t-xl flex justify-between items-center">
-                <h3 class="font-bold text-gray-700 uppercase text-xs tracking-widest">Gerenciar Matérias</h3>
-                <button onclick="closeModal('modal-manage-subjects')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-            </div>
-            
-            <div class="p-4 border-b bg-white">
-                <div class="flex gap-2">
-                    <input type="text" id="manage-new-subject" class="flex-1 border-2 border-gray-100 rounded-lg p-2 text-sm font-bold uppercase outline-none focus:border-green-200" placeholder="NOVA MATÉRIA">
-                    <button onclick="addSubject()" class="bg-school-green text-white px-4 rounded-lg font-bold hover:bg-green-700 transition"><i class="fas fa-plus"></i></button>
-                </div>
-            </div>
-
-            <div class="flex-1 overflow-y-auto p-4 bg-gray-50" id="manage-subjects-list"></div>
-        </div>
-    </div>
-    
-    <!-- MODAL: IMPORTAR -->
     <div id="modal-import" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[95] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
             <h3 class="font-bold text-gray-700 mb-2">Importar em Massa</h3>
@@ -537,7 +565,7 @@
     <!-- Script de Funcionalidade -->
     <script>
         // --- CONSTANTES V29 ---
-        const CLASSES = ["6A", "6B", "7A", "7B", "8A", "8B", "9A", "9B", "1º EM A", "2º EM A", "3º EM A"];
+        const DEFAULT_CLASSES = ["6A", "6B", "7A", "7B", "8A", "8B", "9A", "9B", "1º EM A", "2º EM A", "3º EM A"];
         const DEFAULT_SUBJECTS = ["Matemática", "Português", "Geografia", "História", "Arte", "Educação Física", "Inglês", "Ciências", "Física", "Química", "Biologia", "Projeto de Vida", "Ciências Humanas", "Espanhol"];
         const SUBJECT_DAYS = { "Matemática": 200, "Português": 200, "default": 80 };
         const today = new Date().toISOString().split('T')[0];
@@ -547,12 +575,18 @@
         let appData = {
             students: [],
             activities: [],
-            currentClass: CLASSES[0],
+            currentClass: '',
             currentSubject: '',
             currentMode: 'grades',
             allSubjects: [],
+            allClasses: [],
             isProcessing: false
         };
+        
+        // Variáveis temporárias para o novo Modal de Configuração
+        let tempConfigClasses = [];
+        let tempConfigSubjects = [];
+
         let tempAttendance = {};
         let tempDaily = {};
         let creatingUserType = 'teacher';
@@ -570,10 +604,14 @@
         const initFirebase = async () => {
             const setupScreen = document.getElementById('setup-screen');
             try {
-                let firebaseConfig;
-                if (typeof __firebase_config !== 'undefined') {
+                // Checagem Segura do Firebase Config (Evita ReferenceError de "is not defined")
+                let firebaseConfig = null;
+                if (typeof window !== 'undefined' && window.__firebase_config) {
+                    firebaseConfig = JSON.parse(window.__firebase_config);
+                } else if (typeof __firebase_config !== 'undefined') {
                     firebaseConfig = JSON.parse(__firebase_config);
                 } else {
+                    // Fallback nativo
                     firebaseConfig = {
                         apiKey: "AIzaSyAqeEtvS5mnYffNj1VLgxSbxX1NJ1n7u7c",
                         authDomain: "concenal.firebaseapp.com",
@@ -584,22 +622,27 @@
                     };
                 }
 
-                const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+                const appId = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
                 window.APP_ID = appId;
 
-                firebase.initializeApp(firebaseConfig);
+                if(!firebase.apps.length) {
+                    firebase.initializeApp(firebaseConfig);
+                }
                 db = firebase.firestore();
                 
                 try {
                     db.settings({ experimentalForceLongPolling: true, useFetchStreams: false });
                 } catch (e) {
-                    console.warn("Firestore settings error:", e);
+                    console.warn("Firestore settings log:", e);
                 }
                 
                 auth = firebase.auth();
                 
-                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
-                    await auth.signInWithCustomToken(__initial_auth_token);
+                // Auth
+                let customToken = (typeof window !== 'undefined' && window.__initial_auth_token) ? window.__initial_auth_token : (typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null);
+                
+                if (customToken) {
+                    await auth.signInWithCustomToken(customToken);
                 } else {
                     await auth.signInAnonymously();
                 }
@@ -609,20 +652,28 @@
                 getCollection('concenal_config').doc('general').onSnapshot(doc => {
                     if(appData.isProcessing) return;
 
-                    if (doc.exists && doc.data().subjects) {
-                        appData.allSubjects = doc.data().subjects;
+                    if (doc.exists) {
+                        appData.allSubjects = doc.data().subjects || DEFAULT_SUBJECTS;
+                        appData.allClasses = doc.data().classes || DEFAULT_CLASSES;
                     } else {
                         appData.allSubjects = DEFAULT_SUBJECTS;
-                        getCollection('concenal_config').doc('general').set({ subjects: DEFAULT_SUBJECTS }, { merge: true });
+                        appData.allClasses = DEFAULT_CLASSES;
+                        getCollection('concenal_config').doc('general').set({ subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES }, { merge: true });
                     }
+                    
                     if(!appData.currentSubject && appData.allSubjects.length > 0) appData.currentSubject = appData.allSubjects[0];
+                    if(!appData.currentClass && appData.allClasses.length > 0) appData.currentClass = appData.allClasses[0];
+
                     populateSubjectSelect();
+                    populateClassSelect();
+                    
+                    if(currentUser) {
+                        updateUI();
+                    }
                     
                     if(!document.getElementById('modal-users').classList.contains('hidden')) {
                        document.getElementById('subject-checkboxes').innerHTML = appData.allSubjects.map(s=>`<label class="flex items-center gap-1"><input type="checkbox" value="${s}"> ${s}</label>`).join('');
-                    }
-                    if(!document.getElementById('modal-manage-subjects').classList.contains('hidden')) {
-                       renderManageSubjectsList();
+                       document.getElementById('class-checkboxes').innerHTML = appData.allClasses.map(c=>`<label class="flex items-center gap-1"><input type="checkbox" value="${c}"> ${c}</label>`).join('');
                     }
                 });
 
@@ -635,7 +686,6 @@
                 document.getElementById('attendance-date').value = today;
                 document.getElementById('daily-date').value = today;
                 document.getElementById('new-observation-date').value = today;
-                populateClassSelect();
                 
                 setupScreen.classList.add('hidden');
 
@@ -661,7 +711,7 @@
                     displayName: 'Direção',
                     role: 'admin',
                     subjects: DEFAULT_SUBJECTS,
-                    classes: CLASSES
+                    classes: DEFAULT_CLASSES
                 });
             }
         }
@@ -675,6 +725,82 @@
         function showHistory(id) { openReportModal(id); }
         function openUsersModal() { document.getElementById('modal-users').classList.remove('hidden'); loadUsersList(); switchUserTab('teacher'); }
         function openChat() { document.getElementById('modal-chat').classList.remove('hidden'); loadChatUsers(); setChatRecipient('global', 'Avisos Gerais'); }
+
+        // --- MÓDULO DE CONFIGURAÇÃO GLOBAL PROFISSIONAL ---
+        function openConfigModal() {
+            tempConfigClasses = [...appData.allClasses];
+            tempConfigSubjects = [...appData.allSubjects];
+            renderConfigTags();
+            document.getElementById('modal-config').classList.remove('hidden');
+        }
+
+        function renderConfigTags() {
+            const clsContainer = document.getElementById('container-classes');
+            clsContainer.innerHTML = tempConfigClasses.map((c, i) => `
+                <span class="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-sm">
+                    ${c} <button onclick="removeConfigClass(${i})" class="ml-2 text-red-400 hover:text-red-600 transition"><i class="fas fa-times"></i></button>
+                </span>
+            `).join('');
+
+            const subjContainer = document.getElementById('container-subjects');
+            subjContainer.innerHTML = tempConfigSubjects.map((s, i) => `
+                <span class="bg-school-green text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-sm">
+                    ${s} <button onclick="removeConfigSubject(${i})" class="ml-2 text-green-200 hover:text-white transition"><i class="fas fa-times"></i></button>
+                </span>
+            `).join('');
+        }
+
+        function addConfigClass() {
+            const input = document.getElementById('config-new-class');
+            const val = input.value.trim().toUpperCase();
+            if(val && !tempConfigClasses.includes(val)) {
+                tempConfigClasses.push(val);
+                input.value = '';
+                renderConfigTags();
+            }
+        }
+
+        function removeConfigClass(idx) {
+            tempConfigClasses.splice(idx, 1);
+            renderConfigTags();
+        }
+
+        function addConfigSubject() {
+            const input = document.getElementById('config-new-subject');
+            const val = input.value.trim();
+            // Mantém formatação com a primeira letra maiúscula
+            const formattedVal = val.charAt(0).toUpperCase() + val.slice(1);
+            if(formattedVal && !tempConfigSubjects.includes(formattedVal)) {
+                tempConfigSubjects.push(formattedVal);
+                input.value = '';
+                renderConfigTags();
+            }
+        }
+
+        function removeConfigSubject(idx) {
+            tempConfigSubjects.splice(idx, 1);
+            renderConfigTags();
+        }
+
+        async function saveGlobalConfig() {
+            try {
+                appData.isProcessing = true;
+                document.getElementById('modal-config').classList.add('opacity-50', 'pointer-events-none');
+                
+                await getCollection('concenal_config').doc('general').set({ 
+                    subjects: tempConfigSubjects, 
+                    classes: tempConfigClasses 
+                }, { merge: true });
+                
+                alert("Configurações atualizadas no sistema!");
+                closeModal('modal-config');
+            } catch(e) {
+                alert("Erro ao salvar: " + e.message);
+            } finally {
+                appData.isProcessing = false;
+                document.getElementById('modal-config').classList.remove('opacity-50', 'pointer-events-none');
+            }
+        }
 
         function checkLocalSession() {
             const s = localStorage.getItem('concenal_v29_session');
@@ -694,21 +820,33 @@
         function populateClassSelect() {
             const s = document.getElementById('class-select'); 
             if(s) {
-                s.innerHTML = CLASSES.map(c => `<option value="${c}">${c}</option>`).join('');
-                if(appData.currentClass) s.value = appData.currentClass;
+                let allowedClasses = appData.allClasses;
+                if (currentUser && currentUser.role === 'teacher' && currentUser.classes?.length) {
+                    allowedClasses = currentUser.classes;
+                }
+                s.innerHTML = allowedClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+                if(appData.currentClass && allowedClasses.includes(appData.currentClass)) {
+                    s.value = appData.currentClass;
+                } else if (allowedClasses.length > 0) {
+                    s.value = allowedClasses[0];
+                    appData.currentClass = allowedClasses[0];
+                }
             }
         }
 
         function populateSubjectSelect() {
             const ss = document.getElementById('subject-select');
             if (appData.allSubjects.length > 0) {
-                 const sorted = [...appData.allSubjects].sort();
-                 ss.innerHTML = sorted.map(s => `<option value="${s}">${s}</option>`).join('');
-                 if(appData.currentSubject && sorted.includes(appData.currentSubject)) {
+                 let allowedSubjects = [...appData.allSubjects].sort();
+                 if (currentUser && currentUser.role === 'teacher' && currentUser.subjects?.length) {
+                     allowedSubjects = currentUser.subjects.sort();
+                 }
+                 ss.innerHTML = allowedSubjects.map(s => `<option value="${s}">${s}</option>`).join('');
+                 if(appData.currentSubject && allowedSubjects.includes(appData.currentSubject)) {
                      ss.value = appData.currentSubject;
-                 } else if (sorted.length > 0) {
-                     ss.value = sorted[0];
-                     appData.currentSubject = sorted[0];
+                 } else if (allowedSubjects.length > 0) {
+                     ss.value = allowedSubjects[0];
+                     appData.currentSubject = allowedSubjects[0];
                  }
             }
         }
@@ -767,7 +905,7 @@
             try {
                 let foundUser = null;
                 if (u === "admin" && p === "1234") {
-                     foundUser = { id: 'admin_master', name: "Admin Geral", displayName: "Direção Geral", role: "admin", subjects: appData.allSubjects, classes: [] };
+                     foundUser = { id: 'admin_master', name: "Admin Geral", displayName: "Direção Geral", role: "admin", subjects: appData.allSubjects, classes: appData.allClasses };
                 } else {
                     const snap = await getCollection('concenal_users').get();
                     const foundDoc = snap.docs.find(doc => {
@@ -805,7 +943,7 @@
 
             document.getElementById('btn-admin').classList.toggle('hidden', !isAdmin);
             document.getElementById('btn-coord').classList.toggle('hidden', !isAdmin && !isCoord);
-            document.getElementById('btn-add-subject').classList.toggle('hidden', !isAdmin && !isCoord);
+            document.getElementById('btn-config').classList.toggle('hidden', !isAdmin);
             
             const classTabs = document.getElementById('class-tabs');
             if(isParent) {
@@ -819,7 +957,7 @@
             if (isAdmin || isCoord) {
                 document.getElementById('subject-select').disabled = false;
             } else if (!isParent) {
-                appData.currentSubject = (currentUser.subjects && currentUser.subjects.length > 0) ? currentUser.subjects[0] : "Matemática";
+                appData.currentSubject = (currentUser.subjects && currentUser.subjects.length > 0) ? currentUser.subjects[0] : appData.allSubjects[0];
                 document.getElementById('subject-select').value = appData.currentSubject;
                 document.getElementById('subject-select').disabled = !(currentUser.subjects?.length > 1);
             }
@@ -833,7 +971,7 @@
                 const list = [];
                 snap.forEach(doc => {
                     const data = doc.data();
-                    if (currentUser.role === 'parent') {
+                    if (currentUser && currentUser.role === 'parent') {
                         if (data.studentId === currentUser.studentId || doc.id === currentUser.studentId) { 
                             list.push({id: doc.id, ...data});
                             appData.currentClass = data.class;
@@ -870,9 +1008,9 @@
                 messages = messages.slice(-100);
 
                 messages.forEach(m => {
-                    const isForMe = (m.to === 'global' || m.to === currentUser.id || m.from === currentUser.id || currentUser.role === 'admin' || currentUser.role === 'coord');
+                    const isForMe = (m.to === 'global' || m.to === currentUser?.id || m.from === currentUser?.id || currentUser?.role === 'admin' || currentUser?.role === 'coord');
                     if (isForMe) {
-                        const isSent = m.from === currentUser.id;
+                        const isSent = m.from === currentUser?.id;
                         const date = new Date(m.timestamp).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
                         let fH = '';
                         if(m.file) {
@@ -885,7 +1023,7 @@
                                 ${fH}
                                 <div class="text-xs leading-relaxed text-gray-800">${m.text}</div>
                                 <div class="text-[7px] text-right mt-1 opacity-40">${date}</div>
-                                ${(currentUser.role === 'admin' || currentUser.role === 'coord') ? `<button onclick="deleteMsg('${m.docId}')" class="absolute -top-2 -right-2 text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times-circle"></i></button>` : ''}
+                                ${(currentUser?.role === 'admin' || currentUser?.role === 'coord') ? `<button onclick="deleteMsg('${m.docId}')" class="absolute -top-2 -right-2 text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times-circle"></i></button>` : ''}
                             </div>
                         `;
                     }
@@ -895,19 +1033,20 @@
         }
 
         function updateUI() {
+            if (!currentUser) return; // FIX DE SEGURANÇA QUE FALTAVA (Impede TypeError Role of Null)
+
             if(currentUser.role !== 'parent') {
-                const allowed = (currentUser.role === 'teacher' && currentUser.classes?.length) ? currentUser.classes : CLASSES;
+                const allowed = (currentUser.role === 'teacher' && currentUser.classes?.length) ? currentUser.classes : appData.allClasses;
                 const cs = document.getElementById('class-select');
-                if(cs) {
-                    cs.innerHTML = allowed.map(c => `<option value="${c}">${c}</option>`).join('');
-                    if(!allowed.includes(appData.currentClass)) appData.currentClass = allowed[0];
-                    cs.value = appData.currentClass;
+                if(cs && (!cs.value || !allowed.includes(cs.value))) {
+                    populateClassSelect();
                 }
             }
 
             // Tabs UI update
             ['nav-grades','nav-attendance','nav-daily', 'nav-activities'].forEach(id => {
                 const el = document.getElementById(id);
+                if(!el) return;
                 const isActive = `nav-${appData.currentMode}` === id;
                 if(isActive) {
                     el.classList.add('border-school-green', 'text-school-green');
@@ -918,8 +1057,13 @@
                 }
             });
 
-            ['view-grades', 'view-attendance', 'view-daily', 'view-activities'].forEach(id => document.getElementById(id).classList.add('hidden'));
-            document.getElementById(`view-${appData.currentMode}`).classList.remove('hidden');
+            ['view-grades', 'view-attendance', 'view-daily', 'view-activities'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            
+            const activeView = document.getElementById(`view-${appData.currentMode}`);
+            if (activeView) activeView.classList.remove('hidden');
 
             if (appData.currentMode === 'grades') renderGradesTable();
             else if (appData.currentMode === 'attendance') renderAttendanceTable();
@@ -928,7 +1072,7 @@
         }
 
         function getStudentsByClass() {
-            if (currentUser.role === 'parent') return appData.students;
+            if (currentUser && currentUser.role === 'parent') return appData.students;
             return appData.students.filter(s => s.class === appData.currentClass).sort((a,b) => a.name.localeCompare(b.name));
         }
 
@@ -948,16 +1092,28 @@
 
         // --- RENDER VIEWS ---
         function renderGradesTable() {
-            const canEdit = (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects.includes(appData.currentSubject))); 
-            document.getElementById('read-only-msg').classList.toggle('hidden', canEdit || currentUser.role === 'parent');
+            const canEdit = currentUser && (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects && currentUser.subjects.includes(appData.currentSubject))); 
+            
+            const readOnlyMsg = document.getElementById('read-only-msg');
+            if (readOnlyMsg) readOnlyMsg.classList.toggle('hidden', canEdit || (currentUser && currentUser.role === 'parent'));
             
             const btnContainer = document.getElementById('action-buttons');
-            btnContainer.innerHTML = canEdit ? `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm">Novo Aluno</button><button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm">Importar Massa</button>` : '';
+            if (btnContainer) {
+                btnContainer.innerHTML = canEdit ? `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm">Novo Aluno</button><button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm">Importar Massa</button>` : '';
+            }
 
-            const tbody = document.getElementById('grades-body'); tbody.innerHTML = '';
+            const tbody = document.getElementById('grades-body'); 
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
             const list = getStudentsByClass();
-            if(list.length === 0) { document.getElementById('empty-state').classList.remove('hidden'); return; }
-            document.getElementById('empty-state').classList.add('hidden');
+            const emptyState = document.getElementById('empty-state');
+            
+            if(list.length === 0) { 
+                if (emptyState) emptyState.classList.remove('hidden'); 
+                return; 
+            }
+            if (emptyState) emptyState.classList.add('hidden');
 
             list.forEach(s => {
                 const d = ensureSubjectData(s, appData.currentSubject); const c = calculateStatus(d);
@@ -972,8 +1128,10 @@
         }
 
         function renderAttendanceTable(){
-            const date = document.getElementById('attendance-date').value; 
-            const canE = (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects.includes(appData.currentSubject)));
+            const dateInput = document.getElementById('attendance-date');
+            if(!dateInput) return;
+            const date = dateInput.value; 
+            const canE = currentUser && (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects && currentUser.subjects.includes(appData.currentSubject)));
             const students = getStudentsByClass();
             
             // Render History Strip
@@ -983,16 +1141,21 @@
                 if(sub.attendance) Object.keys(sub.attendance).forEach(d => savedDates.add(d));
             });
             const strip = document.getElementById('attendance-history-strip');
-            strip.innerHTML = '';
-            Array.from(savedDates).sort((a,b) => b.localeCompare(a)).forEach(d => {
-                const isSelected = d === date;
-                const fmtDate = d.split('-').reverse().join('/');
-                strip.innerHTML += `<button onclick="changeAttendanceDate('${d}')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap transition ${isSelected ? 'bg-school-green text-white border-school-green' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}">${fmtDate}</button>`;
-            });
-            if(savedDates.size === 0) strip.innerHTML = '<span class="text-[10px] text-gray-400 italic py-1.5">Nenhum registro encontrado para esta matéria/turma.</span>';
+            if(strip) {
+                strip.innerHTML = '';
+                Array.from(savedDates).sort((a,b) => b.localeCompare(a)).forEach(d => {
+                    const isSelected = d === date;
+                    const fmtDate = d.split('-').reverse().join('/');
+                    strip.innerHTML += `<button onclick="changeAttendanceDate('${d}')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap transition ${isSelected ? 'bg-school-green text-white border-school-green' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}">${fmtDate}</button>`;
+                });
+                if(savedDates.size === 0) strip.innerHTML = '<span class="text-[10px] text-gray-400 italic py-1.5">Nenhum registro encontrado para esta matéria/turma.</span>';
+            }
 
             // Render Table
-            const tbody=document.getElementById('attendance-body'); tbody.innerHTML=''; 
+            const tbody=document.getElementById('attendance-body'); 
+            if(!tbody) return;
+            tbody.innerHTML=''; 
+            
             students.forEach(s=>{
                 const sub=ensureSubjectData(s, appData.currentSubject); const r=sub.attendance[date]; 
                 let st='P', j=false, doc=null; if(r){ if(typeof r==='string') st=r; else {st=r.status; j=r.justified; doc=r.doc;} }
@@ -1000,7 +1163,7 @@
                 let btnCls = st==='P'?"bg-green-100 text-green-800 border-green-200": (j?"bg-blue-100 text-blue-800 border-blue-200":"bg-red-100 text-red-800 border-red-200");
                 let btnTxt = st==='P'?"PRESENTE": (j?"JUSTIFICADO":"FALTOU");
                 
-                let act = (st === 'F' && currentUser.role === 'parent') ? 
+                let act = (st === 'F' && currentUser && currentUser.role === 'parent') ? 
                     `<button onclick="openJustifyModal('${s.id}')" class="ml-2 text-[10px] text-blue-600 underline font-bold uppercase tracking-tighter">Justificar</button>` : 
                     ((j && doc) ? `<button onclick="viewDoc('${doc}')" class="ml-2 text-blue-500 hover:scale-110 transition"><i class="fas fa-paperclip"></i></button>` : '');
                 
@@ -1014,7 +1177,9 @@
         }
 
         function loadDailyData() {
-            const date = document.getElementById('daily-date').value;
+            const dateInput = document.getElementById('daily-date');
+            if(!dateInput) return;
+            const date = dateInput.value;
             tempDaily = {}; 
             getStudentsByClass().forEach(s => {
                 const sub = ensureSubjectData(s, appData.currentSubject);
@@ -1025,8 +1190,11 @@
         }
 
         function renderDailyTable() {
-            const tbody = document.getElementById('daily-body'); tbody.innerHTML = '';
-            const canE = (currentUser.role === 'admin' || currentUser.role === 'teacher');
+            const tbody = document.getElementById('daily-body'); 
+            if(!tbody) return;
+            tbody.innerHTML = '';
+            
+            const canE = currentUser && (currentUser.role === 'admin' || currentUser.role === 'teacher');
             getStudentsByClass().forEach(s => {
                 const l = tempDaily[s.id] || { homework: false, behavior: 'Normal' };
                 tbody.innerHTML += `<tr class="border-b border-gray-50">
@@ -1048,10 +1216,12 @@
         }
 
         function renderActivitiesView() {
-            const canEdit = (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects.includes(appData.currentSubject)));
-            document.getElementById('btn-new-activity').classList.toggle('hidden', !canEdit);
+            const canEdit = currentUser && (currentUser.role === 'admin' || (currentUser.role === 'teacher' && currentUser.subjects && currentUser.subjects.includes(appData.currentSubject)));
+            const btnNewAct = document.getElementById('btn-new-activity');
+            if (btnNewAct) btnNewAct.classList.toggle('hidden', !canEdit);
 
             const listEl = document.getElementById('activities-list');
+            if(!listEl) return;
             listEl.innerHTML = '';
 
             const filteredActs = appData.activities.filter(a => a.class === appData.currentClass && a.subject === appData.currentSubject);
@@ -1207,7 +1377,7 @@
             const list=document.getElementById('observations-list'); list.innerHTML=''; 
             (d.observations||[]).reverse().forEach(o=>list.innerHTML+=`<div class="bg-gray-50 border p-3 rounded-xl shadow-sm text-sm"><div class="flex justify-between text-[10px] text-gray-400 font-bold uppercase mb-1"><span>${o.date}</span><span>${o.author}</span></div><p class="text-gray-700">${o.text}</p></div>`);
             
-            const isP=currentUser.role==='parent'; 
+            const isP = currentUser && currentUser.role === 'parent'; 
             document.getElementById('report-tools').classList.toggle('hidden', isP); 
             document.getElementById('report-parent-msg').classList.toggle('hidden', !isP); 
             document.getElementById('modal-report').classList.remove('hidden');
@@ -1338,7 +1508,7 @@
             document.getElementById('field-parent-student').classList.toggle('hidden', t!=='parent');
             
             document.getElementById('subject-checkboxes').innerHTML = appData.allSubjects.map(s=>`<label class="flex items-center gap-1"><input type="checkbox" value="${s}"> ${s}</label>`).join('');
-            document.getElementById('class-checkboxes').innerHTML = CLASSES.map(c=>`<label class="flex items-center gap-1"><input type="checkbox" value="${c}"> ${c}</label>`).join('');
+            document.getElementById('class-checkboxes').innerHTML = appData.allClasses.map(c=>`<label class="flex items-center gap-1"><input type="checkbox" value="${c}"> ${c}</label>`).join('');
             loadUsersList();
         }
 
