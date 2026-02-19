@@ -55,7 +55,10 @@
         .hide-scroll-x { scrollbar-width: none; }
     </style>
 </head>
-<body class="text-gray-800 min-h-screen flex flex-col bg-gray-50">
+<body class="text-gray-800 min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
+
+    <!-- Container de Notificações Pop-up -->
+    <div id="toast-container" class="fixed bottom-4 right-4 z-[200] flex flex-col gap-2 pointer-events-none"></div>
 
     <!-- SETUP SCREEN -->
     <div id="setup-screen" class="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900 text-white hidden">
@@ -70,7 +73,6 @@
     <div id="login-screen" class="fixed inset-0 z-50 flex items-center justify-center bg-school-green">
         <div class="bg-white p-8 rounded-lg shadow-2xl w-full max-w-md mx-4 fade-in relative">
             <div class="text-center mb-6">
-                <!-- Logo Concenal -->
                 <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" onerror="this.src='https://placehold.co/150x50/png?text=CONCENAL'" alt="CONCENAL" class="mx-auto mb-4 w-40 h-auto">
                 <h1 class="text-xl font-bold text-gray-800 leading-tight uppercase font-serif">Diário Escolar</h1>
                 <p class="text-gray-400 text-[10px] mt-2 uppercase tracking-widest font-bold border-t pt-2">Acesso Restrito - CONCENAL</p>
@@ -115,16 +117,16 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
-                    <button onclick="openChat()" class="relative bg-green-800 p-2 rounded-lg hover:bg-green-700 transition border border-green-700 shadow-sm" title="Chat Interno">
+                    <button onclick="openChat()" class="relative bg-green-800 p-2 rounded-lg hover:bg-green-700 transition border border-green-700 shadow-sm" title="Comunicação Interna">
                         <i class="fas fa-comments"></i>
-                        <span id="chat-badge" class="absolute -top-1 -right-1 bg-red-500 w-2.5 h-2.5 rounded-full hidden border border-white"></span>
+                        <span id="chat-badge" class="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full hidden border border-white animate-pulse"></span>
                     </button>
                     
                     <button onclick="openCoordPanel()" id="btn-coord" class="hidden bg-white text-school-green px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-white hover:bg-green-50 transition"><i class="fas fa-eye mr-1"></i> Coordenação</button>
                     <button onclick="openUsersModal()" id="btn-admin" class="hidden bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-orange-600 hover:bg-orange-600 transition"><i class="fas fa-users-cog mr-1"></i> Gestão</button>
                     <button onclick="openConfigModal()" id="btn-config" class="hidden bg-gray-700 bg-opacity-30 text-white border border-white border-opacity-20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-opacity-50 transition"><i class="fas fa-sliders-h mr-1"></i> Config.</button>
                     
-                    <button onclick="logout()" class="text-white hover:text-red-300 ml-2 p-2"><i class="fas fa-sign-out-alt fa-lg"></i></button>
+                    <button onclick="logout()" class="text-white hover:text-red-300 ml-2 p-2" title="Sair"><i class="fas fa-sign-out-alt fa-lg"></i></button>
                 </div>
             </div>
         </header>
@@ -145,7 +147,6 @@
                 </div>
                 <div id="action-buttons" class="flex gap-2"></div>
             </div>
-            <!-- Abas (Tabs) -->
             <div class="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto hide-scroll-x mt-1">
                 <button onclick="switchMode('grades')" id="nav-grades" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Notas e Médias</button>
                 <button onclick="switchMode('attendance')" id="nav-attendance" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Frequência</button>
@@ -198,7 +199,6 @@
                         </div>
                     </div>
                     
-                    <!-- Histórico de Chamadas -->
                     <div class="border-t border-gray-200 pt-3">
                         <label class="text-[9px] font-bold text-school-green uppercase tracking-widest mb-2 block"><i class="fas fa-history mr-1"></i> Histórico de Chamadas Salvas</label>
                         <div id="attendance-history-strip" class="flex gap-2 overflow-x-auto hide-scroll-x pb-1">
@@ -246,11 +246,10 @@
                     </div>
                 </div>
             </div>
-
         </main>
     </div>
 
-    <!-- MODAIS GERAIS -->
+    <!-- MODAIS -->
 
     <!-- MODAL: CONFIGURAÇÕES GLOBAIS (ADMIN PROFISSIONAL) -->
     <div id="modal-config" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
@@ -267,30 +266,22 @@
             </div>
             
             <div class="p-6 overflow-y-auto flex-1 bg-white">
-                <!-- Seção Turmas -->
                 <div class="mb-8">
                     <h4 class="text-xs font-bold text-school-green uppercase tracking-widest border-b pb-2 mb-4 flex items-center gap-2"><i class="fas fa-users"></i> Gestão de Turmas</h4>
-                    
                     <div class="flex gap-2 mb-3">
                         <input type="text" id="config-new-class" class="flex-1 border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:border-school-green bg-gray-50" placeholder="Ex: 6º Ano A" onkeypress="if(event.key === 'Enter') addConfigClass()">
                         <button onclick="addConfigClass()" class="bg-blue-600 text-white px-5 rounded-lg font-bold shadow hover:bg-blue-700 transition"><i class="fas fa-plus"></i></button>
                     </div>
-                    <div id="container-classes" class="flex flex-wrap gap-2 p-4 bg-gray-50 border border-gray-100 rounded-xl min-h-[80px]">
-                        <!-- Chips Renderizados aqui -->
-                    </div>
+                    <div id="container-classes" class="flex flex-wrap gap-2 p-4 bg-gray-50 border border-gray-100 rounded-xl min-h-[80px]"></div>
                 </div>
 
-                <!-- Seção Matérias -->
                 <div>
                     <h4 class="text-xs font-bold text-school-green uppercase tracking-widest border-b pb-2 mb-4 flex items-center gap-2"><i class="fas fa-book"></i> Gestão de Matérias</h4>
-                    
                     <div class="flex gap-2 mb-3">
                         <input type="text" id="config-new-subject" class="flex-1 border border-gray-200 p-2.5 rounded-lg text-sm outline-none focus:border-school-green bg-gray-50" placeholder="Ex: Matemática" onkeypress="if(event.key === 'Enter') addConfigSubject()">
                         <button onclick="addConfigSubject()" class="bg-blue-600 text-white px-5 rounded-lg font-bold shadow hover:bg-blue-700 transition"><i class="fas fa-plus"></i></button>
                     </div>
-                    <div id="container-subjects" class="flex flex-wrap gap-2 p-4 bg-gray-50 border border-gray-100 rounded-xl min-h-[80px]">
-                        <!-- Chips Renderizados aqui -->
-                    </div>
+                    <div id="container-subjects" class="flex flex-wrap gap-2 p-4 bg-gray-50 border border-gray-100 rounded-xl min-h-[80px]"></div>
                 </div>
             </div>
 
@@ -440,26 +431,31 @@
 
     <!-- MODAL: CHAT INTERNO -->
     <div id="modal-chat" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[85vh] flex flex-col overflow-hidden">
-            <div class="p-4 bg-school-green text-white flex justify-between items-center">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
+            <div class="p-4 bg-school-green text-white flex justify-between items-center z-10">
                 <div class="flex items-center gap-3">
                     <i class="fas fa-comments text-2xl"></i>
                     <div>
-                        <h3 class="font-bold leading-none mb-1">Canais de Conversa</h3>
-                        <div id="chat-recipient-info" class="text-[10px] text-green-100 uppercase font-bold tracking-widest">Avisos Gerais</div>
+                        <h3 class="font-bold leading-none mb-1">Comunicação Interna</h3>
+                        <div class="text-[10px] text-green-100 uppercase font-bold tracking-widest flex items-center gap-2">
+                            <span id="chat-recipient-info">Avisos Gerais</span>
+                        </div>
                     </div>
                 </div>
-                <button onclick="closeModal('modal-chat')" class="hover:text-red-200 transition"><i class="fas fa-times fa-lg"></i></button>
+                <div class="flex gap-4 items-center">
+                    <button id="btn-clear-chat" onclick="clearConversation()" class="hidden text-[10px] bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded uppercase font-bold tracking-widest shadow-sm transition"><i class="fas fa-trash-alt mr-1"></i> Limpar Conversa</button>
+                    <button onclick="closeModal('modal-chat')" class="hover:text-red-200 transition p-2"><i class="fas fa-times fa-lg"></i></button>
+                </div>
             </div>
             
-            <div class="flex flex-1 overflow-hidden">
+            <div class="flex flex-1 overflow-hidden relative">
                 <!-- Sidebar Contatos -->
-                <div id="chat-sidebar" class="w-full md:w-72 border-r bg-gray-50 overflow-y-auto flex flex-col">
+                <div id="chat-sidebar" class="w-full md:w-72 border-r bg-gray-50 overflow-y-auto flex flex-col z-10 hidden md:flex absolute md:static inset-0">
                     <div class="p-3">
-                        <button onclick="setChatRecipient('global', 'Avisos Gerais')" class="w-full text-left p-4 rounded-xl border-2 border-transparent transition hover:border-green-300 bg-white shadow-sm flex items-center gap-3 mb-4" id="chat-btn-global">
+                        <button onclick="setChatRecipient('global', 'Mural Geral')" class="w-full text-left p-4 rounded-xl border-2 border-transparent transition hover:border-green-300 bg-white shadow-sm flex items-center gap-3 mb-4 relative" id="chat-btn-global">
                             <div class="w-10 h-10 bg-green-100 text-school-green rounded-full flex items-center justify-center"><i class="fas fa-bullhorn"></i></div>
-                            <div>
-                                <div class="text-sm font-bold text-gray-700 leading-none">Mural Geral</div>
+                            <div class="flex-1">
+                                <div class="text-sm font-bold text-gray-700 leading-none flex justify-between">Mural Geral</div>
                                 <div class="text-[9px] text-gray-400 mt-1 uppercase font-bold">Público</div>
                             </div>
                         </button>
@@ -469,23 +465,28 @@
                 </div>
 
                 <!-- Mensagens -->
-                <div class="hidden md:flex flex-1 flex-col bg-white" id="chat-main-window">
-                    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 bg-gray-100 flex flex-col gap-1"></div>
+                <div class="flex-1 flex flex-col bg-white w-full" id="chat-main-window">
+                    <div class="md:hidden bg-gray-100 p-2 border-b text-xs flex justify-between items-center">
+                        <button onclick="document.getElementById('chat-sidebar').classList.remove('hidden'); document.getElementById('chat-main-window').classList.add('hidden');" class="text-blue-600 font-bold"><i class="fas fa-chevron-left"></i> Voltar</button>
+                        <span class="font-bold text-gray-600 uppercase" id="mobile-chat-title">Mural Geral</span>
+                    </div>
+
+                    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 bg-gray-100 flex flex-col gap-2"></div>
                     
                     <div id="chat-attachment-preview" class="hidden p-3 bg-blue-50 border-t flex items-center justify-between">
                         <div class="flex items-center gap-2">
                             <i class="fas fa-file-alt text-blue-500"></i>
                             <span id="attachment-name" class="text-xs text-blue-800 font-bold truncate max-w-[200px]"></span>
                         </div>
-                        <button onclick="clearChatAttachment()" class="text-red-500 hover:text-red-700"><i class="fas fa-times-circle"></i></button>
+                        <button onclick="clearChatAttachment()" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-times-circle"></i></button>
                     </div>
 
-                    <div class="p-4 border-t bg-white flex gap-2 items-center">
+                    <div id="chat-input-area" class="p-4 border-t bg-white flex gap-2 items-center">
                         <label class="cursor-pointer text-gray-400 hover:text-school-green p-2 transition">
                             <i class="fas fa-paperclip fa-lg"></i>
                             <input type="file" id="chat-file" class="hidden" onchange="handleChatFile(this)">
                         </label>
-                        <input id="chat-input" class="flex-1 border-2 border-gray-100 p-3 rounded-xl text-sm outline-none focus:border-school-green transition" placeholder="Sua mensagem...">
+                        <input id="chat-input" class="flex-1 border-2 border-gray-100 p-3 rounded-xl text-sm outline-none focus:border-school-green transition" placeholder="Escreva sua mensagem..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
                         <button onclick="sendChatMessage()" class="bg-school-green text-white p-3 rounded-xl w-12 h-12 flex items-center justify-center shadow-lg hover:bg-green-700 transition">
                             <i class="fas fa-paper-plane"></i>
                         </button>
@@ -582,16 +583,21 @@
             isProcessing: false
         };
         
-        // Variáveis temporárias para o Modal de Configuração
         let tempConfigClasses = [];
         let tempConfigSubjects = [];
-
         let tempAttendance = {};
         let tempDaily = {};
         let creatingUserType = 'teacher';
+        
+        // Chat State
         let currentChatFile = null;
         let chatRecipient = 'global';
-        let chatRecipientName = 'Avisos Gerais';
+        let chatRecipientName = 'Mural Geral';
+        let currentChatMessages = [];
+        let knownMessages = new Set();
+        let isFirstChatLoad = true;
+        let unreadCounts = {};
+
         let currentStudentForReport = null;
         let currentJustificationStudentId = null;
         let currentJustificationDate = null;
@@ -635,7 +641,6 @@
                 
                 auth = firebase.auth();
                 
-                // Auth
                 let customToken = (typeof window !== 'undefined' && window.__initial_auth_token) ? window.__initial_auth_token : (typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null);
                 
                 if (customToken) {
@@ -723,83 +728,7 @@
         function openAddModal() { document.getElementById('modal-add').classList.remove('hidden'); }
         function showHistory(id) { openReportModal(id); }
         function openUsersModal() { document.getElementById('modal-users').classList.remove('hidden'); loadUsersList(); switchUserTab('teacher'); }
-        function openChat() { document.getElementById('modal-chat').classList.remove('hidden'); loadChatUsers(); setChatRecipient('global', 'Avisos Gerais'); }
-
-        // --- MÓDULO DE CONFIGURAÇÃO GLOBAL PROFISSIONAL ---
-        function openConfigModal() {
-            tempConfigClasses = [...appData.allClasses];
-            tempConfigSubjects = [...appData.allSubjects];
-            renderConfigTags();
-            document.getElementById('modal-config').classList.remove('hidden');
-        }
-
-        function renderConfigTags() {
-            const clsContainer = document.getElementById('container-classes');
-            clsContainer.innerHTML = tempConfigClasses.map((c, i) => `
-                <span class="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-sm">
-                    ${c} <button onclick="removeConfigClass(${i})" class="ml-2 text-red-400 hover:text-red-600 transition"><i class="fas fa-times"></i></button>
-                </span>
-            `).join('');
-
-            const subjContainer = document.getElementById('container-subjects');
-            subjContainer.innerHTML = tempConfigSubjects.map((s, i) => `
-                <span class="bg-school-green text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-sm">
-                    ${s} <button onclick="removeConfigSubject(${i})" class="ml-2 text-green-200 hover:text-white transition"><i class="fas fa-times"></i></button>
-                </span>
-            `).join('');
-        }
-
-        function addConfigClass() {
-            const input = document.getElementById('config-new-class');
-            const val = input.value.trim().toUpperCase();
-            if(val && !tempConfigClasses.includes(val)) {
-                tempConfigClasses.push(val);
-                input.value = '';
-                renderConfigTags();
-            }
-        }
-
-        function removeConfigClass(idx) {
-            tempConfigClasses.splice(idx, 1);
-            renderConfigTags();
-        }
-
-        function addConfigSubject() {
-            const input = document.getElementById('config-new-subject');
-            const val = input.value.trim();
-            const formattedVal = val.charAt(0).toUpperCase() + val.slice(1);
-            if(formattedVal && !tempConfigSubjects.includes(formattedVal)) {
-                tempConfigSubjects.push(formattedVal);
-                input.value = '';
-                renderConfigTags();
-            }
-        }
-
-        function removeConfigSubject(idx) {
-            tempConfigSubjects.splice(idx, 1);
-            renderConfigTags();
-        }
-
-        async function saveGlobalConfig() {
-            try {
-                appData.isProcessing = true;
-                document.getElementById('modal-config').classList.add('opacity-50', 'pointer-events-none');
-                
-                await getCollection('concenal_config').doc('general').set({ 
-                    subjects: tempConfigSubjects, 
-                    classes: tempConfigClasses 
-                }, { merge: true });
-                
-                alert("Configurações atualizadas no sistema!");
-                closeModal('modal-config');
-            } catch(e) {
-                alert("Erro ao salvar: " + e.message);
-            } finally {
-                appData.isProcessing = false;
-                document.getElementById('modal-config').classList.remove('opacity-50', 'pointer-events-none');
-            }
-        }
-
+        
         function checkLocalSession() {
             const s = localStorage.getItem('concenal_v29_session');
             if(s) { 
@@ -868,6 +797,76 @@
                 appData.currentClass = allowedClasses[0];
             } else {
                 appData.currentClass = '';
+            }
+        }
+
+        // --- MÓDULO DE CONFIGURAÇÃO GLOBAL ---
+        function openConfigModal() {
+            tempConfigClasses = [...appData.allClasses];
+            tempConfigSubjects = [...appData.allSubjects];
+            renderConfigTags();
+            document.getElementById('modal-config').classList.remove('hidden');
+        }
+
+        function renderConfigTags() {
+            const clsContainer = document.getElementById('container-classes');
+            clsContainer.innerHTML = tempConfigClasses.map((c, i) => `
+                <span class="bg-white border border-gray-200 text-gray-700 px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-sm">
+                    ${c} <button onclick="removeConfigClass(${i})" class="ml-2 text-red-400 hover:text-red-600 transition"><i class="fas fa-times"></i></button>
+                </span>
+            `).join('');
+
+            const subjContainer = document.getElementById('container-subjects');
+            subjContainer.innerHTML = tempConfigSubjects.map((s, i) => `
+                <span class="bg-school-green text-white px-3 py-1.5 rounded-lg text-xs font-bold flex items-center shadow-sm">
+                    ${s} <button onclick="removeConfigSubject(${i})" class="ml-2 text-green-200 hover:text-white transition"><i class="fas fa-times"></i></button>
+                </span>
+            `).join('');
+        }
+
+        function addConfigClass() {
+            const input = document.getElementById('config-new-class');
+            const val = input.value.trim().toUpperCase();
+            if(val && !tempConfigClasses.includes(val)) {
+                tempConfigClasses.push(val);
+                input.value = '';
+                renderConfigTags();
+            }
+        }
+
+        function removeConfigClass(idx) {
+            tempConfigClasses.splice(idx, 1);
+            renderConfigTags();
+        }
+
+        function addConfigSubject() {
+            const input = document.getElementById('config-new-subject');
+            const val = input.value.trim();
+            const formattedVal = val.charAt(0).toUpperCase() + val.slice(1);
+            if(formattedVal && !tempConfigSubjects.includes(formattedVal)) {
+                tempConfigSubjects.push(formattedVal);
+                input.value = '';
+                renderConfigTags();
+            }
+        }
+
+        function removeConfigSubject(idx) {
+            tempConfigSubjects.splice(idx, 1);
+            renderConfigTags();
+        }
+
+        async function saveGlobalConfig() {
+            try {
+                appData.isProcessing = true;
+                document.getElementById('modal-config').classList.add('opacity-50', 'pointer-events-none');
+                await getCollection('concenal_config').doc('general').set({ subjects: tempConfigSubjects, classes: tempConfigClasses }, { merge: true });
+                alert("Configurações atualizadas no sistema!");
+                closeModal('modal-config');
+            } catch(e) {
+                alert("Erro ao salvar: " + e.message);
+            } finally {
+                appData.isProcessing = false;
+                document.getElementById('modal-config').classList.remove('opacity-50', 'pointer-events-none');
             }
         }
 
@@ -985,6 +984,68 @@
             startRealtimeSync();
         }
 
+        // --- NOTIFICATION & TOAST LOGIC ---
+        function playSound() {
+            // Um pequeno "Pop" para notificar mensagens
+            const audio = new Audio('data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExEAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExIAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq');
+            audio.play().catch(() => {}); // catch previne erro se navegador bloquear autoplay
+        }
+
+        function showToast(title, msg) {
+            const t = document.createElement('div');
+            t.className = 'bg-white border-l-4 border-school-green shadow-xl rounded-lg p-4 mb-2 w-72 transform transition-all duration-300 translate-x-full z-[200] pointer-events-auto';
+            t.innerHTML = `
+                <div class="flex justify-between items-start">
+                    <h4 class="text-xs font-bold text-gray-800">${title}</h4>
+                    <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
+                </div>
+                <p class="text-[10px] text-gray-500 truncate mt-1">${msg}</p>
+            `;
+            document.getElementById('toast-container').appendChild(t);
+            setTimeout(() => t.classList.remove('translate-x-full'), 10);
+            setTimeout(() => {
+                t.classList.add('translate-x-full');
+                setTimeout(() => t.remove(), 300);
+            }, 4000);
+        }
+
+        function updateUnreadBadges() {
+            let totalUnread = 0;
+            
+            // Badge Mural
+            const globalBtn = document.getElementById('chat-btn-global');
+            if(globalBtn) {
+                const c = unreadCounts['global'] || 0;
+                totalUnread += c;
+                let existingBadge = globalBtn.querySelector('.unread-badge');
+                if(existingBadge) existingBadge.remove();
+                if(c > 0) {
+                    globalBtn.querySelector('.flex-1').innerHTML += `<span class="unread-badge absolute right-4 top-1/2 transform -translate-y-1/2 bg-red-500 text-white text-[9px] font-bold px-1.5 rounded-full shadow-sm">${c}</span>`;
+                }
+            }
+
+            // Badge Outros Usuários
+            Object.entries(unreadCounts).forEach(([uid, count]) => {
+                if(uid === 'global') return;
+                totalUnread += count;
+                const btn = document.getElementById(`chat-btn-${uid}`);
+                if(btn) {
+                    let existingBadge = btn.querySelector('.unread-badge');
+                    if(existingBadge) existingBadge.remove();
+                    if(count > 0) {
+                        btn.innerHTML += `<span class="unread-badge ml-auto bg-red-500 text-white text-[9px] font-bold px-1.5 rounded-full shadow-sm">${count}</span>`;
+                    }
+                }
+            });
+
+            // Ícone Cabeçalho
+            const mainBadge = document.getElementById('chat-badge');
+            if(mainBadge) {
+                if(totalUnread > 0) mainBadge.classList.remove('hidden');
+                else mainBadge.classList.add('hidden');
+            }
+        }
+
         function startRealtimeSync() {
             document.getElementById('loading-overlay').classList.remove('hidden');
             if (unsubscribe) unsubscribe();
@@ -1017,46 +1078,108 @@
                 if(appData.currentMode === 'activities') renderActivitiesView();
             });
 
-            // Chat Sync
+            // NOVO CHAT SYNC COM NOTIFICAÇÕES
             getCollection('concenal_chat').onSnapshot(snap => {
-                const div = document.getElementById('chat-messages');
-                if(!div) return;
-                div.innerHTML = '';
-                
                 let messages = [];
-                snap.forEach(doc => messages.push({ docId: doc.id, ...doc.data() }));
-                messages.sort((a, b) => a.timestamp - b.timestamp);
-                messages = messages.slice(-100);
+                let newMessagesArrived = false;
 
-                messages.forEach(m => {
-                    const isForMe = (m.to === 'global' || m.to === currentUser?.id || m.from === currentUser?.id || currentUser?.role === 'admin' || currentUser?.role === 'coord');
-                    if (isForMe) {
-                        const isSent = m.from === currentUser?.id;
-                        const date = new Date(m.timestamp).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
-                        let fH = '';
-                        if(m.file) {
-                             if(m.file.type.startsWith('image')) fH = `<img src="${m.file.data}" class="max-h-48 rounded-lg mb-2 shadow-sm cursor-pointer" onclick="viewDoc('${m.file.data}')">`;
-                             else fH = `<a href="${m.file.data}" download="${m.file.name}" class="bg-black bg-opacity-5 p-2 rounded-lg block text-[10px] border border-black border-opacity-5 mb-2"><i class="fas fa-file-alt mr-1"></i> ${m.file.name}</a>`;
+                snap.forEach(doc => {
+                    const m = doc.data();
+                    const docId = doc.id;
+                    messages.push({ docId, ...m });
+                    
+                    // Lógica de Notificações
+                    if (!isFirstChatLoad && !knownMessages.has(docId)) {
+                        const isForMe = (m.to === 'global' || m.to === currentUser?.id || currentUser?.role === 'admin' || currentUser?.role === 'coord');
+                        const isFromMe = m.from === currentUser?.id;
+                        
+                        if (isForMe && !isFromMe) {
+                            newMessagesArrived = true;
+                            const senderId = m.to === 'global' ? 'global' : m.from;
+                            
+                            // Mostrar Toast e Somar badge se o chat correspondente não estiver aberto no momento
+                            const isChatModalOpen = !document.getElementById('modal-chat').classList.contains('hidden');
+                            if (!isChatModalOpen || chatRecipient !== senderId) {
+                                showToast(`Nova mensagem de ${m.fromName}`, m.text || "Anexo enviado");
+                                unreadCounts[senderId] = (unreadCounts[senderId] || 0) + 1;
+                                updateUnreadBadges();
+                            }
                         }
-                        div.innerHTML += `
-                            <div class="chat-msg ${isSent?'sent':'received'} p-3 shadow-sm group">
-                                <div class="text-[8px] font-bold text-gray-500 uppercase tracking-tighter mb-1">${m.fromName} ${m.to === 'global' ? '• MURAL' : ''}</div>
-                                ${fH}
-                                <div class="text-xs leading-relaxed text-gray-800">${m.text}</div>
-                                <div class="text-[7px] text-right mt-1 opacity-40">${date}</div>
-                                ${(currentUser?.role === 'admin' || currentUser?.role === 'coord') ? `<button onclick="deleteMsg('${m.docId}')" class="absolute -top-2 -right-2 text-red-500 opacity-0 group-hover:opacity-100 transition"><i class="fas fa-times-circle"></i></button>` : ''}
-                            </div>
-                        `;
                     }
+                    knownMessages.add(docId);
                 });
-                div.scrollTop = div.scrollHeight;
+
+                if (newMessagesArrived) playSound();
+                isFirstChatLoad = false;
+
+                messages.sort((a, b) => a.timestamp - b.timestamp);
+                
+                // Manteve as últimas 200 mensagens na memória
+                const allMessages = messages.slice(-200); 
+
+                // Processa a UI apenas para o chat que está atualmente selecionado
+                renderChatMessages(allMessages);
             });
+        }
+        
+        function renderChatMessages(allMessages) {
+            const div = document.getElementById('chat-messages');
+            if(!div) return;
+            div.innerHTML = '';
+            
+            // Filtra as mensagens ativas na conversa atual
+            currentChatMessages = allMessages.filter(m => {
+                if (chatRecipient === 'global') return m.to === 'global';
+                // Conversa Privada: De mim pra ele, ou dele pra mim
+                return (m.from === currentUser?.id && m.to === chatRecipient) || 
+                       (m.to === currentUser?.id && m.from === chatRecipient);
+            });
+
+            currentChatMessages.forEach(m => {
+                const isSent = m.from === currentUser?.id;
+                const date = new Date(m.timestamp).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+                let fH = '';
+                if(m.file) {
+                     if(m.file.type.startsWith('image')) fH = `<img src="${m.file.data}" class="max-h-48 rounded-lg mb-2 shadow-sm cursor-pointer" onclick="viewDoc('${m.file.data}')">`;
+                     else fH = `<a href="${m.file.data}" download="${m.file.name}" class="bg-black bg-opacity-5 p-2 rounded-lg block text-[10px] border border-black border-opacity-5 mb-2"><i class="fas fa-file-alt mr-1"></i> ${m.file.name}</a>`;
+                }
+
+                const isAdminOrCoord = (currentUser?.role === 'admin' || currentUser?.role === 'coord');
+                const isTeacher = currentUser?.role === 'teacher';
+                
+                // REGRAS DE EXCLUSÃO
+                // 1. Apenas Coord/Dir apagam mensagens definitivas
+                const canDelete = isAdminOrCoord;
+                
+                // 2. Professores podem "Solicitar Exclusão" nas suas próprias mensagens (que não sejam no mural e não tenham sido pedidas já)
+                const canReqDelete = isTeacher && isSent && m.to !== 'global' && !m.deleteRequested;
+                
+                let reqDelHtml = canReqDelete ? `<button onclick="requestDeleteMsg('${m.docId}')" class="text-[9px] text-orange-500 hover:text-orange-700 transition mt-1 block w-full text-right uppercase font-bold"><i class="fas fa-exclamation-triangle"></i> Pedir Exclusão</button>` : '';
+                
+                let badgeHtml = m.deleteRequested ? `<div class="absolute -top-2 -left-2 bg-red-500 text-white text-[8px] px-2 py-0.5 rounded-full shadow-sm animate-pulse border border-white font-bold tracking-widest z-10">EXCLUSÃO SOLICITADA</div>` : '';
+                
+                let delBtnHtml = canDelete ? `<button onclick="deleteMsg('${m.docId}')" class="absolute -top-2 -right-2 text-red-500 bg-white rounded-full opacity-0 group-hover:opacity-100 transition z-10 w-6 h-6 flex items-center justify-center shadow-md border border-gray-100 hover:bg-red-50"><i class="fas fa-times"></i></button>` : '';
+
+                const extraBorder = m.deleteRequested ? "border-2 border-red-400" : (isSent ? "border border-green-200" : "border border-gray-200");
+
+                div.innerHTML += `
+                    <div class="chat-msg ${isSent?'sent':'received'} p-3 shadow-sm group ${extraBorder}">
+                        ${badgeHtml}
+                        <div class="text-[8px] font-bold text-gray-500 uppercase tracking-tighter mb-1">${m.fromName} ${m.to === 'global' ? '• MURAL' : ''}</div>
+                        ${fH}
+                        <div class="text-xs leading-relaxed text-gray-800 break-words">${m.text}</div>
+                        <div class="text-[7px] text-right mt-1 opacity-40 font-bold">${date}</div>
+                        ${reqDelHtml}
+                        ${delBtnHtml}
+                    </div>
+                `;
+            });
+            div.scrollTop = div.scrollHeight;
         }
 
         function updateUI() {
             if (!currentUser) return; 
 
-            // Update Class Select safely implicitly just in case subject bounds updated it
             const cs = document.getElementById('class-select');
             if(cs && cs.value !== appData.currentClass) {
                  cs.value = appData.currentClass;
@@ -1664,11 +1787,43 @@
         // --- CHAT FUNCTIONS ---
         function setChatRecipient(id, name) {
             chatRecipient = id; chatRecipientName = name;
-            document.getElementById('chat-recipient-info').innerText = name;
+            
+            const infoEl = document.getElementById('chat-recipient-info');
+            infoEl.innerText = name;
+            
             document.getElementById('chat-main-window').classList.remove('hidden');
             document.getElementById('chat-sidebar').classList.add('hidden', 'md:flex');
             document.querySelectorAll('[id^="chat-btn-"]').forEach(b => b.classList.remove('border-green-300'));
             const aB = document.getElementById(`chat-btn-${id}`); if(aB) aB.classList.add('border-green-300');
+
+            // Regra do Mural para Professores
+            const inputArea = document.getElementById('chat-input-area');
+            if (id === 'global' && currentUser && currentUser.role === 'teacher') {
+                inputArea.classList.add('hidden');
+            } else {
+                inputArea.classList.remove('hidden');
+            }
+            
+            // Regra: Limpar Conversa
+            const clearBtn = document.getElementById('btn-clear-chat');
+            if(id !== 'global' && currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord')) {
+                clearBtn.classList.remove('hidden');
+            } else {
+                clearBtn.classList.add('hidden');
+            }
+
+            // Ao entrar, limpar os unreads e atualizar visualização
+            if(unreadCounts[id]) {
+                unreadCounts[id] = 0;
+                updateUnreadBadges();
+            }
+            renderChatMessages(currentChatMessages);
+        }
+
+        function openChat() { 
+            document.getElementById('modal-chat').classList.remove('hidden'); 
+            loadChatUsers(); 
+            setChatRecipient('global', 'Mural Geral'); 
         }
 
         function loadChatUsers() {
@@ -1678,12 +1833,13 @@
                     const u = doc.data();
                     if (doc.id !== currentUser.id && u.role !== 'parent') {
                         list.innerHTML += `
-                            <button id="chat-btn-${doc.id}" onclick="setChatRecipient('${doc.id}', '${u.displayName||u.name}')" class="w-full text-left p-2 rounded-xl border-2 border-transparent transition hover:bg-white bg-transparent flex items-center gap-3 mb-1">
+                            <button id="chat-btn-${doc.id}" onclick="setChatRecipient('${doc.id}', '${u.displayName||u.name}')" class="w-full text-left p-2 rounded-xl border-2 border-transparent transition hover:bg-white bg-transparent flex items-center gap-3 mb-1 relative">
                                 <div class="w-10 h-10 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center text-[10px] font-bold uppercase">${(u.displayName||u.name).charAt(0)}</div>
                                 <span class="text-xs font-bold text-gray-600 truncate">${u.displayName || u.name}</span>
                             </button>`;
                     }
                 });
+                updateUnreadBadges();
             });
         }
 
@@ -1710,7 +1866,36 @@
         }
 
         function clearChatAttachment() { currentChatFile = null; document.getElementById('chat-file').value = ''; document.getElementById('chat-attachment-preview').classList.add('hidden'); }
-        function deleteMsg(id) { if(confirm("Apagar para todos?")) getCollection('concenal_chat').doc(id).delete(); }
+        
+        function deleteMsg(id) { 
+            if(confirm("Deseja remover essa mensagem permanentemente para todos?")) {
+                getCollection('concenal_chat').doc(id).delete(); 
+            }
+        }
+        
+        async function requestDeleteMsg(id) {
+            if(confirm("Solicitar exclusão desta mensagem para a Coordenação/Direção?")) {
+                await getCollection('concenal_chat').doc(id).update({ deleteRequested: true });
+                alert("Solicitação enviada. A mensagem será destacada para os administradores apagarem.");
+            }
+        }
+        
+        async function clearConversation() {
+            if(!confirm("Atenção! Isso apagará TODA esta conversa para ambos os usuários. Deseja prosseguir?")) return;
+            const batch = db.batch();
+            let count = 0;
+            currentChatMessages.forEach(msg => {
+                // Apenas apagar as mensagens da conversa atual privada
+                if(msg.to !== 'global') {
+                    batch.delete(getCollection('concenal_chat').doc(msg.docId));
+                    count++;
+                }
+            });
+            if(count > 0) {
+                await batch.commit();
+                alert("Conversa apagada com sucesso!");
+            }
+        }
 
         // --- START ---
         document.addEventListener('DOMContentLoaded', initFirebase);
