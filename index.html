@@ -118,7 +118,7 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
-                    <button onclick="openChat()" class="relative bg-green-800 p-2 rounded-lg hover:bg-green-700 transition border border-green-700 shadow-sm" title="Comunicação Interna">
+                    <button id="btn-chat" onclick="openChat()" class="relative bg-green-800 p-2 rounded-lg hover:bg-green-700 transition border border-green-700 shadow-sm" title="Comunicação Interna">
                         <i class="fas fa-comments"></i>
                         <span id="chat-badge" class="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full hidden border border-white animate-pulse"></span>
                     </button>
@@ -750,7 +750,7 @@
         // --- POPULATE DROPDOWNS ---
         function populateSubjectSelect() {
             const ss = document.getElementById('subject-select');
-            if (!ss || !currentUser || currentUser.role === 'parent') return;
+            if (!ss || !currentUser) return;
             
             let allowedSubjects = [...appData.allSubjects].sort();
             
@@ -969,6 +969,7 @@
             document.getElementById('btn-admin').classList.toggle('hidden', !isAdmin);
             document.getElementById('btn-coord').classList.toggle('hidden', !isAdmin && !isCoord);
             document.getElementById('btn-config').classList.toggle('hidden', !isAdmin);
+            document.getElementById('btn-chat').classList.toggle('hidden', isParent);
             
             const classTabs = document.getElementById('class-tabs');
             if(isParent) {
@@ -999,6 +1000,12 @@
                      }
                  });
                  startRealtimeSync();
+            }
+            
+            if (isAdmin || isCoord || isParent) {
+                document.getElementById('subject-select').disabled = false;
+            } else if (!isParent) {
+                document.getElementById('subject-select').disabled = (document.getElementById('subject-select').options.length <= 1);
             }
         }
 
@@ -1290,6 +1297,11 @@
             ); 
             const students = getStudentsByClass();
             
+            // Oculta botão de salvar chamada para pais
+            const actionsContainer = document.getElementById('attendance-actions');
+            if (actionsContainer) actionsContainer.classList.toggle('hidden', !canE);
+
+            // Render History Strip
             let savedDates = new Set();
             students.forEach(s => {
                 const sub = ensureSubjectData(s, appData.currentSubject);
@@ -1356,6 +1368,10 @@
                  currentUser.assignments[appData.currentSubject] && 
                  currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
             ); 
+            
+            // Oculta botão de salvar diário para pais
+            const actionsContainer = document.getElementById('daily-actions');
+            if (actionsContainer) actionsContainer.classList.toggle('hidden', !canE);
 
             getStudentsByClass().forEach(s => {
                 const l = tempDaily[s.id] || { homework: false, behavior: 'Normal' };
