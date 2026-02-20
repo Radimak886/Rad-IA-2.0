@@ -610,6 +610,34 @@
             </div>
             
             <div class="p-6 flex-1 overflow-y-auto bg-white">
+                
+                <!-- ADDED Resumo Global -->
+                <div class="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Média Global</p>
+                        <h3 class="text-2xl font-bold text-blue-700" id="report-avg">--</h3>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-100">
+                        <p class="text-[10px] font-bold text-green-400 uppercase tracking-widest mb-1">Frequência</p>
+                        <h3 class="text-2xl font-bold text-green-700" id="report-freq">--</h3>
+                        <div class="w-full bg-green-200 h-1 mt-2 rounded-full overflow-hidden">
+                            <div id="report-freq-bar" class="bg-green-500 h-full w-0"></div>
+                        </div>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                        <p class="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1">Faltas</p>
+                        <h3 class="text-xl font-bold text-red-700 mt-1" id="report-days-count">--</h3>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status Atual</p>
+                        <h3 class="text-sm font-bold text-gray-800 mt-2" id="report-status">--</h3>
+                    </div>
+                </div>
+                <div id="report-parent-msg" class="hidden mb-4 p-3 bg-yellow-50 text-yellow-800 text-xs rounded-lg border border-yellow-200 font-bold">
+                    <i class="fas fa-info-circle mr-1"></i> Visão de Responsável - Apenas visualização.
+                </div>
+                <!-- END ADDED -->
+
                 <div class="overflow-x-auto mb-6">
                     <table class="min-w-full divide-y divide-gray-200 text-center border">
                         <thead class="bg-gray-100 text-gray-500 font-bold text-[10px] uppercase">
@@ -682,6 +710,7 @@
         let currentChatFile = null;
         let chatRecipient = 'global';
         let chatRecipientName = 'Avisos Gerais';
+        let allChatMessagesMaster = [];
         let currentChatMessages = [];
         let knownMessages = new Set();
         let isFirstChatLoad = true;
@@ -882,6 +911,250 @@
             }
         }
 
+        // --- FUNCIONALIDADES DO CHAT, MODAIS E ALERTAS (CORREÇÕES ADICIONADAS) ---
+        function showToast(title, msg) {
+            const container = document.getElementById('toast-container');
+            if(!container) return;
+            const toast = document.createElement('div');
+            toast.className = 'bg-white border-l-4 border-school-green shadow-lg p-3 rounded-r-lg fade-in text-xs w-64 pointer-events-auto';
+            toast.innerHTML = `<h4 class="font-bold text-gray-800">${title}</h4><p class="text-gray-500 truncate">${msg}</p>`;
+            container.appendChild(toast);
+            setTimeout(() => { toast.remove(); }, 4000);
+        }
+
+        function playSound() {
+            try {
+                const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'+Array(100).join('A'));
+                audio.volume = 0.2;
+                audio.play().catch(e=>{});
+            } catch(e) {}
+        }
+
+        function updateUnreadBadges() {
+            const mainBadge = document.getElementById('chat-badge');
+            const total = Object.values(unreadCounts).reduce((a,b)=>a+b, 0);
+            if(mainBadge) {
+                if(total > 0) mainBadge.classList.remove('hidden');
+                else mainBadge.classList.add('hidden');
+            }
+            
+            Object.keys(unreadCounts).forEach(id => {
+                const el = document.getElementById(`unread-${id}`);
+                if(el) {
+                    if(unreadCounts[id] > 0) {
+                        el.innerText = unreadCounts[id];
+                        el.classList.remove('hidden');
+                    } else {
+                        el.classList.add('hidden');
+                    }
+                }
+            });
+        }
+
+        function openChat() {
+            document.getElementById('modal-chat').classList.remove('hidden');
+            if (chatRecipient === 'global') {
+                setChatRecipient('global', 'Avisos Gerais');
+            }
+            const div = document.getElementById('chat-messages');
+            if (div) div.scrollTop = div.scrollHeight;
+        }
+
+        function setChatRecipient(id, name) {
+            chatRecipient = id;
+            chatRecipientName = name;
+            
+            const btnClear = document.getElementById('btn-clear-chat');
+            if(btnClear) btnClear.classList.toggle('hidden', id === 'global' && currentUser.role !== 'admin' && currentUser.role !== 'coord');
+
+            document.getElementById('chat-recipient-info').innerText = name;
+            document.getElementById('mobile-chat-title').innerText = name;
+            
+            unreadCounts[id] = 0;
+            updateUnreadBadges();
+            
+            document.querySelectorAll('#chat-sidebar button').forEach(b => b.classList.remove('border-green-300', 'bg-green-50'));
+            const activeBtn = document.getElementById(id === 'global' ? 'chat-btn-global' : `chat-btn-${id}`);
+            if(activeBtn) activeBtn.classList.add('border-green-300', 'bg-green-50');
+
+            if(window.innerWidth < 768) {
+                document.getElementById('chat-sidebar').classList.add('hidden');
+                document.getElementById('chat-main-window').classList.remove('hidden');
+            }
+
+            renderChatMessages(allChatMessagesMaster);
+        }
+
+        async function loadChatUsers() {
+            const list = document.getElementById('chat-user-list');
+            if(!list) return;
+            const snap = await getCollection('concenal_users').get();
+            list.innerHTML = '';
+            snap.forEach(doc => {
+                const u = doc.data();
+                if(doc.id === currentUser.id || u.role === 'parent') return;
+                list.innerHTML += `
+                    <button onclick="setChatRecipient('${doc.id}', '${u.displayName || u.name}')" id="chat-btn-${doc.id}" class="w-full text-left p-3 rounded-xl border-2 border-transparent transition hover:border-green-200 bg-white shadow-sm flex items-center justify-between group mb-2">
+                        <div class="flex items-center gap-2">
+                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-xs font-bold">${(u.displayName || u.name).charAt(0).toUpperCase()}</div>
+                            <div class="leading-none">
+                                <div class="text-xs font-bold text-gray-700">${u.displayName || u.name}</div>
+                                <div class="text-[8px] text-gray-400 mt-1 uppercase">${u.role}</div>
+                            </div>
+                        </div>
+                        <span id="unread-${doc.id}" class="bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center hidden font-bold shadow-sm">0</span>
+                    </button>
+                `;
+            });
+        }
+
+        async function sendChatMessage() {
+            const input = document.getElementById('chat-input');
+            const text = input.value.trim();
+            if (!text && !currentChatFile) return;
+
+            const msgData = {
+                from: currentUser.id,
+                fromName: currentUser.displayName || currentUser.name,
+                to: chatRecipient,
+                text: text,
+                timestamp: Date.now(),
+                deleteRequested: false
+            };
+
+            if (currentChatFile) {
+                msgData.file = currentChatFile;
+            }
+
+            try {
+                await getCollection('concenal_chat').add(msgData);
+                input.value = '';
+                clearChatAttachment();
+                const div = document.getElementById('chat-messages');
+                setTimeout(() => div.scrollTop = div.scrollHeight, 100);
+            } catch(e) {
+                console.error(e);
+                alert("Erro ao enviar: " + e.message);
+            }
+        }
+
+        function handleChatFile(input) {
+            const file = input.files[0];
+            if (!file) return;
+            // Limite de 2MB para base64 dentro do documento Firestore
+            if (file.size > 2 * 1024 * 1024) return alert('Tamanho máximo permitido: 2MB');
+            
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = e => {
+                currentChatFile = {
+                    name: file.name,
+                    type: file.type,
+                    data: e.target.result
+                };
+                document.getElementById('chat-attachment-preview').classList.remove('hidden');
+                document.getElementById('attachment-name').innerText = file.name;
+            };
+        }
+
+        function clearChatAttachment() {
+            currentChatFile = null;
+            document.getElementById('chat-file').value = '';
+            document.getElementById('chat-attachment-preview').classList.add('hidden');
+        }
+
+        function requestDeleteMsg(docId) {
+            getCollection('concenal_chat').doc(docId).update({ deleteRequested: true });
+            showToast("Solicitação", "Aviso enviado à coordenação.");
+        }
+
+        function deleteMsg(docId) {
+            if(confirm("Excluir esta mensagem permanentemente?")) {
+                getCollection('concenal_chat').doc(docId).delete();
+            }
+        }
+
+        async function clearConversation() {
+            if(confirm("ATENÇÃO: Limpar toda a conversa atual? Isso não pode ser desfeito.")) {
+                const snap = await getCollection('concenal_chat').get();
+                const batch = db.batch();
+                snap.forEach(doc => {
+                    const m = doc.data();
+                    if ((m.from === currentUser.id && m.to === chatRecipient) || 
+                        (m.to === currentUser.id && m.from === chatRecipient) || 
+                        (chatRecipient === 'global' && m.to === 'global')) {
+                        batch.delete(doc.ref);
+                    }
+                });
+                await batch.commit();
+            }
+        }
+
+        function viewDoc(dataUrl) {
+            const w = window.open("");
+            if(w) w.document.write(`<iframe width='100%' height='100%' src='${dataUrl}' frameborder='0'></iframe>`);
+        }
+
+        function openCoordPanel() {
+            document.getElementById('modal-coord').classList.remove('hidden');
+            loadCoordData();
+        }
+
+        async function loadCoordData() {
+            const teachersList = document.getElementById('coord-teachers-list');
+            const pendingList = document.getElementById('coord-pending-list');
+            teachersList.innerHTML = '<p class="text-xs text-gray-500"><i class="fas fa-spinner fa-spin"></i> Carregando...</p>';
+            pendingList.innerHTML = '<p class="text-xs text-gray-500"><i class="fas fa-spinner fa-spin"></i> Carregando...</p>';
+
+            const usersSnap = await getCollection('concenal_users').where('role', 'in', ['teacher', 'coord', 'admin']).get();
+            teachersList.innerHTML = '';
+            usersSnap.forEach(doc => {
+                const u = doc.data();
+                teachersList.innerHTML += `<div class="p-2 bg-gray-50 rounded border mb-1 text-xs flex justify-between items-center"><span class="font-bold">${u.displayName || u.name}</span><span class="text-[9px] uppercase text-gray-400 bg-white px-2 py-0.5 rounded border">${u.role}</span></div>`;
+            });
+
+            pendingList.innerHTML = '';
+            let hasPending = false;
+            appData.students.forEach(s => {
+                if(s.subjects) {
+                    Object.entries(s.subjects).forEach(([subj, data]) => {
+                        if(data.attendance) {
+                            Object.entries(data.attendance).forEach(([date, att]) => {
+                                if(typeof att === 'object' && att.pendingReview) {
+                                    hasPending = true;
+                                    const btn = att.doc ? `<button onclick="viewDoc('${att.doc}')" class="text-blue-500 bg-blue-50 w-6 h-6 rounded-full hover:bg-blue-100 mx-2"><i class="fas fa-paperclip"></i></button>` : '';
+                                    pendingList.innerHTML += `
+                                        <div class="p-3 bg-orange-50 border border-orange-100 rounded-lg mb-2 text-xs shadow-sm">
+                                            <div class="font-bold flex justify-between text-gray-800">${s.name} ${btn}</div>
+                                            <div class="text-[10px] text-gray-500 mb-1 font-bold uppercase tracking-widest">${subj} - ${date.split('-').reverse().join('/')}</div>
+                                            <div class="italic mb-3 text-gray-600 bg-white p-2 border rounded">"${att.reason}"</div>
+                                            <div class="flex gap-2">
+                                                <button onclick="resolveJustification('${s.id}', '${subj}', '${date}', true)" class="flex-1 bg-green-500 text-white font-bold px-2 py-1.5 rounded shadow hover:bg-green-600 transition">Aprovar Justificativa</button>
+                                                <button onclick="resolveJustification('${s.id}', '${subj}', '${date}', false)" class="flex-1 bg-red-500 text-white font-bold px-2 py-1.5 rounded shadow hover:bg-red-600 transition">Rejeitar</button>
+                                            </div>
+                                        </div>
+                                    `;
+                                }
+                            });
+                        }
+                    });
+                }
+            });
+            if(!hasPending) pendingList.innerHTML = '<div class="text-xs text-gray-400 italic">Nenhuma pendência encontrada.</div>';
+        }
+
+        function resolveJustification(sid, subj, date, approved) {
+            const s = appData.students.find(x => x.id === sid);
+            const d = ensureSubjectData(s, subj);
+            d.attendance[date].pendingReview = false;
+            d.attendance[date].justified = approved;
+            d.attendance[date].status = approved ? 'F' : 'F'; 
+            
+            getCollection('concenal_students').doc(sid).set({subjects:{[subj]:{attendance:d.attendance}}},{merge:true});
+            loadCoordData();
+            if(appData.currentMode === 'attendance') renderAttendanceTable();
+        }
+
         // --- POPULATE DROPDOWNS & DYNAMIC PARENT DATA ---
         async function loadParentSubjectsAndPopulate() {
             const ss = document.getElementById('subject-select');
@@ -1023,15 +1296,15 @@
         }
 
         function renderCurriculumCheckboxes() {
-            const cClass = document.getElementById('config-curriculum-class').value;
+            const cClass = document.getElementById('config-curriculum-class');
             const container = document.getElementById('config-curriculum-checkboxes');
-            if(!cClass) { container.innerHTML = ''; return; }
+            if(!cClass || !cClass.value) { container.innerHTML = ''; return; }
             
-            const currentSubjInClass = tempCurriculum[cClass] || [];
+            const currentSubjInClass = tempCurriculum[cClass.value] || [];
             
             container.innerHTML = tempConfigSubjects.map(s => `
                 <label class="flex items-center gap-2 p-2 bg-gray-50 border rounded-lg cursor-pointer hover:bg-green-50 transition ${currentSubjInClass.includes(s) ? 'border-green-200' : 'border-gray-100'}">
-                    <input type="checkbox" value="${s}" onchange="updateTempCurriculum('${cClass}', this.value, this.checked)" ${currentSubjInClass.includes(s) ? 'checked' : ''} class="w-4 h-4 text-school-green">
+                    <input type="checkbox" value="${s}" onchange="updateTempCurriculum('${cClass.value}', this.value, this.checked)" ${currentSubjInClass.includes(s) ? 'checked' : ''} class="w-4 h-4 text-school-green">
                     <span class="text-xs font-bold text-gray-700">${s}</span>
                 </label>
             `).join('');
@@ -1311,6 +1584,7 @@
 
             if (currentUser.id === 'admin_master') {
                  loadParentSubjectsAndPopulate();
+                 if(currentUser.role !== 'parent') loadChatUsers();
                  startRealtimeSync();
             } else {
                  if (userProfileUnsubscribe) userProfileUnsubscribe();
@@ -1324,6 +1598,7 @@
                          logout();
                      }
                  });
+                 if(currentUser.role !== 'parent') loadChatUsers();
                  startRealtimeSync();
             }
         }
@@ -1456,9 +1731,9 @@
                 isFirstChatLoad = false;
 
                 messages.sort((a, b) => a.timestamp - b.timestamp);
-                const allMessages = messages.slice(-200); 
+                allChatMessagesMaster = messages.slice(-200); 
 
-                renderChatMessages(allMessages);
+                renderChatMessages(allChatMessagesMaster);
             });
         }
         
@@ -2376,4 +2651,3 @@
     </script>
 </body>
 </html>
-
