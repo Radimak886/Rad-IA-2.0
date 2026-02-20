@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - 2026</title>
+    <title>DIÁRIO ESCOLAR V29</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -41,8 +41,8 @@
 
         @media print {
             body * { visibility: hidden; }
-            #modal-report, #modal-report * { visibility: visible; }
-            #modal-report { position: absolute; left: 0; top: 0; width: 100%; height: 100%; background: white; z-index: 9999; padding: 0; }
+            #print-area, #print-area * { visibility: visible; }
+            #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; z-index: 99999; }
             .no-print { display: none !important; }
         }
 
@@ -56,6 +56,9 @@
     </style>
 </head>
 <body class="text-gray-800 min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
+
+    <!-- ÁREA DE IMPRESSÃO PDF -->
+    <div id="print-area" class="hidden font-serif bg-white p-8"></div>
 
     <!-- Container de Notificações Pop-up -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-[200] flex flex-col gap-2 pointer-events-none"></div>
@@ -103,7 +106,7 @@
         <div id="loading-overlay" class="fixed inset-0 bg-white bg-opacity-80 z-50 flex items-center justify-center hidden">
             <div class="text-center">
                 <i class="fas fa-circle-notch fa-spin text-5xl text-school-green"></i>
-                <p class="mt-4 text-school-green font-bold uppercase text-[10px] tracking-widest">Sincronizando...</p>
+                <p class="mt-4 text-school-green font-bold uppercase text-[10px] tracking-widest">Processando...</p>
             </div>
         </div>
 
@@ -119,14 +122,19 @@
                 </div>
                 
                 <div class="flex items-center gap-2">
-                    <button id="btn-chat" onclick="openChat()" class="relative bg-green-800 p-2 rounded-lg hover:bg-green-700 transition border border-green-700 shadow-sm" title="Comunicação Interna">
+                    <button id="btn-notifications" onclick="openNotifications()" class="hidden relative bg-green-800 p-2 rounded-lg hover:bg-green-700 transition border border-green-700 shadow-sm" title="Notificações do Sistema">
+                        <i class="fas fa-bell"></i>
+                        <span id="notif-badge" class="absolute -top-1 -right-1 bg-orange-500 w-3 h-3 rounded-full hidden border border-white animate-pulse"></span>
+                    </button>
+
+                    <button id="btn-chat" onclick="openChat()" class="hidden relative bg-green-800 p-2 rounded-lg hover:bg-green-700 transition border border-green-700 shadow-sm" title="Comunicação Interna">
                         <i class="fas fa-comments"></i>
                         <span id="chat-badge" class="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full hidden border border-white animate-pulse"></span>
                     </button>
                     
                     <button onclick="openCoordPanel()" id="btn-coord" class="hidden bg-white text-school-green px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-white hover:bg-green-50 transition"><i class="fas fa-eye mr-1"></i> Coordenação</button>
                     <button onclick="openUsersModal()" id="btn-admin" class="hidden bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-orange-600 hover:bg-orange-600 transition"><i class="fas fa-users-cog mr-1"></i> Gestão</button>
-                    <button onclick="openConfigModal()" id="btn-config" class="hidden bg-gray-700 bg-opacity-30 text-white border border-white border-opacity-20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-opacity-50 transition"><i class="fas fa-sliders-h mr-1"></i> Currículo/Config.</button>
+                    <button onclick="openConfigModal()" id="btn-config" class="hidden bg-gray-700 bg-opacity-30 text-white border border-white border-opacity-20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-opacity-50 transition"><i class="fas fa-sliders-h mr-1"></i> Currículo</button>
                     
                     <button onclick="logout()" class="text-white hover:text-red-300 ml-2 p-2" title="Sair"><i class="fas fa-sign-out-alt fa-lg"></i></button>
                 </div>
@@ -210,26 +218,33 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-100"><tbody id="attendance-body" class="bg-white"></tbody></table></div>
-                <div class="p-4 bg-gray-50 border-t flex justify-end" id="attendance-actions">
+                <div class="p-4 bg-gray-50 border-t flex justify-end gap-2" id="attendance-actions">
+                    <button onclick="openReportsModal('attendance')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>
                     <button onclick="saveDailyAttendance()" class="bg-school-green text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-green-700 transition flex items-center gap-2"><i class="fas fa-save"></i> Salvar Chamada</button>
                 </div>
             </div>
 
             <!-- Tabela Diário -->
             <div id="view-daily" class="max-w-5xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden hidden fade-in border border-gray-200">
-                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
-                    <h3 class="font-bold text-gray-500 text-xs uppercase tracking-widest">Diário de Atividades</h3>
+                <div class="p-4 border-b bg-gray-50 flex flex-col md:flex-row md:justify-between items-start md:items-center gap-3">
+                    <div>
+                        <h3 class="font-bold text-gray-500 text-xs uppercase tracking-widest">Diário de Atividades</h3>
+                        <div id="daily-history-strip" class="flex gap-2 overflow-x-auto hide-scroll-x mt-2">
+                            <!-- Preenchido via JS -->
+                        </div>
+                    </div>
                     <input type="date" id="daily-date" onchange="loadDailyData()" class="border border-gray-200 rounded-lg p-2 text-sm font-bold bg-white focus:ring-1 focus:ring-school-green outline-none">
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100">
                         <thead class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase text-center">
-                            <tr><th class="px-4 py-4 text-left">Estudante</th><th class="w-32">Dever</th><th class="w-48">Comportamento</th></tr>
+                            <tr><th class="px-4 py-4 text-left">Estudante</th><th class="w-32">Dever</th><th class="w-48">Comportamento</th><th class="w-48">Anotação (Opcional)</th></tr>
                         </thead>
                         <tbody id="daily-body" class="bg-white text-sm"></tbody>
                     </table>
                 </div>
-                <div class="p-4 bg-gray-50 border-t flex justify-end" id="daily-actions">
+                <div class="p-4 bg-gray-50 border-t flex justify-end gap-2" id="daily-actions">
+                    <button onclick="openReportsModal('daily')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>
                     <button onclick="saveDailyLog()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition flex items-center gap-2"><i class="fas fa-book"></i> Gravar Diário</button>
                 </div>
             </div>
@@ -253,6 +268,54 @@
     </div>
 
     <!-- MODAIS GERAIS -->
+
+    <!-- MODAL: RELATÓRIOS PDF (NOVO) -->
+    <div id="modal-reports" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
+                <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm leading-tight" id="reports-modal-title">Gerador de Relatórios</h3>
+                <button onclick="closeModal('modal-reports')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div class="p-6 bg-white space-y-4">
+                <input type="hidden" id="report-type-input">
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Período</label>
+                    <select id="report-period" class="w-full border p-2.5 rounded-lg text-sm outline-none focus:ring-1 focus:ring-school-green bg-gray-50">
+                        <option value="all">Todo o Histórico</option>
+                        <option value="today">Apenas Hoje</option>
+                        <option value="week">Última Semana</option>
+                        <option value="month">Último Mês</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[10px] font-bold text-gray-400 uppercase mb-1">Aluno Específico (Opcional)</label>
+                    <select id="report-student" class="w-full border p-2.5 rounded-lg text-sm outline-none focus:ring-1 focus:ring-school-green bg-gray-50">
+                        <!-- Carregado dinamicamente -->
+                    </select>
+                </div>
+            </div>
+            <div class="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-2">
+                <button onclick="closeModal('modal-reports')" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold uppercase">Cancelar</button>
+                <button onclick="generateFilteredPDF()" class="px-6 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold uppercase shadow flex items-center gap-2"><i class="fas fa-file-pdf"></i> Gerar PDF</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: NOTIFICAÇÕES (COORD/DIR) -->
+    <div id="modal-notifications" class="fixed inset-0 bg-black bg-opacity-70 hidden z-[100] flex items-center justify-end p-4 backdrop-blur-sm" onclick="if(event.target===this) closeModal('modal-notifications')">
+        <div class="bg-white rounded-l-2xl shadow-2xl w-full max-w-sm h-full flex flex-col animate-[slideInRight_0.3s_ease-out]">
+            <div class="p-4 border-b bg-school-green text-white flex justify-between items-center">
+                <h3 class="font-bold uppercase tracking-widest text-sm"><i class="fas fa-bell mr-2"></i> Log de Atividades</h3>
+                <button onclick="closeModal('modal-notifications')" class="text-green-200 hover:text-white transition"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div class="p-4 flex-1 overflow-y-auto bg-gray-50 space-y-3" id="notifications-list">
+                <!-- Preenchido via JS -->
+            </div>
+            <div class="p-3 border-t bg-white text-center">
+                <button onclick="clearNotifications()" class="text-[10px] text-gray-400 uppercase font-bold hover:text-red-500">Limpar Histórico</button>
+            </div>
+        </div>
+    </div>
 
     <!-- MODAL: CONFIGURAÇÕES GLOBAIS (ADMIN PROFISSIONAL) -->
     <div id="modal-config" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
@@ -532,9 +595,9 @@
         </div>
     </div>
 
-    <!-- MODAL RELATÓRIO V29 -->
+    <!-- MODAL RELATÓRIO V29 (ACADÊMICO UNIFICADO) -->
     <div id="modal-report" class="fixed inset-0 bg-black bg-opacity-70 hidden z-[90] flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl w-full max-w-2xl flex flex-col h-[90vh] shadow-2xl">
+        <div class="bg-white rounded-2xl w-full max-w-4xl flex flex-col max-h-[90vh] shadow-2xl">
             <div class="p-6 border-b flex justify-between items-start bg-gray-50 rounded-t-2xl">
                 <div class="flex items-center gap-4">
                     <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" onerror="this.src='https://placehold.co/150x50/png?text=CONCENAL'" class="h-12 bg-white p-1 rounded shadow-sm">
@@ -546,54 +609,41 @@
                 <button onclick="closeModal('modal-report')" class="no-print text-gray-300 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
             </div>
             
-            <div class="p-6 flex-1 overflow-y-auto bg-gray-100">
-                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2 mb-6 text-center">
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                        <span class="text-[9px] block text-gray-400 uppercase font-bold mb-1">Média</span>
-                        <strong class="text-3xl text-school-green leading-none" id="report-avg">-</strong>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                        <span class="text-[9px] block text-gray-400 uppercase font-bold mb-1">Frequência</span>
-                        <strong class="text-3xl text-blue-600 leading-none" id="report-freq">-</strong>
-                        <div class="w-full bg-gray-100 h-1.5 rounded-full mt-3 overflow-hidden"><div class="bg-blue-600 h-full transition-all duration-500" id="report-freq-bar" style="width:0%"></div></div>
-                        <span class="text-[9px] text-gray-400 block mt-1" id="report-days-count"></span>
-                    </div>
-                    <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 flex flex-col justify-center">
-                        <span class="text-[9px] block text-gray-400 uppercase font-bold mb-1">Status Final</span>
-                        <strong class="text-[11px] uppercase tracking-tighter" id="report-status">-</strong>
-                    </div>
+            <div class="p-6 flex-1 overflow-y-auto bg-white">
+                <div class="overflow-x-auto mb-6">
+                    <table class="min-w-full divide-y divide-gray-200 text-center border">
+                        <thead class="bg-gray-100 text-gray-500 font-bold text-[10px] uppercase">
+                            <tr>
+                                <th class="px-4 py-3 text-left">Disciplina</th>
+                                <th class="w-10">U1</th><th class="w-10">U2</th><th class="w-10">U3</th><th class="w-10">U4</th><th class="w-10">U5</th><th class="w-10">U6</th>
+                                <th class="w-16 border-l">Faltas</th>
+                                <th class="w-16 border-l">Média</th>
+                                <th class="w-14 border-l text-red-500">Rec</th>
+                                <th class="w-24 border-l">Situação</th>
+                            </tr>
+                        </thead>
+                        <tbody id="unified-report-body" class="bg-white divide-y divide-gray-100 text-xs">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
                 </div>
 
-                <div class="bg-white p-4 rounded-xl shadow-sm border border-gray-200 mb-6">
-                    <h4 class="font-bold text-gray-500 border-b pb-2 uppercase text-[10px] tracking-widest mb-4">Desempenho por Unidade</h4>
-                    <div class="grid grid-cols-7 gap-1 text-center text-xs">
-                        <div class="bg-gray-50 p-2 rounded"><span class="block text-gray-400 font-bold mb-1">U1</span><strong id="rep-u1" class="text-sm">-</strong></div>
-                        <div class="bg-gray-50 p-2 rounded"><span class="block text-gray-400 font-bold mb-1">U2</span><strong id="rep-u2" class="text-sm">-</strong></div>
-                        <div class="bg-gray-50 p-2 rounded"><span class="block text-gray-400 font-bold mb-1">U3</span><strong id="rep-u3" class="text-sm">-</strong></div>
-                        <div class="bg-gray-50 p-2 rounded"><span class="block text-gray-400 font-bold mb-1">U4</span><strong id="rep-u4" class="text-sm">-</strong></div>
-                        <div class="bg-gray-50 p-2 rounded"><span class="block text-gray-400 font-bold mb-1">U5</span><strong id="rep-u5" class="text-sm">-</strong></div>
-                        <div class="bg-gray-50 p-2 rounded"><span class="block text-gray-400 font-bold mb-1">U6</span><strong id="rep-u6" class="text-sm">-</strong></div>
-                        <div class="bg-red-50 p-2 rounded border border-red-100"><span class="block text-red-400 font-bold mb-1">Rec</span><strong id="rep-rec" class="text-sm text-red-600">-</strong></div>
-                    </div>
-                </div>
-
-                <div class="bg-white p-5 rounded-2xl shadow-sm border border-gray-200">
-                    <h4 class="font-bold text-gray-500 border-b pb-2 uppercase text-[10px] tracking-widest mb-4">Relatório Pedagógico</h4>
-                    <div id="observations-list" class="space-y-4 mb-4"></div>
+                <div class="bg-gray-50 p-5 rounded-2xl border border-gray-200">
+                    <h4 class="font-bold text-gray-500 border-b pb-2 uppercase text-[10px] tracking-widest mb-4">Relatório Pedagógico (Todas as Disciplinas)</h4>
+                    <div id="observations-list" class="space-y-3 mb-4 max-h-48 overflow-y-auto pr-2"></div>
                     
-                    <div id="report-tools" class="mt-6 pt-6 border-t border-dashed no-print">
-                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2 ml-1">Nova Observação Manual</label>
-                        <div class="flex flex-col gap-2">
-                            <input type="date" id="new-observation-date" class="border border-gray-300 rounded-lg p-2 text-sm text-gray-600 focus:outline-none w-full sm:w-auto">
-                            <textarea id="new-observation-text" class="w-full border-2 border-gray-100 rounded-xl p-3 text-sm focus:border-blue-200 outline-none transition bg-gray-50 mb-2" rows="3" placeholder="Escreva aqui..."></textarea>
+                    <div id="report-tools" class="mt-4 pt-4 border-t border-dashed no-print">
+                        <label class="block text-[10px] font-bold text-gray-400 uppercase mb-2 ml-1">Nova Observação para <span id="obs-subject-label" class="text-school-green"></span></label>
+                        <div class="flex flex-col sm:flex-row gap-2">
+                            <input type="date" id="new-observation-date" class="border border-gray-300 rounded-lg p-2 text-xs text-gray-600 focus:outline-none w-full sm:w-32">
+                            <input type="text" id="new-observation-text" class="flex-1 border border-gray-300 rounded-lg p-2 text-xs focus:border-school-green outline-none transition" placeholder="Escreva o parecer aqui...">
+                            <button onclick="addObservation()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-blue-700 transition">Salvar</button>
                         </div>
-                        <button onclick="addObservation()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-[10px] font-bold uppercase shadow-lg hover:bg-blue-700 transition float-right">Gravar Registro</button>
                     </div>
-                    <div id="report-parent-msg" class="hidden text-sm text-gray-400 italic text-center p-8 bg-gray-50 rounded-xl">Documento oficial de consulta para responsáveis.</div>
                 </div>
             </div>
             <div class="p-4 bg-gray-50 rounded-b-2xl flex justify-end no-print gap-2">
-                <button onclick="window.print()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase shadow hover:bg-black transition flex items-center gap-2"><i class="fas fa-print"></i> Imprimir</button>
+                <button onclick="printUnifiedReport()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase shadow hover:bg-black transition flex items-center gap-2"><i class="fas fa-print"></i> Imprimir Boletim</button>
             </div>
         </div>
     </div>
@@ -644,6 +694,7 @@
         let unsubscribe = null;
         let activitiesUnsubscribe = null;
         let userProfileUnsubscribe = null;
+        let notificationsUnsubscribe = null;
 
         // --- INICIALIZAÇÃO FIREBASE REFORÇADA ---
         const initFirebase = async () => {
@@ -672,14 +723,7 @@
                     };
                 }
 
-                let appId = 'default-app-id';
-                try {
-                    if (typeof window !== 'undefined' && window.__app_id) {
-                        appId = window.__app_id;
-                    } else if (typeof __app_id !== 'undefined') {
-                        appId = __app_id;
-                    }
-                } catch(e) {}
+                const appId = (typeof window !== 'undefined' && window.__app_id) ? window.__app_id : (typeof __app_id !== 'undefined' ? __app_id : 'default-app-id');
                 window.APP_ID = appId;
 
                 if(!firebase.apps.length) {
@@ -689,9 +733,7 @@
                 
                 try {
                     db.settings({ experimentalForceLongPolling: true, useFetchStreams: false });
-                } catch (e) {
-                    console.warn("Firestore settings log:", e);
-                }
+                } catch (e) {}
                 
                 auth = firebase.auth();
                 
@@ -779,9 +821,7 @@
                         assignments: {}
                     });
                 }
-            } catch(e) {
-                console.error("Erro ao verificar admin:", e);
-            }
+            } catch(e) {}
         }
 
         // --- GLOBAL SCOPE FUNCTIONS ---
@@ -796,7 +836,6 @@
         function openAddModal() { document.getElementById('modal-add').classList.remove('hidden'); }
         function showHistory(id) { openReportModal(id); }
         function openUsersModal() { document.getElementById('modal-users').classList.remove('hidden'); loadUsersList(); switchUserTab('teacher'); }
-        function openChat() { document.getElementById('modal-chat').classList.remove('hidden'); loadChatUsers(); setChatRecipient('global', 'Avisos Gerais'); }
 
         function checkLocalSession() {
             const s = localStorage.getItem('concenal_v29_session');
@@ -810,6 +849,36 @@
                 }
             } else { 
                 document.getElementById('login-screen').classList.remove('hidden'); 
+            }
+        }
+
+        // --- MÓDULO DE NOTIFICAÇÕES GERAIS ---
+        async function logAction(type, description) {
+            if(!currentUser || currentUser.role === 'parent') return;
+            try {
+                await getCollection('concenal_notifications').add({
+                    type: type, // 'Chamada', 'Diário', 'Atividade'
+                    description: description,
+                    teacherName: currentUser.displayName || currentUser.name,
+                    className: appData.currentClass,
+                    subjectName: appData.currentSubject,
+                    timestamp: Date.now()
+                });
+            } catch(e) { console.error("Erro ao notificar ação:", e); }
+        }
+
+        function openNotifications() {
+            document.getElementById('modal-notifications').classList.remove('hidden');
+            const mainBadge = document.getElementById('notif-badge');
+            if(mainBadge) mainBadge.classList.add('hidden');
+        }
+
+        async function clearNotifications() {
+            if(confirm("Apagar o log de notificações recente?")) {
+                const snap = await getCollection('concenal_notifications').get();
+                const batch = db.batch();
+                snap.forEach(doc => batch.delete(doc.ref));
+                await batch.commit();
             }
         }
 
@@ -829,13 +898,11 @@
                     allowedSubjects = [];
                 }
             } else if (currentUser.role === 'parent') {
-                // Filtro para os pais usando a Matriz Curricular
                 const student = appData.students.find(s => s.id === currentUser.studentId);
                 const stClass = student ? student.class : appData.currentClass;
                 
                 let parentSubjectsSet = new Set(appData.curriculum[stClass] || []);
                 
-                // Incluir matérias que já tenham histórico para evitar sumir com o boletim se a coordenação remover a matéria do currículo depois
                 if (student && student.subjects) {
                     Object.keys(student.subjects).forEach(s => parentSubjectsSet.add(s));
                 }
@@ -977,7 +1044,7 @@
             } else if (!isChecked) {
                 tempCurriculum[cClass] = tempCurriculum[cClass].filter(s => s !== subj);
             }
-            renderCurriculumCheckboxes(); // Force visual border update
+            renderCurriculumCheckboxes(); 
             document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
         }
 
@@ -1035,7 +1102,6 @@
             const sName = tempConfigSubjects[idx];
             if(confirm(`Remover disciplina ${sName}?`)) {
                 tempConfigSubjects.splice(idx, 1);
-                // Remove from curriculum
                 Object.keys(tempCurriculum).forEach(c => {
                     tempCurriculum[c] = tempCurriculum[c].filter(s => s !== sName);
                 });
@@ -1056,13 +1122,11 @@
                     document.getElementById('modal-config').classList.add('opacity-50', 'pointer-events-none');
                     document.getElementById('cfg-unsaved-warn').innerText = 'Aplicando migração no banco de dados... Aguarde.';
                     
-                    // 1. Atualizar configs locais temp
                     tempConfigSubjects[idx] = newName;
                     Object.keys(tempCurriculum).forEach(c => {
                         tempCurriculum[c] = tempCurriculum[c].map(s => s === oldName ? newName : s);
                     });
 
-                    // 2. Atualizar todos os alunos
                     const snap = await getCollection('concenal_students').get();
                     const docsToUpdate = [];
                     snap.forEach(doc => {
@@ -1084,12 +1148,16 @@
                         await batch.commit();
                     }
 
-                    // 3. Atualizar configurações gerais no DB
-                    await getCollection('concenal_config').doc('general').set({ 
+                    const payload = { 
                         subjects: tempConfigSubjects, 
                         classes: tempConfigClasses,
                         curriculum: tempCurriculum
-                    }, { merge: true });
+                    };
+                    try {
+                        await getCollection('concenal_config').doc('general').update(payload);
+                    } catch (err) {
+                        await getCollection('concenal_config').doc('general').set(payload);
+                    }
 
                     alert("Disciplina renomeada e notas migradas com sucesso!");
                     renderConfigSubjects();
@@ -1109,11 +1177,17 @@
                 document.getElementById('modal-config').classList.add('opacity-50', 'pointer-events-none');
                 document.getElementById('cfg-unsaved-warn').innerText = 'Salvando...';
                 
-                await getCollection('concenal_config').doc('general').set({ 
+                const payload = { 
                     subjects: tempConfigSubjects, 
                     classes: tempConfigClasses,
                     curriculum: tempCurriculum 
-                }, { merge: true });
+                };
+
+                try {
+                    await getCollection('concenal_config').doc('general').update(payload);
+                } catch(err) {
+                    await getCollection('concenal_config').doc('general').set(payload);
+                }
                 
                 alert("Configurações atualizadas no sistema!");
                 document.getElementById('cfg-unsaved-warn').innerText = '';
@@ -1127,7 +1201,7 @@
         }
 
         // --- LOGIC V29 ---
-        function calculateStatus(d) {
+        function calculateStatus(d, subjName) {
             let sum = 0, filled = 0;
             if(d.units && Array.isArray(d.units)) {
                 d.units.forEach(u => { if (u !== null && u !== "") { sum += parseFloat(u); filled++; } });
@@ -1136,7 +1210,7 @@
             if (filled === 6) avg = (sum / 6).toFixed(1);
 
             const totalFaults = countFaults(d);
-            const totalDays = SUBJECT_DAYS[appData.currentSubject] || SUBJECT_DAYS['default'];
+            const totalDays = SUBJECT_DAYS[subjName] || SUBJECT_DAYS['default'];
             const freqPercent = ((totalDays - totalFaults) / totalDays) * 100;
             
             let st = "Cursando", cl = "status-badge bg-blue-100 text-blue-800";
@@ -1163,7 +1237,7 @@
         function countFaults(subData) {
             if(!subData.attendance) return 0;
             return Object.values(subData.attendance).filter(v => {
-                if (v === 'F') return true;
+                if (v === 'F') return true; // Legacy
                 if (typeof v === 'object' && v.status === 'F' && !v.justified) return true;
                 return false;
             }).length;
@@ -1220,6 +1294,9 @@
             document.getElementById('btn-coord').classList.toggle('hidden', !isAdmin && !isCoord);
             document.getElementById('btn-config').classList.toggle('hidden', !isAdmin);
             
+            const btnNotif = document.getElementById('btn-notifications');
+            if (btnNotif) btnNotif.classList.toggle('hidden', !isAdmin && !isCoord);
+
             const btnChat = document.getElementById('btn-chat');
             if (btnChat) btnChat.classList.toggle('hidden', isParent);
             
@@ -1251,62 +1328,56 @@
             }
         }
 
-        // --- NOTIFICATION & TOAST LOGIC ---
-        function playSound() {
-            const audio = new Audio('data:audio/mp3;base64,//NExAAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExEAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq//NExIAAAANIAAAAAExBTUUzLjEwMKqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq');
-            audio.play().catch(() => {});
-        }
-
-        function showToast(title, msg) {
-            const t = document.createElement('div');
-            t.className = 'bg-white border-l-4 border-school-green shadow-xl rounded-lg p-4 mb-2 w-72 transform transition-all duration-300 translate-x-full z-[200] pointer-events-auto';
-            t.innerHTML = `
-                <div class="flex justify-between items-start">
-                    <h4 class="text-xs font-bold text-gray-800">${title}</h4>
-                    <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-                </div>
-                <p class="text-[10px] text-gray-500 truncate mt-1">${msg}</p>
-            `;
-            document.getElementById('toast-container').appendChild(t);
-            setTimeout(() => t.classList.remove('translate-x-full'), 10);
-            setTimeout(() => {
-                t.classList.add('translate-x-full');
-                setTimeout(() => t.remove(), 300);
-            }, 4000);
-        }
-
-        function updateUnreadBadges() {
-            let totalUnread = 0;
+        // --- NOTIFICATION SYNC ---
+        function listenForNotifications() {
+            if (currentUser.role !== 'admin' && currentUser.role !== 'coord') return;
             
-            const globalBtn = document.getElementById('chat-btn-global');
-            if(globalBtn) {
-                const c = unreadCounts['global'] || 0;
-                totalUnread += c;
-                let existingBadge = globalBtn.querySelector('.unread-badge');
-                if(existingBadge) existingBadge.remove();
-                if(c > 0) {
-                    globalBtn.querySelector('.flex-1').innerHTML += `<span class="unread-badge absolute right-4 top-1/2 transform -translate-y-1/2 bg-red-500 text-white text-[9px] font-bold px-1.5 rounded-full shadow-sm">${c}</span>`;
-                }
-            }
+            if (notificationsUnsubscribe) notificationsUnsubscribe();
+            
+            // Limit to last 50 for performance
+            notificationsUnsubscribe = getCollection('concenal_notifications').orderBy('timestamp', 'desc').limit(50).onSnapshot(snap => {
+                const list = document.getElementById('notifications-list');
+                if(!list) return;
+                
+                list.innerHTML = '';
+                let newCount = 0;
+                const now = Date.now();
 
-            Object.entries(unreadCounts).forEach(([uid, count]) => {
-                if(uid === 'global') return;
-                totalUnread += count;
-                const btn = document.getElementById(`chat-btn-${uid}`);
-                if(btn) {
-                    let existingBadge = btn.querySelector('.unread-badge');
-                    if(existingBadge) existingBadge.remove();
-                    if(count > 0) {
-                        btn.innerHTML += `<span class="unread-badge ml-auto bg-red-500 text-white text-[9px] font-bold px-1.5 rounded-full shadow-sm">${count}</span>`;
-                    }
+                snap.forEach(doc => {
+                    const n = doc.data();
+                    const dateStr = new Date(n.timestamp).toLocaleString('pt-BR');
+                    
+                    // Simple logic: if less than 1 hour old, consider it "new" for the badge pulse
+                    if (now - n.timestamp < 3600000) newCount++;
+
+                    let icon = 'fa-info-circle';
+                    let color = 'text-blue-500';
+                    if (n.type === 'Chamada') { icon = 'fa-user-check'; color = 'text-green-500'; }
+                    if (n.type === 'Diário') { icon = 'fa-book'; color = 'text-orange-500'; }
+                    if (n.type === 'Atividade') { icon = 'fa-file-pdf'; color = 'text-red-500'; }
+
+                    list.innerHTML += `
+                        <div class="bg-white p-3 rounded-lg border border-gray-200 shadow-sm">
+                            <div class="flex items-center gap-2 mb-1">
+                                <i class="fas ${icon} ${color}"></i>
+                                <span class="text-[10px] font-bold uppercase text-gray-500">${n.type}</span>
+                                <span class="text-[9px] text-gray-400 ml-auto">${dateStr}</span>
+                            </div>
+                            <p class="text-xs text-gray-700 leading-tight"><b>${n.teacherName}</b> (${n.subjectName} - ${n.className}): ${n.description}</p>
+                        </div>
+                    `;
+                });
+
+                if (snap.empty) {
+                    list.innerHTML = '<div class="text-center text-xs text-gray-400 p-4">Nenhuma atividade recente.</div>';
+                }
+
+                const badge = document.getElementById('notif-badge');
+                if(badge) {
+                    if(newCount > 0) badge.classList.remove('hidden');
+                    else badge.classList.add('hidden');
                 }
             });
-
-            const mainBadge = document.getElementById('chat-badge');
-            if(mainBadge) {
-                if(totalUnread > 0) mainBadge.classList.remove('hidden');
-                else mainBadge.classList.add('hidden');
-            }
         }
 
         function startRealtimeSync() {
@@ -1347,9 +1418,12 @@
                 if(appData.currentMode === 'activities') renderActivitiesView();
             });
 
-            // NOVO CHAT SYNC COM NOTIFICAÇÕES E LIMITES LOCAIS
+            // Start Notification Sync
+            listenForNotifications();
+
+            // CHAT SYNC
             getCollection('concenal_chat').onSnapshot(snap => {
-                if(currentUser && currentUser.role === 'parent') return; // Pais não rodam o chat engine
+                if(currentUser && currentUser.role === 'parent') return; 
                 
                 let messages = [];
                 let newMessagesArrived = false;
@@ -1492,9 +1566,9 @@
 
         // --- RENDER VIEWS ---
         function renderGradesTable() {
+            // Professor SÓ edita se a turma X for atribuída à matéria Y dele. Admin edita tudo.
             const canEdit = currentUser && (
                 currentUser.role === 'admin' || 
-                currentUser.role === 'coord' || 
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
                  currentUser.assignments[appData.currentSubject] && 
@@ -1516,14 +1590,14 @@
             const list = getStudentsByClass();
             const emptyState = document.getElementById('empty-state');
             
-            if(list.length === 0 || (!appData.currentClass && currentUser.role !== 'parent')) { 
+            if(list.length === 0 || (!appData.currentClass && currentUser.role !== 'parent') || !appData.currentSubject) { 
                 if (emptyState) emptyState.classList.remove('hidden'); 
                 return; 
             }
             if (emptyState) emptyState.classList.add('hidden');
 
             list.forEach(s => {
-                const d = ensureSubjectData(s, appData.currentSubject); const c = calculateStatus(d);
+                const d = ensureSubjectData(s, appData.currentSubject); const c = calculateStatus(d, appData.currentSubject);
                 let row = `<tr class="hover:bg-gray-50 transition border-b border-gray-100"><td class="px-4 py-4 border-r flex justify-between items-center sticky left-0 bg-white"><div><span class="font-bold text-gray-700">${s.name}</span><br><span class="text-[9px] text-gray-300 font-mono text-left block w-20 truncate">${s.id}</span></div><div class="flex gap-2"><button onclick="openReportModal('${s.id}')" class="text-blue-500 hover:scale-110 transition"><i class="fas fa-file-alt"></i></button>${canEdit?`<button onclick="deleteStudent('${s.id}')" class="text-red-300 hover:text-red-500 transition"><i class="fas fa-trash"></i></button>`:''}</div></td>`;
                 for(let i=0; i<6; i++) { 
                     const v = d.units[i] ?? ''; 
@@ -1540,7 +1614,6 @@
             const date = dateInput.value; 
             const canE = currentUser && (
                 currentUser.role === 'admin' || 
-                currentUser.role === 'coord' || 
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
                  currentUser.assignments[appData.currentSubject] && 
@@ -1548,9 +1621,14 @@
             ); 
             const students = getStudentsByClass();
             
-            // Oculta botão de salvar chamada para pais
             const actionsContainer = document.getElementById('attendance-actions');
-            if (actionsContainer) actionsContainer.classList.toggle('hidden', !canE);
+            if (actionsContainer) {
+                // SÓ quem pode editar a chamada vê o botão de salvar. O botão de PDF todos podem ver.
+                actionsContainer.innerHTML = `
+                    <button onclick="openReportsModal('attendance')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>
+                    ${canE ? `<button onclick="saveDailyAttendance()" class="bg-school-green text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-green-700 transition flex items-center gap-2"><i class="fas fa-save"></i> Salvar Chamada</button>` : ''}
+                `;
+            }
 
             // Render History Strip
             let savedDates = new Set();
@@ -1573,10 +1651,27 @@
             if(!tbody) return;
             tbody.innerHTML=''; 
             
+            if(!appData.currentSubject) return;
+
             students.forEach(s=>{
                 const sub=ensureSubjectData(s, appData.currentSubject); const r=sub.attendance[date]; 
-                let st='P', j=false, doc=null; if(r){ if(typeof r==='string') st=r; else {st=r.status; j=r.justified; doc=r.doc;} }
-                tempAttendance[s.id] = r || 'P';
+                
+                // Extract teacher tracking info if available
+                let tName = '';
+                let st='P', j=false, doc=null; 
+                if(r){ 
+                    if(typeof r==='string') {
+                        st=r; 
+                    } else {
+                        st=r.status; 
+                        j=r.justified; 
+                        doc=r.doc;
+                        tName = r.teacherName ? `Registrado por: ${r.teacherName}` : '';
+                    } 
+                }
+                
+                tempAttendance[s.id] = r || { status: 'P', teacherId: currentUser.id, teacherName: currentUser.displayName || currentUser.name };
+                
                 let btnCls = st==='P'?"bg-green-100 text-green-800 border-green-200": (j?"bg-blue-100 text-blue-800 border-blue-200":"bg-red-100 text-red-800 border-red-200");
                 let btnTxt = st==='P'?"PRESENTE": (j?"JUSTIFICADO":"FALTOU");
                 
@@ -1584,7 +1679,9 @@
                     `<button onclick="openJustifyModal('${s.id}')" class="ml-2 text-[10px] text-blue-600 underline font-bold uppercase tracking-tighter">Justificar</button>` : 
                     ((j && doc) ? `<button onclick="viewDoc('${doc}')" class="ml-2 text-blue-500 hover:scale-110 transition"><i class="fas fa-paperclip"></i></button>` : '');
                 
-                tbody.innerHTML += `<tr class="border-b border-gray-50"><td class="px-6 py-4 font-bold text-gray-700 flex justify-between items-center">${s.name} ${act}</td><td class="px-6 py-4 text-center"><button id="btn-att-${s.id}" onclick="toggleAtt('${s.id}')" ${!canE?'disabled':''} class="w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition ${btnCls}">${btnTxt}</button></td></tr>`;
+                let infoHtml = tName ? `<div class="text-[8px] text-gray-400 font-normal uppercase tracking-tighter mt-1">${tName}</div>` : '';
+
+                tbody.innerHTML += `<tr class="border-b border-gray-50"><td class="px-6 py-4 font-bold text-gray-700 flex justify-between items-center">${s.name} ${act}</td><td class="px-6 py-4 text-center"><button id="btn-att-${s.id}" onclick="toggleAtt('${s.id}')" ${!canE?'disabled':''} class="w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition flex flex-col items-center justify-center ${btnCls} mx-auto"><span>${btnTxt}</span></button>${infoHtml}</td></tr>`;
             });
         }
         
@@ -1598,12 +1695,37 @@
             if(!dateInput) return;
             const date = dateInput.value;
             tempDaily = {}; 
+            
+            // Daily Log History Strip
+            const students = getStudentsByClass();
+            let savedDates = new Set();
+            students.forEach(s => {
+                const sub = ensureSubjectData(s, appData.currentSubject);
+                if(sub.dailyLogs) Object.keys(sub.dailyLogs).forEach(d => savedDates.add(d));
+            });
+            const strip = document.getElementById('daily-history-strip');
+            if(strip) {
+                strip.innerHTML = '';
+                Array.from(savedDates).sort((a,b) => b.localeCompare(a)).forEach(d => {
+                    const isSelected = d === date;
+                    const fmtDate = d.split('-').reverse().join('/');
+                    strip.innerHTML += `<button onclick="changeDailyDate('${d}')" class="px-3 py-1.5 rounded-lg text-[10px] font-bold border whitespace-nowrap transition ${isSelected ? 'bg-school-green text-white border-school-green' : 'bg-white text-gray-500 border-gray-200 hover:bg-gray-50'}">${fmtDate}</button>`;
+                });
+                if(savedDates.size === 0) strip.innerHTML = '<span class="text-[10px] text-gray-400 italic py-1.5">Nenhum diário salvo.</span>';
+            }
+
+
             getStudentsByClass().forEach(s => {
                 const sub = ensureSubjectData(s, appData.currentSubject);
-                const l = (sub.dailyLogs || {})[date] || { homework: false, behavior: 'Normal' };
+                const l = (sub.dailyLogs || {})[date] || { homework: false, behavior: 'Normal', note: '', teacherName: '' };
                 tempDaily[s.id] = { ...l };
             });
             renderDailyTable();
+        }
+
+        function changeDailyDate(dateStr) {
+            document.getElementById('daily-date').value = dateStr;
+            loadDailyData();
         }
 
         function renderDailyTable() {
@@ -1613,21 +1735,28 @@
             
             const canE = currentUser && (
                 currentUser.role === 'admin' || 
-                currentUser.role === 'coord' || 
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
                  currentUser.assignments[appData.currentSubject] && 
                  currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
             ); 
             
-            // Oculta botão de salvar diário para pais
             const actionsContainer = document.getElementById('daily-actions');
-            if (actionsContainer) actionsContainer.classList.toggle('hidden', !canE);
+            if (actionsContainer) {
+                actionsContainer.innerHTML = `
+                    <button onclick="openReportsModal('daily')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>
+                    ${canE ? `<button onclick="saveDailyLog()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition flex items-center gap-2"><i class="fas fa-book"></i> Gravar Diário</button>` : ''}
+                `;
+            }
+
+            if(!appData.currentSubject) return;
 
             getStudentsByClass().forEach(s => {
-                const l = tempDaily[s.id] || { homework: false, behavior: 'Normal' };
+                const l = tempDaily[s.id] || { homework: false, behavior: 'Normal', note: '' };
+                let tInfo = l.teacherName ? `<div class="text-[8px] text-gray-400 font-bold uppercase mt-1">Por: ${l.teacherName}</div>` : '';
+                
                 tbody.innerHTML += `<tr class="border-b border-gray-50">
-                    <td class="px-4 py-4 text-gray-600 font-medium">${s.name}</td>
+                    <td class="px-4 py-4 text-gray-700 font-bold">${s.name} ${tInfo}</td>
                     <td class="px-2 py-4 text-center">
                         <button id="btn-hw-${s.id}" onclick="toggleHw('${s.id}')" ${!canE?'disabled':''} class="w-8 h-8 rounded-full shadow-inner transition ${l.homework ? 'bg-green-500 text-white shadow-lg' : 'bg-gray-100 text-gray-300'}">
                             <i class="fas fa-home"></i>
@@ -1640,6 +1769,9 @@
                             <option ${l.behavior==='Ruim'?'selected':''}>Ruim</option>
                         </select>
                     </td>
+                    <td class="px-2 py-4 text-center">
+                        <input type="text" value="${l.note || ''}" onchange="updateDailyNote('${s.id}', this.value)" ${!canE?'disabled':''} class="border border-gray-100 rounded-lg text-xs p-1.5 bg-gray-50 outline-none w-full" placeholder="...">
+                    </td>
                 </tr>`;
             });
         }
@@ -1647,7 +1779,6 @@
         function renderActivitiesView() {
             const canEdit = currentUser && (
                 currentUser.role === 'admin' || 
-                currentUser.role === 'coord' || 
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
                  currentUser.assignments[appData.currentSubject] && 
@@ -1733,6 +1864,8 @@
                     teacherId: currentUser.id,
                     timestamp: Date.now()
                 });
+                
+                logAction('Atividade', `Disponibilizou o arquivo: ${title}`);
                 closeModal('modal-send-activity');
                 alert("Atividade enviada com sucesso!");
             } catch(e) {
@@ -1753,85 +1886,297 @@
             let st = typeof c === 'string' ? c : c.status;
             let nw = st === 'P' ? 'F' : 'P';
             
-            if (typeof c === 'object') { 
-                c.status = nw; 
-                tempAttendance[id] = c; 
-            } else { 
-                tempAttendance[id] = nw; 
-            }
+            // Sempre que altera, atribui a posse da alteração
+            tempAttendance[id] = {
+                status: nw,
+                teacherId: currentUser.id,
+                teacherName: currentUser.displayName || currentUser.name,
+                timestamp: Date.now()
+            };
 
             const btn = document.getElementById(`btn-att-${id}`);
-            const isJustified = (typeof tempAttendance[id] === 'object' && tempAttendance[id].justified);
 
             if (nw === 'P') {
-                btn.className = "w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition bg-green-100 text-green-800 border-green-200";
-                btn.innerText = "PRESENTE";
-            } else if (isJustified) {
-                btn.className = "w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition bg-blue-100 text-blue-800 border-blue-200";
-                btn.innerText = "JUSTIFICADO";
+                btn.className = "w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition flex flex-col items-center justify-center bg-green-100 text-green-800 border-green-200 mx-auto";
+                btn.innerHTML = "<span>PRESENTE</span>";
             } else {
-                btn.className = "w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition bg-red-100 text-red-800 border-red-200";
-                btn.innerText = "FALTOU";
+                btn.className = "w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition flex flex-col items-center justify-center bg-red-100 text-red-800 border-red-200 mx-auto";
+                btn.innerHTML = "<span>FALTOU</span>";
             }
         }
 
-        function toggleHw(id){ if (tempDaily[id]) { tempDaily[id].homework = !tempDaily[id].homework; renderDailyTable(); } }
-        function updateBehavior(id,v){ tempDaily[id].behavior=v; }
+        function toggleHw(id){ 
+            if (tempDaily[id]) { 
+                tempDaily[id].homework = !tempDaily[id].homework; 
+                tempDaily[id].teacherName = currentUser.displayName || currentUser.name;
+                renderDailyTable(); 
+            } 
+        }
+        function updateBehavior(id,v){ 
+            tempDaily[id].behavior=v; 
+            tempDaily[id].teacherName = currentUser.displayName || currentUser.name;
+        }
+        function updateDailyNote(id, v) {
+            tempDaily[id].note = v;
+            tempDaily[id].teacherName = currentUser.displayName || currentUser.name;
+        }
         
         async function saveDailyAttendance(){ 
             const d=document.getElementById('attendance-date').value; let b=db.batch(); 
-            getStudentsByClass().forEach(s=>{ const sub=ensureSubjectData(s, appData.currentSubject); sub.attendance[d]=tempAttendance[s.id]; b.set(getCollection('concenal_students').doc(s.id), {subjects:{[appData.currentSubject]:{attendance:sub.attendance}}},{merge:true}); }); 
-            await b.commit(); alert("Chamada salva!"); 
+            getStudentsByClass().forEach(s=>{ 
+                const sub=ensureSubjectData(s, appData.currentSubject); 
+                sub.attendance[d]=tempAttendance[s.id]; 
+                b.set(getCollection('concenal_students').doc(s.id), {subjects:{[appData.currentSubject]:{attendance:sub.attendance}}},{merge:true}); 
+            }); 
+            await b.commit(); 
+            logAction('Chamada', `Realizou a chamada do dia ${d.split('-').reverse().join('/')}`);
+            alert("Chamada salva!"); 
             renderAttendanceTable(); 
         }
+
         async function saveDailyLog(){ 
             const d=document.getElementById('daily-date').value; let b=db.batch(); 
-            getStudentsByClass().forEach(s=>{ const sub=ensureSubjectData(s, appData.currentSubject); sub.dailyLogs[d]=tempDaily[s.id]; b.set(getCollection('concenal_students').doc(s.id), {subjects:{[appData.currentSubject]:{dailyLogs:sub.dailyLogs}}},{merge:true}); }); 
-            await b.commit(); alert("Diário atualizado!"); 
+            getStudentsByClass().forEach(s=>{ 
+                const sub=ensureSubjectData(s, appData.currentSubject); 
+                sub.dailyLogs[d]=tempDaily[s.id]; 
+                b.set(getCollection('concenal_students').doc(s.id), {subjects:{[appData.currentSubject]:{dailyLogs:sub.dailyLogs}}},{merge:true}); 
+            }); 
+            await b.commit(); 
+            logAction('Diário', `Registrou o diário de bordo do dia ${d.split('-').reverse().join('/')}`);
+            alert("Diário atualizado!"); 
+            loadDailyData();
         }
+
         function updateGrade(id,i,v){ const s=appData.students.find(x=>x.id===id); const sd=ensureSubjectData(s,appData.currentSubject); sd.units[i]=v; getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{units:sd.units}}},{merge:true}); }
         function updateRecovery(id,v){ const s=appData.students.find(x=>x.id===id); getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{recovery:v}}},{merge:true}); }
         function deleteStudent(id){ if(confirm("Remover aluno?")) getCollection('concenal_students').doc(id).delete(); }
         function addStudent(){ const n=document.getElementById('new-name').value; if(!n) return; getCollection('concenal_students').add({name:n, class:appData.currentClass, subjects:{}}); closeModal('modal-add'); }
         async function importStudents(){ const l=document.getElementById('import-list').value.split('\n'); let b=db.batch(); l.forEach(n=>{ if(n.trim()) b.set(getCollection('concenal_students').doc(),{name:n.trim(),class:appData.currentClass,subjects:{}}); }); await b.commit(); closeModal('modal-import'); }
 
-        // --- EXTRAS (Justification, Reports, Coord) ---
+        // --- RELATÓRIOS PDF NATIVOS ---
+        function openReportsModal(type) {
+            document.getElementById('report-type-input').value = type;
+            const title = type === 'attendance' ? 'Relatório de Frequência' : 'Relatório Diário de Bordo';
+            document.getElementById('reports-modal-title').innerText = title;
+            
+            // Carregar lista de alunos da turma atual
+            const stSelect = document.getElementById('report-student');
+            stSelect.innerHTML = '<option value="all">Todos os Alunos</option>';
+            getStudentsByClass().forEach(s => {
+                stSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+            });
+
+            document.getElementById('modal-reports').classList.remove('hidden');
+        }
+
+        function generateFilteredPDF() {
+            const type = document.getElementById('report-type-input').value; // 'attendance' or 'daily'
+            const period = document.getElementById('report-period').value;
+            const studentId = document.getElementById('report-student').value;
+            const printArea = document.getElementById('print-area');
+            
+            let studentsToPrint = getStudentsByClass();
+            if(studentId !== 'all') {
+                studentsToPrint = studentsToPrint.filter(s => s.id === studentId);
+            }
+
+            const now = new Date();
+            let dateFilterFn = (dStr) => true; // 'all'
+            if(period === 'today') {
+                const td = now.toISOString().split('T')[0];
+                dateFilterFn = (dStr) => dStr === td;
+            } else if (period === 'month') {
+                const tm = now.toISOString().slice(0, 7);
+                dateFilterFn = (dStr) => dStr.startsWith(tm);
+            } else if (period === 'week') {
+                const weekAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+                dateFilterFn = (dStr) => dStr >= weekAgo;
+            }
+
+            let html = `
+                <div class="text-center mb-6">
+                    <h2 class="text-xl font-bold uppercase">Relatório Oficial - CONCENAL</h2>
+                    <p class="text-sm">Turma: ${appData.currentClass} | Disciplina: ${appData.currentSubject}</p>
+                    <p class="text-xs text-gray-500">Documento gerado em ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}</p>
+                </div>
+            `;
+
+            if(type === 'attendance') {
+                html += `<table class="w-full text-xs text-left border-collapse"><thead class="bg-gray-100 border-b-2 border-gray-800"><tr><th class="p-2 border">Aluno</th><th class="p-2 border">Data</th><th class="p-2 border">Status</th><th class="p-2 border">Professor/Resp.</th></tr></thead><tbody>`;
+                studentsToPrint.forEach(s => {
+                    const sub = ensureSubjectData(s, appData.currentSubject);
+                    if(sub.attendance) {
+                        Object.entries(sub.attendance).filter(([d]) => dateFilterFn(d)).sort((a,b) => b[0].localeCompare(a[0])).forEach(([date, att]) => {
+                            let st = typeof att === 'string' ? att : att.status;
+                            let prof = typeof att === 'object' && att.teacherName ? att.teacherName : '--';
+                            let fmtD = date.split('-').reverse().join('/');
+                            let displaySt = st === 'P' ? 'Presente' : 'Falta';
+                            if(typeof att === 'object' && att.justified) displaySt = 'Falta (Justificada)';
+                            html += `<tr><td class="p-2 border font-bold">${s.name}</td><td class="p-2 border">${fmtD}</td><td class="p-2 border">${displaySt}</td><td class="p-2 border">${prof}</td></tr>`;
+                        });
+                    }
+                });
+                html += `</tbody></table>`;
+            } else {
+                html += `<table class="w-full text-xs text-left border-collapse"><thead class="bg-gray-100 border-b-2 border-gray-800"><tr><th class="p-2 border">Aluno</th><th class="p-2 border">Data</th><th class="p-2 border">Dever</th><th class="p-2 border">Comport.</th><th class="p-2 border">Notas</th><th class="p-2 border">Prof.</th></tr></thead><tbody>`;
+                studentsToPrint.forEach(s => {
+                    const sub = ensureSubjectData(s, appData.currentSubject);
+                    if(sub.dailyLogs) {
+                        Object.entries(sub.dailyLogs).filter(([d]) => dateFilterFn(d)).sort((a,b) => b[0].localeCompare(a[0])).forEach(([date, l]) => {
+                            let fmtD = date.split('-').reverse().join('/');
+                            let hw = l.homework ? 'Sim' : 'Não';
+                            let prof = l.teacherName || '--';
+                            html += `<tr><td class="p-2 border font-bold">${s.name}</td><td class="p-2 border">${fmtD}</td><td class="p-2 border">${hw}</td><td class="p-2 border">${l.behavior}</td><td class="p-2 border">${l.note||'-'}</td><td class="p-2 border">${prof}</td></tr>`;
+                        });
+                    }
+                });
+                html += `</tbody></table>`;
+            }
+
+            printArea.innerHTML = html;
+            closeModal('modal-reports');
+            
+            // Disparar impressão. O CSS @media print cuida de esconder o resto do site.
+            window.print();
+        }
+
+
+        // --- HISTÓRICO ACADÊMICO UNIFICADO (REFACTOR) ---
         function openReportModal(id){
             currentStudentForReport=appData.students.find(s=>s.id===id); if(!currentStudentForReport) return;
-            const d = ensureSubjectData(currentStudentForReport, appData.currentSubject); const c = calculateStatus(d);
-            document.getElementById('report-name').innerText=currentStudentForReport.name; 
-            document.getElementById('report-avg').innerText=c.average; 
-            document.getElementById('report-freq').innerText=c.freq+'%'; 
-            document.getElementById('report-status').innerText=c.status||"CURSANDO"; 
-            document.getElementById('report-days-count').innerText=`${c.faults} Faltas registradas`;
-            document.getElementById('report-freq-bar').style.width = c.freq+'%';
+            const student = currentStudentForReport;
+            document.getElementById('report-name').innerText=student.name; 
             
-            for(let i=0; i<6; i++) document.getElementById(`rep-u${i+1}`).innerText = d.units[i] || '-';
-            document.getElementById('rep-rec').innerText = d.recovery || '-';
+            const tbody = document.getElementById('unified-report-body');
+            tbody.innerHTML = '';
             
-            const list=document.getElementById('observations-list'); list.innerHTML=''; 
-            (d.observations||[]).reverse().forEach(o=>list.innerHTML+=`<div class="bg-gray-50 border p-3 rounded-xl shadow-sm text-sm"><div class="flex justify-between text-[10px] text-gray-400 font-bold uppercase mb-1"><span>${o.date}</span><span>${o.author}</span></div><p class="text-gray-700">${o.text}</p></div>`);
+            // Identificar quais disciplinas exibir (baseado no currículo da turma)
+            let subjectsToDisplay = appData.curriculum[student.class] || [];
+            
+            // Garantir que disciplinas onde o aluno já tem nota apareçam, mesmo se saírem do currículo
+            if (student.subjects) {
+                Object.keys(student.subjects).forEach(s => {
+                    if (!subjectsToDisplay.includes(s)) subjectsToDisplay.push(s);
+                });
+            }
+
+            if(subjectsToDisplay.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="11" class="p-6 text-gray-400">Nenhum dado cadastrado.</td></tr>';
+            }
+
+            let totalAvg = 0, avgCount = 0, totalFaultsGlobal = 0, totalDaysGlobal = 0;
+
+            subjectsToDisplay.sort().forEach(subjName => {
+                const d = student.subjects?.[subjName] || { units: [], attendance: {}, recovery: null };
+                const c = calculateStatus(d, subjName);
+
+                totalFaultsGlobal += c.faults;
+                totalDaysGlobal += SUBJECT_DAYS[subjName] || SUBJECT_DAYS['default'];
+
+                if(c.average !== '-') {
+                    totalAvg += parseFloat(c.average);
+                    avgCount++;
+                }
+
+                let row = `<tr class="hover:bg-gray-50"><td class="px-4 py-3 text-left font-bold border-r">${subjName}</td>`;
+                for(let i=0; i<6; i++) {
+                    const uVal = d.units?.[i];
+                    const vClass = (uVal && uVal < 6) ? 'text-red-500 font-bold' : '';
+                    row += `<td class="${vClass}">${uVal !== undefined && uVal !== null ? uVal : '-'}</td>`;
+                }
+                row += `<td class="border-l font-bold ${c.freq < 75 ? 'text-red-600' : 'text-blue-600'}">${c.faults}</td>`;
+                row += `<td class="border-l font-bold text-gray-800">${c.average}</td>`;
+                row += `<td class="border-l font-bold text-red-500">${d.recovery || '-'}</td>`;
+                row += `<td class="border-l"><span class="${c.statusClass}">${c.status}</span></td></tr>`;
+                tbody.innerHTML += row;
+            });
+
+            // Resumo Global Topo
+            const finalGlobalAvg = avgCount > 0 ? (totalAvg / avgCount).toFixed(1) : '-';
+            const finalGlobalFreq = totalDaysGlobal > 0 ? (((totalDaysGlobal - totalFaultsGlobal) / totalDaysGlobal) * 100).toFixed(1) : '-';
+            
+            document.getElementById('report-avg').innerText = finalGlobalAvg;
+            document.getElementById('report-freq').innerText = finalGlobalFreq !== '-' ? finalGlobalFreq + '%' : '-';
+            document.getElementById('report-days-count').innerText = `Total Faltas: ${totalFaultsGlobal}`;
+            if(finalGlobalFreq !== '-') document.getElementById('report-freq-bar').style.width = finalGlobalFreq + '%';
+            
+            let globalStatus = "CURSANDO";
+            if(finalGlobalAvg !== '-' && finalGlobalAvg >= 6.0 && finalGlobalFreq >= 75) globalStatus = "APROVADO GERAL";
+            if(finalGlobalFreq !== '-' && finalGlobalFreq < 75) globalStatus = "REPROVADO POR FALTAS";
+            document.getElementById('report-status').innerText = globalStatus;
+            
+            // Observações (Unificadas)
+            const obsList = document.getElementById('observations-list'); 
+            obsList.innerHTML = '';
+            let allObs = [];
+            if(student.subjects) {
+                Object.entries(student.subjects).forEach(([subj, data]) => {
+                    if(data.observations) {
+                        data.observations.forEach(o => allObs.push({subj, ...o}));
+                    }
+                });
+            }
+
+            if(allObs.length === 0) obsList.innerHTML = '<div class="text-xs text-gray-400 italic">Sem pareceres registrados.</div>';
+
+            // Ordena observações por data simulada (Atenção: formato BR dd/mm/yyyy dificulta sort direto, simplificando)
+            allObs.reverse().forEach(o => {
+                obsList.innerHTML += `<div class="bg-white border border-gray-100 p-3 rounded-xl shadow-sm text-xs"><div class="flex justify-between text-[10px] text-gray-400 font-bold uppercase mb-1"><span><b class="text-school-green">${o.subj}</b> - ${o.date}</span><span>${o.author}</span></div><p class="text-gray-700 leading-relaxed">${o.text}</p></div>`;
+            });
             
             const isP = currentUser && currentUser.role === 'parent'; 
-            document.getElementById('report-tools').classList.toggle('hidden', isP); 
+            document.getElementById('report-tools').classList.toggle('hidden', isP || !appData.currentSubject); 
+            document.getElementById('obs-subject-label').innerText = appData.currentSubject || '';
             document.getElementById('report-parent-msg').classList.toggle('hidden', !isP); 
             document.getElementById('modal-report').classList.remove('hidden');
         }
 
         async function addObservation(){ 
-            const t=document.getElementById('new-observation-text').value; 
-            const d=document.getElementById('new-observation-date').value;
-            if(!t) return;
-            const s=currentStudentForReport, sd=ensureSubjectData(s,appData.currentSubject);
-            sd.observations.push({date:d.split('-').reverse().join('/'), text:t, author:currentUser.displayName||currentUser.name});
+            const t = document.getElementById('new-observation-text').value; 
+            const d = document.getElementById('new-observation-date').value;
+            if(!t || !appData.currentSubject) return;
+            const s = currentStudentForReport;
+            const sd = ensureSubjectData(s, appData.currentSubject);
+            sd.observations.push({date: d.split('-').reverse().join('/'), text: t, author: currentUser.displayName || currentUser.name});
             await getCollection('concenal_students').doc(s.id).set({subjects:{[appData.currentSubject]:{observations:sd.observations}}},{merge:true});
-            document.getElementById('new-observation-text').value=''; openReportModal(s.id);
+            document.getElementById('new-observation-text').value = ''; 
+            openReportModal(s.id);
+        }
+
+        function printUnifiedReport() {
+            // Reaproveitar lógica do print area
+            const printArea = document.getElementById('print-area');
+            const student = currentStudentForReport;
+            const now = new Date();
+            
+            let html = `
+                <div class="text-center mb-6 border-b pb-4">
+                    <h2 class="text-2xl font-bold uppercase">Boletim Escolar Unificado - CONCENAL</h2>
+                    <p class="text-lg font-bold mt-2">Aluno(a): ${student.name}</p>
+                    <p class="text-sm">Turma: ${student.class} | Ano Letivo: ${now.getFullYear()}</p>
+                </div>
+            `;
+            
+            // Copia a tabela exata que já foi renderizada no modal
+            const tableHTML = document.querySelector('#modal-report table').outerHTML;
+            html += tableHTML;
+
+            // Observações
+            html += `<h3 class="text-sm font-bold uppercase mt-8 border-b pb-2 mb-4">Pareceres Pedagógicos</h3>`;
+            const obsItems = document.querySelectorAll('#observations-list div.bg-white');
+            if(obsItems.length === 0) html += '<p class="text-xs italic text-gray-500">Nenhum parecer registrado.</p>';
+            obsItems.forEach(el => {
+                html += `<div class="mb-4 text-xs"><div class="font-bold border-b pb-1 mb-1">${el.querySelector('.flex span').innerText}</div><p>${el.querySelector('p').innerText}</p></div>`;
+            });
+
+            printArea.innerHTML = html;
+            window.print();
         }
 
         function openJustifyModal(sid){
             currentJustificationStudentId = sid;
             currentJustificationDate = document.getElementById('attendance-date').value;
-            document.getElementById('just-date-display').innerText = `${currentJustificationDate} - ${appData.currentSubject}`;
+            document.getElementById('just-date-display').innerText = `${currentJustificationDate.split('-').reverse().join('/')} - ${appData.currentSubject}`;
             document.getElementById('modal-justification').classList.remove('hidden');
         }
 
@@ -1869,67 +2214,6 @@
                 };
             } else { save(null); }
         }
-
-        function openCoordPanel() {
-            document.getElementById('modal-coord').classList.remove('hidden');
-            getCollection('concenal_users').get().then(snap => {
-                let h = '';
-                snap.forEach(doc => {
-                    const d = doc.data();
-                    if (d.role === 'teacher') {
-                        const isOnline = (Date.now() - (d.lastActive || 0)) < 300000; 
-                        h += `<div class="flex justify-between items-center p-2 border-b text-sm"><span>${d.displayName || d.name}</span><span class="${isOnline?'online-dot':'offline-dot'}"></span></div>`;
-                    }
-                });
-                document.getElementById('coord-teachers-list').innerHTML = h || '<div class="text-xs text-gray-400">Nenhum professor cadastrado.</div>';
-            });
-
-            let pending = '';
-            appData.students.forEach(s => {
-                if(s.subjects) {
-                    Object.entries(s.subjects).forEach(([subjName, subjData]) => {
-                        if(subjData.attendance) {
-                            Object.entries(subjData.attendance).forEach(([date, att]) => {
-                                if(typeof att === 'object' && att.pendingReview) {
-                                    pending += `
-                                        <div class="bg-orange-50 p-3 rounded-lg border border-orange-100 mb-2 shadow-sm text-sm">
-                                            <div class="flex justify-between items-start mb-2">
-                                                <div>
-                                                    <span class="font-bold text-gray-700 block">${s.name}</span>
-                                                    <span class="text-xs text-gray-500">${date} - ${subjName}</span><br>
-                                                    <span class="text-xs text-orange-600 font-bold uppercase">${att.reason}</span>
-                                                </div>
-                                                ${att.doc ? `<button onclick="viewDoc('${att.doc}')" class="text-blue-500"><i class="fas fa-image"></i></button>` : ''}
-                                            </div>
-                                            <div class="flex gap-2 mt-1">
-                                                <button onclick="approveJust('${s.id}', '${subjName}', '${date}', true)" class="flex-1 bg-green-500 text-white text-xs py-1 rounded">Aprovar</button>
-                                                <button onclick="approveJust('${s.id}', '${subjName}', '${date}', false)" class="flex-1 bg-red-500 text-white text-xs py-1 rounded">Rejeitar</button>
-                                            </div>
-                                        </div>
-                                    `;
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-            document.getElementById('coord-pending-list').innerHTML = pending || '<div class="text-center text-gray-400 text-xs py-4">Nenhuma pendência.</div>';
-        }
-
-        async function approveJust(sid, subj, date, approved) {
-            const s = appData.students.find(x => x.id === sid);
-            const d = ensureSubjectData(s, subj);
-            if(approved) {
-                d.attendance[date].pendingReview = false;
-                d.attendance[date].justified = true;
-            } else {
-                d.attendance[date] = 'F'; 
-            }
-            await getCollection('concenal_students').doc(sid).set({subjects:{[subj]:{attendance:d.attendance}}},{merge:true});
-            openCoordPanel(); 
-        }
-
-        function viewDoc(b64){const w=window.open(""); w.document.write(`<img src="${b64}" style="max-width:100%">`);}
 
         // --- GESTÃO USUÁRIOS E ASSIGNMENTS ---
         function switchUserTab(t){ 
@@ -2010,8 +2294,17 @@
             if(!n || !l) return alert("Preencha os campos obrigatórios.");
 
             try {
-                if(id) { await getCollection('concenal_users').doc(id).set(data, { merge: true }); } 
-                else { if(!p) return alert("Defina uma senha"); await getCollection('concenal_users').add(data); }
+                if(id) { 
+                    try {
+                        await getCollection('concenal_users').doc(id).update(data);
+                    } catch(err) {
+                        await getCollection('concenal_users').doc(id).set(data);
+                    }
+                } 
+                else { 
+                    if(!p) return alert("Defina uma senha"); 
+                    await getCollection('concenal_users').add(data); 
+                }
                 alert("Operação concluída!"); loadUsersList(); cancelEdit();
             } catch(e) { alert(e.message); }
         }
@@ -2075,115 +2368,6 @@
         function deleteLogin(id) {
             if(confirm("Deseja apagar este acesso?")) {
                 getCollection('concenal_users').doc(id).delete().then(() => { loadUsersList(); }).catch(e => alert(e.message));
-            }
-        }
-
-        // --- CHAT FUNCTIONS ---
-        function setChatRecipient(id, name) {
-            chatRecipient = id; chatRecipientName = name;
-            
-            const infoEl = document.getElementById('chat-recipient-info');
-            infoEl.innerText = name;
-            
-            document.getElementById('chat-main-window').classList.remove('hidden');
-            document.getElementById('chat-sidebar').classList.add('hidden', 'md:flex');
-            document.querySelectorAll('[id^="chat-btn-"]').forEach(b => b.classList.remove('border-green-300'));
-            const aB = document.getElementById(`chat-btn-${id}`); if(aB) aB.classList.add('border-green-300');
-
-            const inputArea = document.getElementById('chat-input-area');
-            if (id === 'global' && currentUser && currentUser.role === 'teacher') {
-                inputArea.classList.add('hidden');
-            } else {
-                inputArea.classList.remove('hidden');
-            }
-            
-            const clearBtn = document.getElementById('btn-clear-chat');
-            if(id !== 'global' && currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord')) {
-                clearBtn.classList.remove('hidden');
-            } else {
-                clearBtn.classList.add('hidden');
-            }
-
-            if(unreadCounts[id]) {
-                unreadCounts[id] = 0;
-                updateUnreadBadges();
-            }
-            renderChatMessages(currentChatMessages);
-        }
-
-        function openChat() { 
-            document.getElementById('modal-chat').classList.remove('hidden'); 
-            loadChatUsers(); 
-            setChatRecipient('global', 'Mural Geral'); 
-        }
-
-        function loadChatUsers() {
-            const list = document.getElementById('chat-user-list'); list.innerHTML = '';
-            getCollection('concenal_users').get().then(snap => {
-                snap.forEach(doc => {
-                    const u = doc.data();
-                    if (doc.id !== currentUser.id && u.role !== 'parent') {
-                        list.innerHTML += `
-                            <button id="chat-btn-${doc.id}" onclick="setChatRecipient('${doc.id}', '${u.displayName||u.name}')" class="w-full text-left p-2 rounded-xl border-2 border-transparent transition hover:bg-white bg-transparent flex items-center gap-3 mb-1 relative">
-                                <div class="w-10 h-10 bg-gray-100 text-gray-400 rounded-full flex items-center justify-center text-[10px] font-bold uppercase">${(u.displayName||u.name).charAt(0)}</div>
-                                <span class="text-xs font-bold text-gray-600 truncate">${u.displayName || u.name}</span>
-                            </button>`;
-                    }
-                });
-                updateUnreadBadges();
-            });
-        }
-
-        async function sendChatMessage() {
-            const txt = document.getElementById('chat-input').value.trim();
-            if(!txt && !currentChatFile) return;
-            await getCollection('concenal_chat').add({
-                from: currentUser.id, fromName: currentUser.displayName || currentUser.name,
-                to: chatRecipient, text: txt, file: currentChatFile, timestamp: Date.now()
-            });
-            document.getElementById('chat-input').value = '';
-            clearChatAttachment();
-        }
-
-        function handleChatFile(input) {
-            const file = input.files[0]; if (!file) return;
-            if (file.size > 800 * 1024) return alert("Arquivo excedeu limite de 800KB.");
-            const reader = new FileReader(); reader.readAsDataURL(file);
-            reader.onload = e => {
-                currentChatFile = { name: file.name, type: file.type, data: e.target.result };
-                document.getElementById('chat-attachment-preview').classList.remove('hidden');
-                document.getElementById('attachment-name').innerText = file.name;
-            };
-        }
-
-        function clearChatAttachment() { currentChatFile = null; document.getElementById('chat-file').value = ''; document.getElementById('chat-attachment-preview').classList.add('hidden'); }
-        
-        function deleteMsg(id) { 
-            if(confirm("Deseja remover essa mensagem permanentemente para todos?")) {
-                getCollection('concenal_chat').doc(id).delete(); 
-            }
-        }
-        
-        async function requestDeleteMsg(id) {
-            if(confirm("Solicitar exclusão desta mensagem para a Coordenação/Direção?")) {
-                await getCollection('concenal_chat').doc(id).update({ deleteRequested: true });
-                alert("Solicitação enviada. A mensagem será destacada para os administradores apagarem.");
-            }
-        }
-        
-        async function clearConversation() {
-            if(!confirm("Atenção! Isso apagará TODA esta conversa para ambos os usuários. Deseja prosseguir?")) return;
-            const batch = db.batch();
-            let count = 0;
-            currentChatMessages.forEach(msg => {
-                if(msg.to !== 'global') {
-                    batch.delete(getCollection('concenal_chat').doc(msg.docId));
-                    count++;
-                }
-            });
-            if(count > 0) {
-                await batch.commit();
-                alert("Conversa apagada com sucesso!");
             }
         }
 
