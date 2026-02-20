@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - 2026</title>
+    <title>DIÁRIO ESCOLAR</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -40,10 +40,19 @@
         .offline-dot { width: 10px; height: 10px; background-color: #9CA3AF; border-radius: 50%; display: inline-block; }
 
         @media print {
-            body * { visibility: hidden; }
-            #print-area, #print-area * { visibility: visible; }
-            #print-area { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; background: white; z-index: 99999; }
+            /* Garante que cores de fundo do Tailwind apareçam na impressão */
+            body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            /* Oculta tudo que é filho direto do body, EXCETO a área de impressão */
+            body > *:not(#print-area) { display: none !important; }
+            /* Força a área de impressão a ser um bloco, sobrepondo o hidden */
+            #print-area { display: block !important; width: 100%; margin: 0; padding: 0; position: static; }
+            
             .no-print { display: none !important; }
+            
+            /* Evita corte no meio da linha da tabela na quebra de página */
+            table { page-break-inside: auto; }
+            tr { page-break-inside: avoid; page-break-after: auto; }
+            thead { display: table-header-group; }
         }
 
         .chat-msg { max-width: 85%; border-radius: 12px; margin-bottom: 8px; position: relative; }
@@ -2651,4 +2660,3 @@
     </script>
 </body>
 </html>
-
