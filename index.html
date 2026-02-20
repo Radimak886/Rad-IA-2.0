@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR</title>
+    <title>DIÁRIO ESCOLAR - 2026</title>
     
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -36,23 +36,18 @@
         
         .status-rf { color: #7f1d1d; font-weight: 800; background-color: #fee2e2; padding: 2px 6px; border-radius: 4px; font-size: 0.65rem; }
         .status-badge { padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; font-weight: 800; }
-        .online-dot { width: 10px; height: 10px; background-color: #10B981; border-radius: 50%; display: inline-block; box-shadow: 0 0 5px #10B981; }
-        .offline-dot { width: 10px; height: 10px; background-color: #9CA3AF; border-radius: 50%; display: inline-block; }
-
+        
         @media print {
-            /* Garante que cores de fundo do Tailwind apareçam na impressão */
-            body { background-color: white; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-            /* Oculta tudo que é filho direto do body, EXCETO a área de impressão */
+            body { background-color: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; margin: 0; padding: 0; }
             body > *:not(#print-area) { display: none !important; }
-            /* Força a área de impressão a ser um bloco, sobrepondo o hidden */
-            #print-area { display: block !important; width: 100%; margin: 0; padding: 0; position: static; }
-            
+            #print-area { display: block !important; width: 100%; position: relative; }
             .no-print { display: none !important; }
-            
-            /* Evita corte no meio da linha da tabela na quebra de página */
-            table { page-break-inside: auto; }
+            table { page-break-inside: auto; width: 100%; border-collapse: collapse; }
             tr { page-break-inside: avoid; page-break-after: auto; }
             thead { display: table-header-group; }
+            .print-border { border: 1px solid #e5e7eb; }
+            .print-bg-green { background-color: #047857 !important; color: white !important; }
+            .print-bg-gray { background-color: #f9fafb !important; }
         }
 
         .chat-msg { max-width: 85%; border-radius: 12px; margin-bottom: 8px; position: relative; }
@@ -67,7 +62,7 @@
 <body class="text-gray-800 min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
 
     <!-- ÁREA DE IMPRESSÃO PDF -->
-    <div id="print-area" class="hidden font-serif bg-white p-8"></div>
+    <div id="print-area" class="hidden bg-white p-8"></div>
 
     <!-- Container de Notificações Pop-up -->
     <div id="toast-container" class="fixed bottom-4 right-4 z-[200] flex flex-col gap-2 pointer-events-none"></div>
@@ -136,7 +131,7 @@
                         <span id="notif-badge" class="absolute -top-1 -right-1 bg-orange-500 w-3 h-3 rounded-full hidden border border-white animate-pulse"></span>
                     </button>
 
-                    <button id="btn-chat" onclick="openChat()" class="hidden relative bg-green-800 p-2 rounded-lg hover:bg-green-700 transition border border-green-700 shadow-sm" title="Comunicação Interna">
+                    <button id="btn-chat" onclick="openChat()" class="relative bg-green-800 p-2 rounded-lg hover:bg-green-700 transition border border-green-700 shadow-sm" title="Comunicação">
                         <i class="fas fa-comments"></i>
                         <span id="chat-badge" class="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full hidden border border-white animate-pulse"></span>
                     </button>
@@ -152,7 +147,7 @@
 
         <!-- Barra de Controle e Abas -->
         <div id="control-bar" class="bg-white border-b border-gray-200 shadow-sm z-20 sticky top-16">
-            <div class="max-w-7xl mx-auto px-4 pt-3 flex flex-col md:flex-row gap-4 justify-between items-center border-b border-gray-50 pb-3">
+            <div class="max-w-7xl mx-auto px-4 pt-3 flex flex-col md:flex-row gap-4 justify-between items-center border-b border-gray-50 pb-3" id="main-controls">
                 <div class="flex flex-wrap items-center gap-3 w-full md:w-auto">
                     <div class="flex items-center gap-2">
                         <label class="text-[10px] font-bold text-gray-400 uppercase tracking-tighter">Matéria</label>
@@ -172,6 +167,10 @@
                 <button onclick="switchMode('attendance')" id="nav-attendance" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Frequência</button>
                 <button onclick="switchMode('daily')" id="nav-daily" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Diário de Bordo</button>
                 <button onclick="switchMode('activities')" id="nav-activities" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Atividades e Materiais</button>
+                
+                <!-- Novas Abas -->
+                <button onclick="switchMode('schedule')" id="nav-schedule" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap hidden"><i class="fas fa-clock mr-1"></i> Horários</button>
+                <button onclick="switchMode('calendar')" id="nav-calendar" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap hidden"><i class="fas fa-calendar-alt mr-1"></i> Calendário</button>
             </div>
         </div>
 
@@ -271,6 +270,71 @@
                     </div>
                 </div>
             </div>
+
+            <!-- NOVA ABA: HORÁRIOS -->
+            <div id="view-schedule" class="max-w-5xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden hidden fade-in border border-gray-200">
+                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-gray-700 text-sm uppercase tracking-widest">Horário Escolar da Turma</h3>
+                        <p class="text-[10px] text-gray-500 uppercase mt-1" id="schedule-class-name">--</p>
+                    </div>
+                    <div id="schedule-admin-controls" class="hidden">
+                        <button onclick="saveSchedule()" class="bg-school-green text-white px-4 py-2 rounded-lg text-xs font-bold uppercase flex items-center gap-2 shadow-sm hover:bg-green-700 transition"><i class="fas fa-save"></i> Salvar Horário</button>
+                    </div>
+                </div>
+                <div class="p-4 overflow-x-auto">
+                    <table class="w-full text-sm text-center border-collapse border border-gray-200">
+                        <thead class="bg-gray-100 font-bold text-gray-600 uppercase text-[10px]">
+                            <tr>
+                                <th class="border border-gray-200 p-2 w-20">Horário</th>
+                                <th class="border border-gray-200 p-2">Segunda</th>
+                                <th class="border border-gray-200 p-2">Terça</th>
+                                <th class="border border-gray-200 p-2">Quarta</th>
+                                <th class="border border-gray-200 p-2">Quinta</th>
+                                <th class="border border-gray-200 p-2">Sexta</th>
+                            </tr>
+                        </thead>
+                        <tbody id="schedule-body" class="bg-white">
+                            <!-- Preenchido via JS -->
+                        </tbody>
+                    </table>
+                </div>
+                <div class="p-4 bg-gray-50 border-t border-gray-200">
+                    <h4 class="font-bold text-[10px] text-gray-500 uppercase tracking-widest mb-2">Dias Letivos Estimados Anuais (Por Disciplina)</h4>
+                    <div id="schedule-days-count" class="flex flex-wrap gap-2 text-xs"></div>
+                </div>
+            </div>
+
+            <!-- NOVA ABA: CALENDÁRIO -->
+            <div id="view-calendar" class="max-w-5xl mx-auto bg-white rounded-xl shadow-xl overflow-hidden hidden fade-in border border-gray-200">
+                <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                    <div>
+                        <h3 class="font-bold text-gray-700 text-sm uppercase tracking-widest">Calendário Escolar Anual</h3>
+                        <p class="text-[10px] text-gray-500 uppercase mt-1">Datas, eventos e feriados</p>
+                    </div>
+                </div>
+                <div class="p-4 grid md:grid-cols-3 gap-6">
+                    <div class="md:col-span-2">
+                        <div id="calendar-list" class="space-y-3 max-h-[60vh] overflow-y-auto pr-2">
+                            <!-- Preenchido via JS -->
+                        </div>
+                    </div>
+                    <div id="calendar-admin-controls" class="bg-gray-50 p-4 rounded-xl border border-gray-200 hidden self-start">
+                        <h4 class="font-bold text-xs text-school-green uppercase tracking-widest mb-3 border-b border-green-200 pb-2">Adicionar Evento</h4>
+                        <input type="date" id="cal-date" class="w-full border p-2 rounded-lg text-sm mb-2 outline-none">
+                        <select id="cal-type" class="w-full border p-2 rounded-lg text-sm mb-2 outline-none bg-white">
+                            <option value="Feriado">Feriado / Recesso</option>
+                            <option value="Reunião">Reunião</option>
+                            <option value="Avaliação">Período Avaliativo</option>
+                            <option value="Evento">Evento Escolar</option>
+                            <option value="Outro">Outro</option>
+                        </select>
+                        <input type="text" id="cal-desc" placeholder="Descrição do Evento" class="w-full border p-2 rounded-lg text-sm mb-3 outline-none">
+                        <button onclick="addCalendarEvent()" class="w-full bg-blue-600 text-white font-bold py-2 rounded-lg text-xs uppercase shadow hover:bg-blue-700 transition">Adicionar</button>
+                    </div>
+                </div>
+            </div>
+
         </main>
     </div>
 
@@ -303,7 +367,7 @@
             </div>
             <div class="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-2">
                 <button onclick="closeModal('modal-reports')" class="px-4 py-2 bg-gray-100 text-gray-600 rounded-lg text-xs font-bold uppercase">Cancelar</button>
-                <button onclick="generateFilteredPDF()" class="px-6 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold uppercase shadow flex items-center gap-2"><i class="fas fa-file-pdf"></i> Gerar PDF</button>
+                <button onclick="generateFilteredPDF()" class="px-6 py-2 bg-blue-600 text-white rounded-lg text-xs font-bold uppercase shadow flex items-center gap-2"><i class="fas fa-file-pdf"></i> Gerar PDF Profissional</button>
             </div>
         </div>
     </div>
@@ -542,7 +606,7 @@
                 <div class="flex items-center gap-3">
                     <i class="fas fa-comments text-2xl"></i>
                     <div>
-                        <h3 class="font-bold leading-none mb-1">Comunicação Interna</h3>
+                        <h3 class="font-bold leading-none mb-1">Comunicação</h3>
                         <div class="text-[10px] text-green-100 uppercase font-bold tracking-widest flex items-center gap-2">
                             <span id="chat-recipient-info">Avisos Gerais</span>
                         </div>
@@ -572,7 +636,7 @@
 
                 <!-- Mensagens -->
                 <div class="flex-1 flex flex-col bg-white w-full" id="chat-main-window">
-                    <div class="md:hidden bg-gray-100 p-2 border-b text-xs flex justify-between items-center">
+                    <div class="md:hidden bg-gray-100 p-2 border-b text-xs flex justify-between items-center" id="mobile-chat-header">
                         <button onclick="document.getElementById('chat-sidebar').classList.remove('hidden'); document.getElementById('chat-main-window').classList.add('hidden');" class="text-blue-600 font-bold"><i class="fas fa-chevron-left"></i> Voltar</button>
                         <span class="font-bold text-gray-600 uppercase" id="mobile-chat-title">Mural Geral</span>
                     </div>
@@ -674,7 +738,7 @@
                 </div>
             </div>
             <div class="p-4 bg-gray-50 rounded-b-2xl flex justify-end no-print gap-2">
-                <button onclick="printUnifiedReport()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase shadow hover:bg-black transition flex items-center gap-2"><i class="fas fa-print"></i> Imprimir Boletim</button>
+                <button onclick="printUnifiedReport()" class="bg-gray-800 text-white px-6 py-2 rounded-lg font-bold text-xs uppercase shadow hover:bg-black transition flex items-center gap-2"><i class="fas fa-print"></i> Imprimir Boletim Oficial</button>
             </div>
         </div>
     </div>
@@ -683,15 +747,106 @@
     <script>
         // --- CONSTANTES V29 ---
         const DEFAULT_CLASSES = ["6A", "6B", "7A", "7B", "8A", "8B", "9A", "9B", "1º EM A", "2º EM A", "3º EM A"];
-        const DEFAULT_SUBJECTS = ["Matemática", "Português", "Geografia", "História", "Arte", "Educação Física", "Inglês", "Ciências", "Física", "Química", "Biologia", "Projeto de Vida", "Ciências Humanas", "Espanhol"];
+        const DEFAULT_SUBJECTS = ["Matemática", "Português", "Geografia", "História", "Arte", "Educação Física", "Inglês", "Ciências", "Física", "Química", "Biologia", "Projeto de Vida", "Ciências Humanas", "Espanhol", "Redação", "Filosofia", "Ética e Cidadania"];
         const SUBJECT_DAYS = { "Matemática": 200, "Português": 200, "default": 80 };
+        const WEEKDAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
         const today = new Date().toISOString().split('T')[0];
+        
+        function getTimeslotsForClass(className) {
+            if (!className) return [];
+            return className.includes('EM') 
+                ? ["7h", "7:50", "8:50", "9:40", "10:40", "11:30 às 12:10"] 
+                : ["7h", "8h", "9h", "10h", "10h50"];
+        }
+
+        // PADRÕES PRÉ-PREENCHIDOS PARA BANCO DE DADOS (HORÁRIO E CALENDÁRIO 2026)
+        const DEFAULT_SCHEDULE = {
+            "6A": {
+                "Segunda-7h": "Matemática", "Segunda-8h": "Ciências", "Segunda-9h": "Português", "Segunda-10h": "Geografia", "Segunda-10h50": "História",
+                "Terça-7h": "Arte", "Terça-8h": "Português", "Terça-9h": "Educação Física", "Terça-10h": "Inglês", "Terça-10h50": "Redação",
+                "Quarta-7h": "Matemática", "Quarta-8h": "Ciências", "Quarta-9h": "Português", "Quarta-10h": "Geografia", "Quarta-10h50": "História",
+                "Quinta-7h": "Matemática", "Quinta-8h": "Filosofia", "Quinta-9h": "Educação Física", "Quinta-10h": "Inglês", "Quinta-10h50": "Ética e Cidadania",
+                "Sexta-7h": "Matemática", "Sexta-8h": "Ciências", "Sexta-9h": "Português", "Sexta-10h": "Geografia", "Sexta-10h50": "História"
+            },
+            "7A": {
+                "Segunda-7h": "Ciências", "Segunda-8h": "História", "Segunda-9h": "Geografia", "Segunda-10h": "Matemática", "Segunda-10h50": "Português",
+                "Terça-7h": "Português", "Terça-8h": "Educação Física", "Terça-9h": "Filosofia", "Terça-10h": "Redação", "Terça-10h50": "Inglês",
+                "Quarta-7h": "Ciências", "Quarta-8h": "História", "Quarta-9h": "Geografia", "Quarta-10h": "Matemática", "Quarta-10h50": "Português",
+                "Quinta-7h": "Arte", "Quinta-8h": "Educação Física", "Quinta-9h": "Matemática", "Quinta-10h": "Ética e Cidadania", "Quinta-10h50": "Inglês",
+                "Sexta-7h": "Ciências", "Sexta-8h": "História", "Sexta-9h": "Geografia", "Sexta-10h": "Matemática", "Sexta-10h50": "Português"
+            },
+            "8A": {
+                "Segunda-7h": "Geografia", "Segunda-8h": "Português", "Segunda-9h": "História", "Segunda-10h": "Ciências", "Segunda-10h50": "Matemática",
+                "Terça-7h": "Redação", "Terça-8h": "Arte", "Terça-9h": "Inglês", "Terça-10h": "Português", "Terça-10h50": "Educação Física",
+                "Quarta-7h": "Geografia", "Quarta-8h": "Português", "Quarta-9h": "História", "Quarta-10h": "Ciências", "Quarta-10h50": "Matemática",
+                "Quinta-7h": "Ética e Cidadania", "Quinta-8h": "Matemática", "Quinta-9h": "Inglês", "Quinta-10h": "Filosofia", "Quinta-10h50": "Educação Física",
+                "Sexta-7h": "Geografia", "Sexta-8h": "Português", "Sexta-9h": "História", "Sexta-10h": "Ciências", "Sexta-10h50": "Matemática"
+            },
+            "9A": {
+                "Segunda-7h": "História", "Segunda-8h": "Matemática", "Segunda-9h": "Ciências", "Segunda-10h": "Português", "Segunda-10h50": "Geografia",
+                "Terça-7h": "Inglês", "Terça-8h": "Redação", "Terça-9h": "Português", "Terça-10h": "Educação Física", "Terça-10h50": "Arte",
+                "Quarta-7h": "História", "Quarta-8h": "Matemática", "Quarta-9h": "Ciências", "Quarta-10h": "Português", "Quarta-10h50": "Geografia",
+                "Quinta-7h": "Inglês", "Quinta-8h": "Ética e Cidadania", "Quinta-9h": "Filosofia", "Quinta-10h": "Educação Física", "Quinta-10h50": "Matemática",
+                "Sexta-7h": "História", "Sexta-8h": "Matemática", "Sexta-9h": "Ciências", "Sexta-10h": "Português", "Sexta-10h50": "Geografia"
+            },
+            "9B": {
+                "Segunda-7h": "Português", "Segunda-8h": "Geografia", "Segunda-9h": "Matemática", "Segunda-10h": "História", "Segunda-10h50": "Ciências",
+                "Terça-7h": "Educação Física", "Terça-8h": "Inglês", "Terça-9h": "Redação", "Terça-10h": "Filosofia", "Terça-10h50": "Português",
+                "Quarta-7h": "Português", "Quarta-8h": "Geografia", "Quarta-9h": "Matemática", "Quarta-10h": "História", "Quarta-10h50": "Ciências",
+                "Quinta-7h": "Educação Física", "Quinta-8h": "Inglês", "Quinta-9h": "Ética e Cidadania", "Quinta-10h": "Matemática", "Quinta-10h50": "Arte",
+                "Sexta-7h": "Português", "Sexta-8h": "Geografia", "Sexta-9h": "Matemática", "Sexta-10h": "História", "Sexta-10h50": "Ciências"
+            },
+            "1º EM A": {
+                "Segunda-7h": "Geografia", "Segunda-7:50": "Geografia", "Segunda-8:50": "Português", "Segunda-9:40": "Português", "Segunda-10:40": "Matemática", "Segunda-11:30 às 12:10": "Matemática",
+                "Terça-7h": "Física", "Terça-7:50": "Física", "Terça-8:50": "Biologia", "Terça-9:40": "Biologia", "Terça-10:40": "Ciências Humanas", "Terça-11:30 às 12:10": "Ciências Humanas",
+                "Quarta-7h": "Português", "Quarta-7:50": "Português", "Quarta-8:50": "Química", "Quarta-9:40": "Química", "Quarta-10:40": "Matemática", "Quarta-11:30 às 12:10": "Matemática",
+                "Quinta-7h": "Projeto de Vida", "Quinta-7:50": "Espanhol", "Quinta-8:50": "Educação Física", "Quinta-9:40": "Educação Física (Prática)", "Quinta-10:40": "Biologia", "Quinta-11:30 às 12:10": "Biologia",
+                "Sexta-7h": "Português", "Sexta-7:50": "Português", "Sexta-8:50": "História", "Sexta-9:40": "História", "Sexta-10:40": "Inglês", "Sexta-11:30 às 12:10": "Inglês"
+            },
+            "2º EM A": {
+                "Segunda-7h": "Matemática", "Segunda-7:50": "Matemática", "Segunda-8:50": "Geografia", "Segunda-9:40": "Geografia", "Segunda-10:40": "Português", "Segunda-11:30 às 12:10": "Português",
+                "Terça-7h": "Projeto de Vida", "Terça-7:50": "Ciências Humanas", "Terça-8:50": "Física", "Terça-9:40": "Física", "Terça-10:40": "Biologia", "Terça-11:30 às 12:10": "Biologia",
+                "Quarta-7h": "Matemática", "Quarta-7:50": "Matemática", "Quarta-8:50": "Português", "Quarta-9:40": "Português", "Quarta-10:40": "Química", "Quarta-11:30 às 12:10": "Química",
+                "Quinta-7h": "Biologia", "Quinta-7:50": "Biologia", "Quinta-8:50": "Espanhol", "Quinta-9:40": "Espanhol", "Quinta-10:40": "Projeto de Vida", "Quinta-11:30 às 12:10": "Física (Prática)",
+                "Sexta-7h": "História", "Sexta-7:50": "História", "Sexta-8:50": "Inglês", "Sexta-9:40": "Inglês", "Sexta-10:40": "Português", "Sexta-11:30 às 12:10": "Português"
+            }
+        };
+
+        const DEFAULT_CALENDAR = [
+            { date: '2026-01-12', type: 'Reunião', desc: 'Reunião Administrativa' },
+            { date: '2026-01-13', type: 'Reunião', desc: 'Reunião Pedagógica' },
+            { date: '2026-01-26', type: 'Evento', desc: 'Início do ano letivo' },
+            { date: '2026-02-02', type: 'Feriado', desc: 'Nossa Sra. do Perpétuo Socorro' },
+            { date: '2026-02-07', type: 'Evento', desc: 'Sábado Letivo' },
+            { date: '2026-02-14', type: 'Reunião', desc: 'Reunião Pais e Mestres' },
+            { date: '2026-02-16', type: 'Feriado', desc: 'Carnaval' },
+            { date: '2026-02-17', type: 'Feriado', desc: 'Carnaval' },
+            { date: '2026-02-18', type: 'Feriado', desc: 'Cinzas' },
+            { date: '2026-03-07', type: 'Evento', desc: 'Sábado Letivo' },
+            { date: '2026-03-28', type: 'Reunião', desc: 'Reunião' },
+            { date: '2026-04-02', type: 'Feriado', desc: 'Semana Santa' },
+            { date: '2026-04-03', type: 'Feriado', desc: 'Semana Santa' },
+            { date: '2026-04-11', type: 'Evento', desc: 'Sábado Letivo' },
+            { date: '2026-04-21', type: 'Feriado', desc: 'Dia de Tiradentes' },
+            { date: '2026-04-25', type: 'Reunião', desc: 'Reunião' },
+            { date: '2026-05-01', type: 'Feriado', desc: 'Dia do Trabalhador' },
+            { date: '2026-05-04', type: 'Avaliação', desc: 'Início do Período Avaliativo' },
+            { date: '2026-05-09', type: 'Evento', desc: 'Sábado Letivo' },
+            { date: '2026-05-28', type: 'Evento', desc: 'Dia Nacional do Brincar' },
+            { date: '2026-05-30', type: 'Reunião', desc: 'Reunião' },
+            { date: '2026-06-04', type: 'Feriado', desc: 'Corpus Christi' },
+            { date: '2026-06-13', type: 'Reunião', desc: 'Reunião' },
+            { date: '2026-06-15', type: 'Avaliação', desc: 'Início do Período Avaliativo' },
+            { date: '2026-06-19', type: 'Evento', desc: 'Término do 1º semestre letivo' }
+        ];
         
         // --- ESTADO GLOBAL ---
         let db, auth, currentUser = null;
         let appData = {
             students: [],
             activities: [],
+            schedule: {}, // Mapeamento: Turma -> grade de horarios
+            calendar: [], // Eventos
             currentClass: '',
             currentSubject: '',
             currentMode: 'grades',
@@ -789,15 +944,42 @@
                 getCollection('concenal_config').doc('general').onSnapshot(doc => {
                     if(appData.isProcessing) return;
 
+                    let needsUpdate = false;
+                    let dataToSave = {};
+
                     if (doc.exists) {
-                        appData.allSubjects = doc.data().subjects || DEFAULT_SUBJECTS;
-                        appData.allClasses = doc.data().classes || DEFAULT_CLASSES;
-                        appData.curriculum = doc.data().curriculum || {};
+                        const data = doc.data();
+                        appData.allSubjects = data.subjects || DEFAULT_SUBJECTS;
+                        appData.allClasses = data.classes || DEFAULT_CLASSES;
+                        appData.curriculum = data.curriculum || {};
+                        
+                        if (!data.schedule || Object.keys(data.schedule).length === 0) {
+                            appData.schedule = DEFAULT_SCHEDULE;
+                            dataToSave.schedule = DEFAULT_SCHEDULE;
+                            needsUpdate = true;
+                        } else {
+                            appData.schedule = data.schedule;
+                        }
+
+                        if (!data.calendar || data.calendar.length === 0) {
+                            appData.calendar = DEFAULT_CALENDAR;
+                            dataToSave.calendar = DEFAULT_CALENDAR;
+                            needsUpdate = true;
+                        } else {
+                            appData.calendar = data.calendar;
+                        }
                     } else {
                         appData.allSubjects = DEFAULT_SUBJECTS;
                         appData.allClasses = DEFAULT_CLASSES;
                         appData.curriculum = {};
-                        getCollection('concenal_config').doc('general').set({ subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES, curriculum: {} }, { merge: true });
+                        appData.schedule = DEFAULT_SCHEDULE;
+                        appData.calendar = DEFAULT_CALENDAR;
+                        dataToSave = { subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES, curriculum: {}, schedule: DEFAULT_SCHEDULE, calendar: DEFAULT_CALENDAR };
+                        needsUpdate = true;
+                    }
+
+                    if (needsUpdate) {
+                        getCollection('concenal_config').doc('general').set(dataToSave, { merge: true });
                     }
                     
                     if(!appData.currentSubject && appData.allSubjects.length > 0) appData.currentSubject = appData.allSubjects[0];
@@ -810,6 +992,10 @@
                     if(!document.getElementById('modal-users').classList.contains('hidden')) {
                        renderAssignmentsUI();
                     }
+                    
+                    // Rerenderiza se estiver nas abas novas
+                    if(appData.currentMode === 'schedule') renderScheduleView();
+                    if(appData.currentMode === 'calendar') renderCalendarView();
                 });
 
                 auth.onAuthStateChanged(user => {
@@ -864,7 +1050,11 @@
             if(currentUser && currentUser.role !== 'parent') populateClassSelect(); 
             updateUI(); 
         }
-        function changeClass(v) { appData.currentClass = v; updateUI(); }
+        function changeClass(v) { 
+            appData.currentClass = v; 
+            updateUI(); 
+            if(appData.currentMode === 'schedule') renderScheduleView();
+        }
         function openAddModal() { document.getElementById('modal-add').classList.remove('hidden'); }
         function showHistory(id) { openReportModal(id); }
         function openUsersModal() { document.getElementById('modal-users').classList.remove('hidden'); loadUsersList(); switchUserTab('teacher'); }
@@ -927,8 +1117,9 @@
 
         function playSound() {
             try {
+                // Bipe curto e profissional
                 const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'+Array(100).join('A'));
-                audio.volume = 0.2;
+                audio.volume = 0.5;
                 audio.play().catch(e=>{});
             } catch(e) {}
         }
@@ -956,9 +1147,25 @@
 
         function openChat() {
             document.getElementById('modal-chat').classList.remove('hidden');
-            if (chatRecipient === 'global') {
-                setChatRecipient('global', 'Avisos Gerais');
+            
+            // Pais são direcionados direto para a Direção e a sidebar é ocultada
+            if(currentUser.role === 'parent') {
+                document.getElementById('chat-sidebar').classList.add('hidden');
+                document.getElementById('mobile-chat-header').classList.add('hidden');
+                
+                // Procura um admin para direcionar
+                getCollection('concenal_users').where('role', '==', 'admin').limit(1).get().then(snap => {
+                    if(!snap.empty) {
+                        const adminDoc = snap.docs[0];
+                        setChatRecipient(adminDoc.id, 'Direção (Atendimento ao Pai/Responsável)');
+                    }
+                });
+            } else {
+                document.getElementById('chat-sidebar').classList.remove('hidden');
+                if(window.innerWidth < 768) document.getElementById('mobile-chat-header').classList.remove('hidden');
+                if (chatRecipient === 'global') setChatRecipient('global', 'Avisos Gerais');
             }
+            
             const div = document.getElementById('chat-messages');
             if (div) div.scrollTop = div.scrollHeight;
         }
@@ -980,7 +1187,7 @@
             const activeBtn = document.getElementById(id === 'global' ? 'chat-btn-global' : `chat-btn-${id}`);
             if(activeBtn) activeBtn.classList.add('border-green-300', 'bg-green-50');
 
-            if(window.innerWidth < 768) {
+            if(window.innerWidth < 768 && currentUser.role !== 'parent') {
                 document.getElementById('chat-sidebar').classList.add('hidden');
                 document.getElementById('chat-main-window').classList.remove('hidden');
             }
@@ -989,20 +1196,27 @@
         }
 
         async function loadChatUsers() {
+            if(currentUser.role === 'parent') return; // Pais não carregam lista
+            
             const list = document.getElementById('chat-user-list');
             if(!list) return;
             const snap = await getCollection('concenal_users').get();
             list.innerHTML = '';
+            
             snap.forEach(doc => {
                 const u = doc.data();
-                if(doc.id === currentUser.id || u.role === 'parent') return;
+                if(doc.id === currentUser.id) return;
+                
+                // Professores veem: Professores, Coord, Admin. Admin/Coord veem todos, inclusive pais.
+                if(currentUser.role === 'teacher' && u.role === 'parent') return;
+
                 list.innerHTML += `
                     <button onclick="setChatRecipient('${doc.id}', '${u.displayName || u.name}')" id="chat-btn-${doc.id}" class="w-full text-left p-3 rounded-xl border-2 border-transparent transition hover:border-green-200 bg-white shadow-sm flex items-center justify-between group mb-2">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-xs font-bold">${(u.displayName || u.name).charAt(0).toUpperCase()}</div>
-                            <div class="leading-none">
-                                <div class="text-xs font-bold text-gray-700">${u.displayName || u.name}</div>
-                                <div class="text-[8px] text-gray-400 mt-1 uppercase">${u.role}</div>
+                        <div class="flex items-center gap-2 overflow-hidden">
+                            <div class="w-8 h-8 flex-shrink-0 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-xs font-bold">${(u.displayName || u.name).charAt(0).toUpperCase()}</div>
+                            <div class="leading-none overflow-hidden text-left">
+                                <div class="text-xs font-bold text-gray-700 truncate">${u.displayName || u.name}</div>
+                                <div class="text-[8px] text-gray-400 mt-1 uppercase truncate">${u.role === 'parent' ? 'Responsável' : u.role}</div>
                             </div>
                         </div>
                         <span id="unread-${doc.id}" class="bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center hidden font-bold shadow-sm">0</span>
@@ -1021,8 +1235,7 @@
                 fromName: currentUser.displayName || currentUser.name,
                 to: chatRecipient,
                 text: text,
-                timestamp: Date.now(),
-                deleteRequested: false
+                timestamp: Date.now()
             };
 
             if (currentChatFile) {
@@ -1066,12 +1279,8 @@
             document.getElementById('chat-attachment-preview').classList.add('hidden');
         }
 
-        function requestDeleteMsg(docId) {
-            getCollection('concenal_chat').doc(docId).update({ deleteRequested: true });
-            showToast("Solicitação", "Aviso enviado à coordenação.");
-        }
-
         function deleteMsg(docId) {
+            // Qualquer um pode deletar sua própria mensagem ou admin deleta qualquer uma.
             if(confirm("Excluir esta mensagem permanentemente?")) {
                 getCollection('concenal_chat').doc(docId).delete();
             }
@@ -1566,6 +1775,7 @@
             const isAdmin = currentUser.role === 'admin';
             const isCoord = currentUser.role === 'coord';
 
+            // Controles de visibilidade baseados no papel (role)
             document.getElementById('btn-admin').classList.toggle('hidden', !isAdmin);
             document.getElementById('btn-coord').classList.toggle('hidden', !isAdmin && !isCoord);
             document.getElementById('btn-config').classList.toggle('hidden', !isAdmin);
@@ -1573,12 +1783,13 @@
             const btnNotif = document.getElementById('btn-notifications');
             if (btnNotif) btnNotif.classList.toggle('hidden', !isAdmin && !isCoord);
 
-            const btnChat = document.getElementById('btn-chat');
-            if (btnChat) btnChat.classList.toggle('hidden', isParent);
+            // Abas Novas: Apenas Prof/Coord/Admin
+            document.getElementById('nav-schedule').classList.toggle('hidden', isParent);
+            document.getElementById('nav-calendar').classList.toggle('hidden', isParent);
             
             const classTabs = document.getElementById('class-tabs');
             if(isParent) {
-                classTabs.innerHTML = '<span class="text-sm font-bold text-gray-500 p-2 uppercase tracking-wide border rounded-lg bg-gray-50 ml-2">Área do Responsável</span>';
+                classTabs.innerHTML = '';
                 document.getElementById('class-select').parentElement.classList.add('hidden');
             } else {
                 classTabs.innerHTML = '';
@@ -1587,7 +1798,7 @@
 
             if (currentUser.id === 'admin_master') {
                  loadParentSubjectsAndPopulate();
-                 if(currentUser.role !== 'parent') loadChatUsers();
+                 if(!isParent) loadChatUsers();
                  startRealtimeSync();
             } else {
                  if (userProfileUnsubscribe) userProfileUnsubscribe();
@@ -1601,7 +1812,7 @@
                          logout();
                      }
                  });
-                 if(currentUser.role !== 'parent') loadChatUsers();
+                 if(!isParent) loadChatUsers();
                  startRealtimeSync();
             }
         }
@@ -1701,8 +1912,6 @@
 
             // CHAT SYNC
             getCollection('concenal_chat').onSnapshot(snap => {
-                if(currentUser && currentUser.role === 'parent') return; 
-                
                 let messages = [];
                 let newMessagesArrived = false;
 
@@ -1712,7 +1921,12 @@
                     messages.push({ docId, ...m });
                     
                     if (!isFirstChatLoad && !knownMessages.has(docId)) {
-                        const isForMe = (m.to === 'global' || m.to === currentUser?.id || currentUser?.role === 'admin' || currentUser?.role === 'coord');
+                        // Verifica se a mensagem é endereçada ao usuário atual (ou global se for prof/coord/admin)
+                        const isForMe = (m.to === currentUser?.id) || 
+                                        (m.to === 'global' && currentUser?.role !== 'parent') || 
+                                        (currentUser?.role === 'admin') || 
+                                        (currentUser?.role === 'coord');
+                                        
                         const isFromMe = m.from === currentUser?.id;
                         
                         if (isForMe && !isFromMe) {
@@ -1736,7 +1950,9 @@
                 messages.sort((a, b) => a.timestamp - b.timestamp);
                 allChatMessagesMaster = messages.slice(-200); 
 
-                renderChatMessages(allChatMessagesMaster);
+                if(!document.getElementById('modal-chat').classList.contains('hidden')) {
+                    renderChatMessages(allChatMessagesMaster);
+                }
             });
         }
         
@@ -1760,32 +1976,175 @@
                      else fH = `<a href="${m.file.data}" download="${m.file.name}" class="bg-black bg-opacity-5 p-2 rounded-lg block text-[10px] border border-black border-opacity-5 mb-2"><i class="fas fa-file-alt mr-1"></i> ${m.file.name}</a>`;
                 }
 
-                const isAdminOrCoord = (currentUser?.role === 'admin' || currentUser?.role === 'coord');
-                const isTeacher = currentUser?.role === 'teacher';
+                // Todos podem deletar a própria mensagem. Admin pode deletar de todos.
+                const canDelete = isSent || currentUser?.role === 'admin';
                 
-                const canDelete = isAdminOrCoord;
-                const canReqDelete = isTeacher && isSent && m.to !== 'global' && !m.deleteRequested;
-                
-                let reqDelHtml = canReqDelete ? `<button onclick="requestDeleteMsg('${m.docId}')" class="text-[9px] text-orange-500 hover:text-orange-700 transition mt-1 block w-full text-right uppercase font-bold"><i class="fas fa-exclamation-triangle"></i> Pedir Exclusão</button>` : '';
-                let badgeHtml = m.deleteRequested ? `<div class="absolute -top-2 -left-2 bg-red-500 text-white text-[8px] px-2 py-0.5 rounded-full shadow-sm animate-pulse border border-white font-bold tracking-widest z-10">EXCLUSÃO SOLICITADA</div>` : '';
                 let delBtnHtml = canDelete ? `<button onclick="deleteMsg('${m.docId}')" class="absolute -top-2 -right-2 text-red-500 bg-white rounded-full opacity-0 group-hover:opacity-100 transition z-10 w-6 h-6 flex items-center justify-center shadow-md border border-gray-100 hover:bg-red-50"><i class="fas fa-times"></i></button>` : '';
 
-                const extraBorder = m.deleteRequested ? "border-2 border-red-400" : (isSent ? "border border-green-200" : "border border-gray-200");
+                const extraBorder = isSent ? "border border-green-200" : "border border-gray-200";
 
                 div.innerHTML += `
                     <div class="chat-msg ${isSent?'sent':'received'} p-3 shadow-sm group ${extraBorder}">
-                        ${badgeHtml}
                         <div class="text-[8px] font-bold text-gray-500 uppercase tracking-tighter mb-1">${m.fromName} ${m.to === 'global' ? '• MURAL' : ''}</div>
                         ${fH}
                         <div class="text-xs leading-relaxed text-gray-800 break-words">${m.text}</div>
                         <div class="text-[7px] text-right mt-1 opacity-40 font-bold">${date}</div>
-                        ${reqDelHtml}
                         ${delBtnHtml}
                     </div>
                 `;
             });
             div.scrollTop = div.scrollHeight;
         }
+
+        // --- SCHEDULE (HORÁRIOS) & CALENDAR ---
+        function renderScheduleView() {
+            const className = appData.currentClass;
+            document.getElementById('schedule-class-name').innerText = className || 'Nenhuma turma selecionada';
+            
+            const tbody = document.getElementById('schedule-body');
+            tbody.innerHTML = '';
+            
+            if(!className) return;
+
+            const canEdit = currentUser.role === 'admin' || currentUser.role === 'coord';
+            document.getElementById('schedule-admin-controls').classList.toggle('hidden', !canEdit);
+
+            const sch = appData.schedule[className] || {};
+            const activeSlots = getTimeslotsForClass(className);
+
+            activeSlots.forEach(time => {
+                let row = `<tr><td class="border border-gray-200 p-2 font-bold text-gray-500 bg-gray-50">${time}</td>`;
+                WEEKDAYS.forEach(day => {
+                    const val = sch[`${day}-${time}`] || '';
+                    if(canEdit) {
+                        row += `<td class="border border-gray-200 p-1"><input type="text" value="${val}" id="sch-${day}-${time}" class="w-full text-center text-xs p-1 outline-none focus:bg-green-50 uppercase font-bold text-school-green" placeholder="-"></td>`;
+                    } else {
+                        row += `<td class="border border-gray-200 p-2 text-xs font-bold text-school-green uppercase">${val || '-'}</td>`;
+                    }
+                });
+                row += `</tr>`;
+                tbody.innerHTML += row;
+            });
+            
+            // Calcula dias letivos estimados por disciplina baseando-se no preenchimento
+            const counts = {};
+            Object.values(sch).forEach(v => {
+                const sub = v.trim().toUpperCase();
+                if(sub) counts[sub] = (counts[sub] || 0) + 1;
+            });
+            
+            const countDiv = document.getElementById('schedule-days-count');
+            countDiv.innerHTML = '';
+            Object.keys(counts).forEach(k => {
+                // Cálculo estimado: vezes por semana * aprox 40 semanas letivas no ano
+                const estimativaAno = counts[k] * 40; 
+                countDiv.innerHTML += `<span class="bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 font-bold">${k}: ~${estimativaAno} aulas/ano</span>`;
+            });
+            if(Object.keys(counts).length === 0) countDiv.innerHTML = '<span class="text-gray-400 italic">Preencha o horário para calcular a estimativa.</span>';
+        }
+
+        async function saveSchedule() {
+            const className = appData.currentClass;
+            if(!className) return;
+            
+            const activeSlots = getTimeslotsForClass(className);
+            const sch = {};
+            activeSlots.forEach(time => {
+                WEEKDAYS.forEach(day => {
+                    const input = document.getElementById(`sch-${day}-${time}`);
+                    if(input) sch[`${day}-${time}`] = input.value.trim().toUpperCase();
+                });
+            });
+
+            appData.schedule[className] = sch;
+            
+            try {
+                await getCollection('concenal_config').doc('general').set({ schedule: appData.schedule }, { merge: true });
+                alert("Horário da turma salvo com sucesso!");
+                renderScheduleView();
+            } catch(e) {
+                alert("Erro ao salvar horário: " + e.message);
+            }
+        }
+
+        function renderCalendarView() {
+            const canEdit = currentUser.role === 'admin' || currentUser.role === 'coord';
+            document.getElementById('calendar-admin-controls').classList.toggle('hidden', !canEdit);
+            
+            const list = document.getElementById('calendar-list');
+            list.innerHTML = '';
+
+            const events = [...appData.calendar].sort((a, b) => new Date(a.date) - new Date(b.date));
+
+            if(events.length === 0) {
+                list.innerHTML = '<div class="text-center p-8 text-gray-400 italic">Nenhum evento cadastrado no calendário.</div>';
+                return;
+            }
+
+            let currentMonth = -1;
+            events.forEach((ev, idx) => {
+                const dateObj = new Date(ev.date + 'T12:00:00'); // Evitar fuso horario
+                const month = dateObj.getMonth();
+                
+                if(month !== currentMonth) {
+                    const monthName = dateObj.toLocaleString('pt-BR', { month: 'long' }).toUpperCase();
+                    list.innerHTML += `<h4 class="font-bold text-school-green border-b-2 border-green-200 pb-1 mt-4 mb-2 tracking-widest text-xs">${monthName}</h4>`;
+                    currentMonth = month;
+                }
+
+                let color = 'bg-gray-50 border-gray-200';
+                let icon = 'fa-calendar';
+                if(ev.type === 'Feriado') { color = 'bg-red-50 border-red-200 text-red-800'; icon = 'fa-flag'; }
+                if(ev.type === 'Avaliação') { color = 'bg-yellow-50 border-yellow-200 text-yellow-800'; icon = 'fa-pen'; }
+                if(ev.type === 'Reunião') { color = 'bg-blue-50 border-blue-200 text-blue-800'; icon = 'fa-users'; }
+
+                list.innerHTML += `
+                    <div class="flex justify-between items-center p-3 rounded-lg border shadow-sm ${color}">
+                        <div class="flex items-center gap-3">
+                            <div class="bg-white p-2 rounded-lg border font-bold text-center w-12 shadow-sm">
+                                <span class="block text-xs leading-none">${dateObj.getDate()}</span>
+                            </div>
+                            <div>
+                                <h5 class="font-bold text-sm leading-tight">${ev.desc}</h5>
+                                <p class="text-[9px] uppercase tracking-widest font-bold opacity-75"><i class="fas ${icon} mr-1"></i> ${ev.type}</p>
+                            </div>
+                        </div>
+                        ${canEdit ? `<button onclick="deleteCalendarEvent(${idx})" class="text-red-400 hover:text-red-600 transition p-2"><i class="fas fa-trash"></i></button>` : ''}
+                    </div>
+                `;
+            });
+        }
+
+        async function addCalendarEvent() {
+            const d = document.getElementById('cal-date').value;
+            const t = document.getElementById('cal-type').value;
+            const desc = document.getElementById('cal-desc').value.trim();
+
+            if(!d || !desc) return alert("Preencha a data e a descrição.");
+
+            appData.calendar.push({ date: d, type: t, desc: desc });
+            
+            try {
+                await getCollection('concenal_config').doc('general').set({ calendar: appData.calendar }, { merge: true });
+                document.getElementById('cal-desc').value = '';
+                renderCalendarView();
+            } catch(e) {
+                alert("Erro ao salvar: " + e.message);
+            }
+        }
+
+        async function deleteCalendarEvent(idx) {
+            if(confirm("Deseja apagar este evento do calendário?")) {
+                appData.calendar.splice(idx, 1);
+                try {
+                    await getCollection('concenal_config').doc('general').set({ calendar: appData.calendar }, { merge: true });
+                    renderCalendarView();
+                } catch(e) {
+                    alert("Erro ao apagar: " + e.message);
+                }
+            }
+        }
+
 
         function updateUI() {
             if (!currentUser) return; 
@@ -1795,8 +2154,15 @@
                  cs.value = appData.currentClass;
             }
 
+            // Oculta botão matéria na aba calendário, pois é global
+            const mainControls = document.getElementById('main-controls');
+            if(mainControls) {
+                if(appData.currentMode === 'calendar') mainControls.classList.add('hidden');
+                else mainControls.classList.remove('hidden');
+            }
+
             // Tabs UI update
-            ['nav-grades','nav-attendance','nav-daily', 'nav-activities'].forEach(id => {
+            ['nav-grades','nav-attendance','nav-daily', 'nav-activities', 'nav-schedule', 'nav-calendar'].forEach(id => {
                 const el = document.getElementById(id);
                 if(!el) return;
                 const isActive = `nav-${appData.currentMode}` === id;
@@ -1809,7 +2175,7 @@
                 }
             });
 
-            ['view-grades', 'view-attendance', 'view-daily', 'view-activities'].forEach(id => {
+            ['view-grades', 'view-attendance', 'view-daily', 'view-activities', 'view-schedule', 'view-calendar'].forEach(id => {
                 const el = document.getElementById(id);
                 if (el) el.classList.add('hidden');
             });
@@ -1821,7 +2187,11 @@
             else if (appData.currentMode === 'attendance') renderAttendanceTable();
             else if (appData.currentMode === 'daily') loadDailyData();
             else if (appData.currentMode === 'activities') renderActivitiesView();
+            else if (appData.currentMode === 'schedule') renderScheduleView();
+            else if (appData.currentMode === 'calendar') renderCalendarView();
         }
+
+        // FIM DAS ATUALIZAÇÕES DO UI DE NAVEGAÇÃO
 
         function getStudentsByClass() {
             if (currentUser && currentUser.role === 'parent') return appData.students;
@@ -1876,12 +2246,12 @@
 
             list.forEach(s => {
                 const d = ensureSubjectData(s, appData.currentSubject); const c = calculateStatus(d, appData.currentSubject);
-                let row = `<tr class="hover:bg-gray-50 transition border-b border-gray-100"><td class="px-4 py-4 border-r flex justify-between items-center sticky left-0 bg-white"><div><span class="font-bold text-gray-700">${s.name}</span><br><span class="text-[9px] text-gray-300 font-mono text-left block w-20 truncate">${s.id}</span></div><div class="flex gap-2"><button onclick="openReportModal('${s.id}')" class="text-blue-500 hover:scale-110 transition"><i class="fas fa-file-alt"></i></button>${canEdit?`<button onclick="deleteStudent('${s.id}')" class="text-red-300 hover:text-red-500 transition"><i class="fas fa-trash"></i></button>`:''}</div></td>`;
+                let row = `<tr class="hover:bg-gray-50 transition border-b border-gray-100"><td class="px-4 py-4 border-r flex justify-between items-center sticky left-0 bg-white print-border"><div><span class="font-bold text-gray-700">${s.name}</span><br><span class="text-[9px] text-gray-300 font-mono text-left block w-20 truncate no-print">${s.id}</span></div><div class="flex gap-2"><button onclick="openReportModal('${s.id}')" class="text-blue-500 hover:scale-110 transition no-print"><i class="fas fa-file-alt"></i></button>${canEdit?`<button onclick="deleteStudent('${s.id}')" class="text-red-300 hover:text-red-500 transition no-print"><i class="fas fa-trash"></i></button>`:''}</div></td>`;
                 for(let i=0; i<6; i++) { 
                     const v = d.units[i] ?? ''; 
-                    row += `<td class="px-1 border-l"><input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-transparent focus:outline-none ${v!==''&&v<6?'text-red-600 font-bold':'text-green-700'}" value="${v}" onchange="updateGrade('${s.id}',${i},this.value)"></td>`; 
+                    row += `<td class="px-1 border-l print-border"><input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-transparent focus:outline-none ${v!==''&&v<6?'text-red-600 font-bold':'text-green-700'}" value="${v}" onchange="updateGrade('${s.id}',${i},this.value)"></td>`; 
                 }
-                row += `<td class="px-1 text-center font-bold border-l cursor-pointer ${c.freq<75?'text-red-700 bg-red-50':'text-blue-800'}" onclick="openReportModal('${s.id}')">${c.faults} <span class="text-[8px] font-normal opacity-40">${c.freq}%</span></td><td class="px-2 text-center font-bold border-l text-gray-700">${c.average}</td><td class="px-1 border-l"><input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-gray-50" value="${d.recovery||''}" onchange="updateRecovery('${s.id}',this.value)"></td><td class="px-2 text-center border-l"><span class="${c.statusClass}">${c.status||'--'}</span></td></tr>`;
+                row += `<td class="px-1 text-center font-bold border-l cursor-pointer print-border ${c.freq<75?'text-red-700 bg-red-50':'text-blue-800'}" onclick="openReportModal('${s.id}')">${c.faults} <span class="text-[8px] font-normal opacity-40">${c.freq}%</span></td><td class="px-2 text-center font-bold border-l text-gray-700 print-border">${c.average}</td><td class="px-1 border-l print-border"><input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-gray-50" value="${d.recovery||''}" onchange="updateRecovery('${s.id}',this.value)"></td><td class="px-2 text-center border-l print-border"><span class="${c.statusClass}">${c.status||'--'}</span></td></tr>`;
                 tbody.innerHTML += row;
             });
         }
@@ -2307,26 +2677,31 @@
 
             // Layout Profissional para Frequência e Diário de Bordo
             let html = `
-                <div class="flex items-center gap-6 mb-8 pb-4 border-b-2 border-school-green">
-                    <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" onerror="this.src='https://placehold.co/150x50/png?text=CONCENAL'" class="h-16">
+                <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #047857;">
+                    <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" style="height: 64px;">
                     <div>
-                        <h2 class="text-2xl font-bold uppercase text-gray-800 leading-none mb-1">Relatório Oficial - CONCENAL</h2>
-                        <p class="text-[12px] text-school-green uppercase font-bold tracking-widest">
+                        <h2 style="font-size: 24px; font-weight: bold; text-transform: uppercase; color: #1f2937; margin: 0;">Relatório Oficial - CONCENAL</h2>
+                        <p style="font-size: 12px; color: #047857; text-transform: uppercase; font-weight: bold; letter-spacing: 0.1em; margin: 4px 0 0 0;">
                             Turma: ${appData.currentClass} • Disciplina: ${appData.currentSubject}
                         </p>
-                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">Gerado em ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}</p>
+                        <p style="font-size: 10px; color: #9ca3af; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; margin: 4px 0 0 0;">Gerado em ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}</p>
                     </div>
                 </div>
             `;
 
             if(type === 'attendance') {
                 html += `
-                <div class="border border-gray-200 rounded-lg overflow-hidden">
-                    <table class="w-full text-xs text-left">
-                        <thead class="bg-school-green text-white uppercase text-[10px] tracking-wider">
-                            <tr><th class="p-3">Aluno</th><th class="p-3">Data</th><th class="p-3">Status</th><th class="p-3">Professor/Resp.</th></tr>
+                <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                    <table style="width: 100%; text-align: left; font-size: 12px; border-collapse: collapse;">
+                        <thead class="print-bg-green">
+                            <tr>
+                                <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">Aluno</th>
+                                <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">Data</th>
+                                <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">Status</th>
+                                <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">Professor/Resp.</th>
+                            </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100 text-gray-700 font-medium">`;
+                        <tbody style="color: #374151; font-weight: 500;">`;
                 
                 studentsToPrint.forEach(s => {
                     const sub = ensureSubjectData(s, appData.currentSubject);
@@ -2335,30 +2710,37 @@
                             let st = typeof att === 'string' ? att : att.status;
                             let prof = typeof att === 'object' && att.teacherName ? att.teacherName : '--';
                             let fmtD = date.split('-').reverse().join('/');
-                            let displaySt = st === 'P' ? '<span class="text-green-600 font-bold">Presente</span>' : '<span class="text-red-600 font-bold">Falta</span>';
-                            if(typeof att === 'object' && att.justified) displaySt = '<span class="text-blue-600 font-bold">Falta (Justificada)</span>';
-                            html += `<tr class="hover:bg-gray-50"><td class="p-3 font-bold">${s.name}</td><td class="p-3">${fmtD}</td><td class="p-3">${displaySt}</td><td class="p-3 opacity-75">${prof}</td></tr>`;
+                            let displaySt = st === 'P' ? '<span style="color: #16a34a; font-weight: bold;">Presente</span>' : '<span style="color: #dc2626; font-weight: bold;">Falta</span>';
+                            if(typeof att === 'object' && att.justified) displaySt = '<span style="color: #2563eb; font-weight: bold;">Falta (Justificada)</span>';
+                            html += `<tr><td style="padding: 12px; border-bottom: 1px solid #f3f4f6; font-weight: bold;">${s.name}</td><td style="padding: 12px; border-bottom: 1px solid #f3f4f6;">${fmtD}</td><td style="padding: 12px; border-bottom: 1px solid #f3f4f6;">${displaySt}</td><td style="padding: 12px; border-bottom: 1px solid #f3f4f6; opacity: 0.75;">${prof}</td></tr>`;
                         });
                     }
                 });
                 html += `</tbody></table></div>`;
             } else {
                 html += `
-                <div class="border border-gray-200 rounded-lg overflow-hidden">
-                    <table class="w-full text-xs text-left">
-                        <thead class="bg-school-green text-white uppercase text-[10px] tracking-wider">
-                            <tr><th class="p-3">Aluno</th><th class="p-3">Data</th><th class="p-3">Dever</th><th class="p-3">Comport.</th><th class="p-3">Anotação</th><th class="p-3">Professor</th></tr>
+                <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden;">
+                    <table style="width: 100%; text-align: left; font-size: 12px; border-collapse: collapse;">
+                        <thead class="print-bg-green">
+                            <tr>
+                                <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">Aluno</th>
+                                <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">Data</th>
+                                <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">Dever</th>
+                                <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">Comportamento</th>
+                                <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">Anotação</th>
+                                <th style="padding: 12px; border-bottom: 1px solid #e5e7eb;">Professor</th>
+                            </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100 text-gray-700 font-medium">`;
+                        <tbody style="color: #374151; font-weight: 500;">`;
                 
                 studentsToPrint.forEach(s => {
                     const sub = ensureSubjectData(s, appData.currentSubject);
                     if(sub.dailyLogs) {
                         Object.entries(sub.dailyLogs).filter(([d]) => dateFilterFn(d)).sort((a,b) => b[0].localeCompare(a[0])).forEach(([date, l]) => {
                             let fmtD = date.split('-').reverse().join('/');
-                            let hw = l.homework ? '<span class="text-green-600 font-bold">Sim</span>' : '<span class="text-gray-400">Não</span>';
+                            let hw = l.homework ? '<span style="color: #16a34a; font-weight: bold;">Sim</span>' : '<span style="color: #9ca3af;">Não</span>';
                             let prof = l.teacherName || '--';
-                            html += `<tr class="hover:bg-gray-50"><td class="p-3 font-bold">${s.name}</td><td class="p-3">${fmtD}</td><td class="p-3">${hw}</td><td class="p-3">${l.behavior}</td><td class="p-3 opacity-75">${l.note||'-'}</td><td class="p-3 opacity-75">${prof}</td></tr>`;
+                            html += `<tr><td style="padding: 12px; border-bottom: 1px solid #f3f4f6; font-weight: bold;">${s.name}</td><td style="padding: 12px; border-bottom: 1px solid #f3f4f6;">${fmtD}</td><td style="padding: 12px; border-bottom: 1px solid #f3f4f6;">${hw}</td><td style="padding: 12px; border-bottom: 1px solid #f3f4f6;">${l.behavior}</td><td style="padding: 12px; border-bottom: 1px solid #f3f4f6; opacity: 0.75;">${l.note||'-'}</td><td style="padding: 12px; border-bottom: 1px solid #f3f4f6; opacity: 0.75;">${prof}</td></tr>`;
                         });
                     }
                 });
@@ -2368,8 +2750,8 @@
             printArea.innerHTML = html;
             closeModal('modal-reports');
             
-            // Disparar impressão. O CSS @media print cuida de esconder o resto do site.
-            window.print();
+            // Timeout leve para renderizar o html antes de chamar o print
+            setTimeout(() => { window.print(); }, 300);
         }
 
 
@@ -2459,7 +2841,6 @@
             const isP = currentUser && currentUser.role === 'parent'; 
             document.getElementById('report-tools').classList.toggle('hidden', isP || !appData.currentSubject); 
             document.getElementById('obs-subject-label').innerText = appData.currentSubject || '';
-            // Caixa de mensagem foi removida
             document.getElementById('modal-report').classList.remove('hidden');
         }
 
@@ -2486,58 +2867,94 @@
             const status = document.getElementById('report-status').innerText;
             
             let html = `
-                <div class="flex items-center gap-6 mb-6 pb-4 border-b-2 border-school-green">
-                    <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" onerror="this.src='https://placehold.co/150x50/png?text=CONCENAL'" class="h-16">
+                <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #047857;">
+                    <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" style="height: 64px;">
                     <div>
-                        <h2 class="text-2xl font-bold text-gray-800 leading-none mb-1">${student.name}</h2>
-                        <p class="text-[10px] text-school-green uppercase font-bold tracking-widest">Histórico Acadêmico Unificado • ${appData.currentClass} • ${now.getFullYear()}</p>
+                        <h2 style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 0; line-height: 1;">${student.name}</h2>
+                        <p style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: bold; letter-spacing: 0.1em; margin: 4px 0 0 0;">Histórico Acadêmico Unificado • ${appData.currentClass} • ${now.getFullYear()}</p>
                     </div>
                 </div>
 
-                <div class="mb-6 grid grid-cols-4 gap-4">
-                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
-                        <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">Média Global</p>
-                        <h3 class="text-2xl font-bold text-blue-700">${avg}</h3>
+                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+                    <div style="background-color: #eff6ff; padding: 16px; border-radius: 12px; border: 1px solid #dbeafe;">
+                        <p style="font-size: 10px; font-weight: bold; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 4px 0;">Média Global</p>
+                        <h3 style="font-size: 24px; font-weight: bold; color: #1d4ed8; margin: 0;">${avg}</h3>
                     </div>
-                    <div class="bg-green-50 p-4 rounded-xl border border-green-100">
-                        <p class="text-[10px] font-bold text-green-500 uppercase tracking-widest mb-1">Frequência</p>
-                        <h3 class="text-2xl font-bold text-green-700">${freq}</h3>
+                    <div style="background-color: #f0fdf4; padding: 16px; border-radius: 12px; border: 1px solid #dcfce3;">
+                        <p style="font-size: 10px; font-weight: bold; color: #22c55e; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 4px 0;">Frequência</p>
+                        <h3 style="font-size: 24px; font-weight: bold; color: #15803d; margin: 0;">${freq}</h3>
                     </div>
-                    <div class="bg-red-50 p-4 rounded-xl border border-red-100">
-                        <p class="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Faltas</p>
-                        <h3 class="text-xl font-bold text-red-700 mt-1">${faults}</h3>
+                    <div style="background-color: #fef2f2; padding: 16px; border-radius: 12px; border: 1px solid #fee2e2;">
+                        <p style="font-size: 10px; font-weight: bold; color: #ef4444; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 4px 0;">Faltas</p>
+                        <h3 style="font-size: 20px; font-weight: bold; color: #b91c1c; margin: 4px 0 0 0;">${faults}</h3>
                     </div>
-                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
-                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Status Atual</p>
-                        <h3 class="text-sm font-bold text-gray-800 mt-2">${status}</h3>
+                    <div style="background-color: #f9fafb; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                        <p style="font-size: 10px; font-weight: bold; color: #6b7280; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 4px 0;">Status Atual</p>
+                        <h3 style="font-size: 14px; font-weight: bold; color: #1f2937; margin: 8px 0 0 0;">${status}</h3>
                     </div>
                 </div>
             `;
             
-            // Copia a tabela exata que já foi renderizada no modal, com estilização forçada
-            const tableHTML = document.querySelector('#modal-report table').outerHTML;
-            html += `<div class="mb-6 border border-gray-200 rounded-lg overflow-hidden">${tableHTML}</div>`;
+            // Pega as linhas da tabela e aplica estilos inline fortes para forçar a impressão perfeita
+            const trs = Array.from(document.querySelectorAll('#unified-report-body tr'));
+            let tableRowsStr = '';
+            trs.forEach(tr => {
+                const tds = Array.from(tr.querySelectorAll('td'));
+                tableRowsStr += `<tr>`;
+                tds.forEach((td, idx) => {
+                    let borderLeft = idx >= 7 ? 'border-left: 1px solid #e5e7eb;' : '';
+                    let borderRight = idx === 0 ? 'border-right: 1px solid #e5e7eb;' : '';
+                    tableRowsStr += `<td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; ${borderLeft} ${borderRight}">${td.innerHTML}</td>`;
+                });
+                tableRowsStr += `</tr>`;
+            });
+
+            html += `
+                <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
+                    <table style="width: 100%; text-align: center; font-size: 12px; border-collapse: collapse;">
+                        <thead class="print-bg-gray">
+                            <tr style="color: #6b7280; font-size: 10px; text-transform: uppercase;">
+                                <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Disciplina</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U1</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U2</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U3</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U4</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U5</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U6</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb;">Faltas</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb;">Média</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb; color: #ef4444;">Rec</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb;">Situação</th>
+                            </tr>
+                        </thead>
+                        <tbody style="background-color: white;">
+                            ${tableRowsStr}
+                        </tbody>
+                    </table>
+                </div>
+            `;
 
             // Observações
-            html += `<h3 class="text-sm font-bold uppercase mt-8 border-b-2 border-school-green pb-2 mb-4 text-school-green tracking-widest">Pareceres Pedagógicos</h3>`;
+            html += `<h3 style="font-size: 14px; font-weight: bold; text-transform: uppercase; margin-top: 32px; border-bottom: 2px solid #047857; padding-bottom: 8px; margin-bottom: 16px; color: #047857; letter-spacing: 0.1em;">Pareceres Pedagógicos</h3>`;
             const obsItems = document.querySelectorAll('#observations-list > div.bg-white');
             if(obsItems.length === 0) {
-                html += '<p class="text-xs italic text-gray-500">Nenhum parecer registrado no sistema.</p>';
+                html += '<p style="font-size: 12px; font-style: italic; color: #6b7280;">Nenhum parecer registrado no sistema.</p>';
             } else {
-                html += `<div class="grid grid-cols-1 gap-3">`;
+                html += `<div style="display: grid; grid-template-columns: 1fr; gap: 12px;">`;
                 obsItems.forEach(el => {
                     const headerHtml = el.querySelector('.flex').innerHTML;
                     const pText = el.querySelector('p').innerText;
-                    html += `<div class="bg-gray-50 p-4 rounded-xl border border-gray-200 text-xs break-inside-avoid">
-                        <div class="flex justify-between font-bold border-b border-gray-200 pb-2 mb-2 text-[10px] uppercase text-gray-500">${headerHtml}</div>
-                        <p class="text-gray-800 leading-relaxed">${pText}</p>
+                    html += `
+                    <div style="background-color: #f9fafb; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; font-size: 12px; page-break-inside: avoid;">
+                        <div style="display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 8px; font-size: 10px; text-transform: uppercase; color: #6b7280;">${headerHtml}</div>
+                        <p style="color: #1f2937; line-height: 1.6; margin: 0;">${pText}</p>
                     </div>`;
                 });
                 html += `</div>`;
             }
 
             printArea.innerHTML = html;
-            window.print();
+            setTimeout(() => { window.print(); }, 300);
         }
 
         function openJustifyModal(sid){
