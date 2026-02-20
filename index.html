@@ -228,8 +228,7 @@
                 </div>
                 <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-100"><tbody id="attendance-body" class="bg-white"></tbody></table></div>
                 <div class="p-4 bg-gray-50 border-t flex justify-end gap-2" id="attendance-actions">
-                    <button onclick="openReportsModal('attendance')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>
-                    <button onclick="saveDailyAttendance()" class="bg-school-green text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-green-700 transition flex items-center gap-2"><i class="fas fa-save"></i> Salvar Chamada</button>
+                    <!-- Preenchido dinamicamente no JS -->
                 </div>
             </div>
 
@@ -246,15 +245,14 @@
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-100">
-                        <thead class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase text-center">
-                            <tr><th class="px-4 py-4 text-left">Estudante</th><th class="w-32">Dever</th><th class="w-48">Comportamento</th><th class="w-48">Anotação (Opcional)</th></tr>
+                        <thead class="bg-gray-50 text-[10px] font-bold text-gray-400 uppercase text-center" id="daily-thead">
+                            <!-- Preenchido via JS para controlar a visão dos pais -->
                         </thead>
                         <tbody id="daily-body" class="bg-white text-sm"></tbody>
                     </table>
                 </div>
                 <div class="p-4 bg-gray-50 border-t flex justify-end gap-2" id="daily-actions">
-                    <button onclick="openReportsModal('daily')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>
-                    <button onclick="saveDailyLog()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition flex items-center gap-2"><i class="fas fa-book"></i> Gravar Diário</button>
+                    <!-- Preenchido dinamicamente no JS -->
                 </div>
             </div>
 
@@ -620,7 +618,7 @@
             
             <div class="p-6 flex-1 overflow-y-auto bg-white">
                 
-                <!-- ADDED Resumo Global -->
+                <!-- Resumo Global -->
                 <div class="mb-6 grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
                         <p class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1">Média Global</p>
@@ -642,10 +640,6 @@
                         <h3 class="text-sm font-bold text-gray-800 mt-2" id="report-status">--</h3>
                     </div>
                 </div>
-                <div id="report-parent-msg" class="hidden mb-4 p-3 bg-yellow-50 text-yellow-800 text-xs rounded-lg border border-yellow-200 font-bold">
-                    <i class="fas fa-info-circle mr-1"></i> Visão de Responsável - Apenas visualização.
-                </div>
-                <!-- END ADDED -->
 
                 <div class="overflow-x-auto mb-6">
                     <table class="min-w-full divide-y divide-gray-200 text-center border">
@@ -920,7 +914,7 @@
             }
         }
 
-        // --- FUNCIONALIDADES DO CHAT, MODAIS E ALERTAS (CORREÇÕES ADICIONADAS) ---
+        // --- FUNCIONALIDADES DO CHAT, MODAIS E ALERTAS ---
         function showToast(title, msg) {
             const container = document.getElementById('toast-container');
             if(!container) return;
@@ -1896,6 +1890,7 @@
             const dateInput = document.getElementById('attendance-date');
             if(!dateInput) return;
             const date = dateInput.value; 
+            const isParent = currentUser && currentUser.role === 'parent';
             const canE = currentUser && (
                 currentUser.role === 'admin' || 
                 (currentUser.role === 'teacher' && 
@@ -1907,9 +1902,9 @@
             
             const actionsContainer = document.getElementById('attendance-actions');
             if (actionsContainer) {
-                // SÓ quem pode editar a chamada vê o botão de salvar. O botão de PDF todos podem ver.
+                // SÓ mostra o PDF se não for o responsável. O botão salvar mostra só para quem edita.
                 actionsContainer.innerHTML = `
-                    <button onclick="openReportsModal('attendance')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>
+                    ${!isParent ? `<button onclick="openReportsModal('attendance')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>` : ''}
                     ${canE ? `<button onclick="saveDailyAttendance()" class="bg-school-green text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-green-700 transition flex items-center gap-2"><i class="fas fa-save"></i> Salvar Chamada</button>` : ''}
                 `;
             }
@@ -2012,11 +2007,28 @@
             loadDailyData();
         }
 
+        function toggleAllHw() {
+            const students = getStudentsByClass();
+            if(students.length === 0) return;
+            
+            const allMarked = students.every(s => tempDaily[s.id] && tempDaily[s.id].homework);
+            const newState = !allMarked;
+            
+            students.forEach(s => {
+                if(!tempDaily[s.id]) tempDaily[s.id] = { homework: false, behavior: 'Normal', note: '' };
+                tempDaily[s.id].homework = newState;
+                tempDaily[s.id].teacherName = currentUser.displayName || currentUser.name;
+            });
+            renderDailyTable();
+        }
+
         function renderDailyTable() {
+            const thead = document.getElementById('daily-thead');
             const tbody = document.getElementById('daily-body'); 
-            if(!tbody) return;
+            if(!tbody || !thead) return;
             tbody.innerHTML = '';
             
+            const isParent = currentUser && currentUser.role === 'parent';
             const canE = currentUser && (
                 currentUser.role === 'admin' || 
                 (currentUser.role === 'teacher' && 
@@ -2024,11 +2036,25 @@
                  currentUser.assignments[appData.currentSubject] && 
                  currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
             ); 
+
+            // Renderiza o cabeçalho baseando-se no papel (oculta Anotação para pais, e adiciona botão Marcar Todos para profs)
+            thead.innerHTML = `
+                <tr>
+                    <th class="px-4 py-4 text-left">Estudante</th>
+                    <th class="w-32">
+                        Dever 
+                        ${canE ? `<button onclick="toggleAllHw()" class="ml-2 text-school-green hover:text-green-800" title="Marcar/Desmarcar todos"><i class="fas fa-check-double"></i></button>` : ''}
+                    </th>
+                    <th class="w-48">Comportamento</th>
+                    ${!isParent ? `<th class="w-48">Anotação (Opcional)</th>` : ''}
+                </tr>
+            `;
             
             const actionsContainer = document.getElementById('daily-actions');
             if (actionsContainer) {
+                // SÓ mostra o botão PDF se não for responsável
                 actionsContainer.innerHTML = `
-                    <button onclick="openReportsModal('daily')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>
+                    ${!isParent ? `<button onclick="openReportsModal('daily')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>` : ''}
                     ${canE ? `<button onclick="saveDailyLog()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition flex items-center gap-2"><i class="fas fa-book"></i> Gravar Diário</button>` : ''}
                 `;
             }
@@ -2053,9 +2079,11 @@
                             <option ${l.behavior==='Ruim'?'selected':''}>Ruim</option>
                         </select>
                     </td>
+                    ${!isParent ? `
                     <td class="px-2 py-4 text-center">
                         <input type="text" value="${l.note || ''}" onchange="updateDailyNote('${s.id}', this.value)" ${!canE?'disabled':''} class="border border-gray-100 rounded-lg text-xs p-1.5 bg-gray-50 outline-none w-full" placeholder="...">
                     </td>
+                    ` : ''}
                 </tr>`;
             });
         }
@@ -2277,16 +2305,29 @@
                 dateFilterFn = (dStr) => dStr >= weekAgo;
             }
 
+            // Layout Profissional para Frequência e Diário de Bordo
             let html = `
-                <div class="text-center mb-6">
-                    <h2 class="text-xl font-bold uppercase">Relatório Oficial - CONCENAL</h2>
-                    <p class="text-sm">Turma: ${appData.currentClass} | Disciplina: ${appData.currentSubject}</p>
-                    <p class="text-xs text-gray-500">Documento gerado em ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}</p>
+                <div class="flex items-center gap-6 mb-8 pb-4 border-b-2 border-school-green">
+                    <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" onerror="this.src='https://placehold.co/150x50/png?text=CONCENAL'" class="h-16">
+                    <div>
+                        <h2 class="text-2xl font-bold uppercase text-gray-800 leading-none mb-1">Relatório Oficial - CONCENAL</h2>
+                        <p class="text-[12px] text-school-green uppercase font-bold tracking-widest">
+                            Turma: ${appData.currentClass} • Disciplina: ${appData.currentSubject}
+                        </p>
+                        <p class="text-[9px] text-gray-400 font-bold uppercase tracking-widest mt-1">Gerado em ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}</p>
+                    </div>
                 </div>
             `;
 
             if(type === 'attendance') {
-                html += `<table class="w-full text-xs text-left border-collapse"><thead class="bg-gray-100 border-b-2 border-gray-800"><tr><th class="p-2 border">Aluno</th><th class="p-2 border">Data</th><th class="p-2 border">Status</th><th class="p-2 border">Professor/Resp.</th></tr></thead><tbody>`;
+                html += `
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-school-green text-white uppercase text-[10px] tracking-wider">
+                            <tr><th class="p-3">Aluno</th><th class="p-3">Data</th><th class="p-3">Status</th><th class="p-3">Professor/Resp.</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-gray-700 font-medium">`;
+                
                 studentsToPrint.forEach(s => {
                     const sub = ensureSubjectData(s, appData.currentSubject);
                     if(sub.attendance) {
@@ -2294,27 +2335,34 @@
                             let st = typeof att === 'string' ? att : att.status;
                             let prof = typeof att === 'object' && att.teacherName ? att.teacherName : '--';
                             let fmtD = date.split('-').reverse().join('/');
-                            let displaySt = st === 'P' ? 'Presente' : 'Falta';
-                            if(typeof att === 'object' && att.justified) displaySt = 'Falta (Justificada)';
-                            html += `<tr><td class="p-2 border font-bold">${s.name}</td><td class="p-2 border">${fmtD}</td><td class="p-2 border">${displaySt}</td><td class="p-2 border">${prof}</td></tr>`;
+                            let displaySt = st === 'P' ? '<span class="text-green-600 font-bold">Presente</span>' : '<span class="text-red-600 font-bold">Falta</span>';
+                            if(typeof att === 'object' && att.justified) displaySt = '<span class="text-blue-600 font-bold">Falta (Justificada)</span>';
+                            html += `<tr class="hover:bg-gray-50"><td class="p-3 font-bold">${s.name}</td><td class="p-3">${fmtD}</td><td class="p-3">${displaySt}</td><td class="p-3 opacity-75">${prof}</td></tr>`;
                         });
                     }
                 });
-                html += `</tbody></table>`;
+                html += `</tbody></table></div>`;
             } else {
-                html += `<table class="w-full text-xs text-left border-collapse"><thead class="bg-gray-100 border-b-2 border-gray-800"><tr><th class="p-2 border">Aluno</th><th class="p-2 border">Data</th><th class="p-2 border">Dever</th><th class="p-2 border">Comport.</th><th class="p-2 border">Notas</th><th class="p-2 border">Prof.</th></tr></thead><tbody>`;
+                html += `
+                <div class="border border-gray-200 rounded-lg overflow-hidden">
+                    <table class="w-full text-xs text-left">
+                        <thead class="bg-school-green text-white uppercase text-[10px] tracking-wider">
+                            <tr><th class="p-3">Aluno</th><th class="p-3">Data</th><th class="p-3">Dever</th><th class="p-3">Comport.</th><th class="p-3">Anotação</th><th class="p-3">Professor</th></tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-gray-700 font-medium">`;
+                
                 studentsToPrint.forEach(s => {
                     const sub = ensureSubjectData(s, appData.currentSubject);
                     if(sub.dailyLogs) {
                         Object.entries(sub.dailyLogs).filter(([d]) => dateFilterFn(d)).sort((a,b) => b[0].localeCompare(a[0])).forEach(([date, l]) => {
                             let fmtD = date.split('-').reverse().join('/');
-                            let hw = l.homework ? 'Sim' : 'Não';
+                            let hw = l.homework ? '<span class="text-green-600 font-bold">Sim</span>' : '<span class="text-gray-400">Não</span>';
                             let prof = l.teacherName || '--';
-                            html += `<tr><td class="p-2 border font-bold">${s.name}</td><td class="p-2 border">${fmtD}</td><td class="p-2 border">${hw}</td><td class="p-2 border">${l.behavior}</td><td class="p-2 border">${l.note||'-'}</td><td class="p-2 border">${prof}</td></tr>`;
+                            html += `<tr class="hover:bg-gray-50"><td class="p-3 font-bold">${s.name}</td><td class="p-3">${fmtD}</td><td class="p-3">${hw}</td><td class="p-3">${l.behavior}</td><td class="p-3 opacity-75">${l.note||'-'}</td><td class="p-3 opacity-75">${prof}</td></tr>`;
                         });
                     }
                 });
-                html += `</tbody></table>`;
+                html += `</tbody></table></div>`;
             }
 
             printArea.innerHTML = html;
@@ -2362,7 +2410,7 @@
                     avgCount++;
                 }
 
-                let row = `<tr class="hover:bg-gray-50"><td class="px-4 py-3 text-left font-bold border-r">${subjName}</td>`;
+                let row = `<tr class="hover:bg-gray-50"><td class="px-4 py-3 text-left font-bold border-r text-gray-800">${subjName}</td>`;
                 for(let i=0; i<6; i++) {
                     const uVal = d.units?.[i];
                     const vClass = (uVal && uVal < 6) ? 'text-red-500 font-bold' : '';
@@ -2411,7 +2459,7 @@
             const isP = currentUser && currentUser.role === 'parent'; 
             document.getElementById('report-tools').classList.toggle('hidden', isP || !appData.currentSubject); 
             document.getElementById('obs-subject-label').innerText = appData.currentSubject || '';
-            document.getElementById('report-parent-msg').classList.toggle('hidden', !isP); 
+            // Caixa de mensagem foi removida
             document.getElementById('modal-report').classList.remove('hidden');
         }
 
@@ -2428,30 +2476,65 @@
         }
 
         function printUnifiedReport() {
-            // Reaproveitar lógica do print area
             const printArea = document.getElementById('print-area');
             const student = currentStudentForReport;
             const now = new Date();
+
+            const avg = document.getElementById('report-avg').innerText;
+            const freq = document.getElementById('report-freq').innerText;
+            const faults = document.getElementById('report-days-count').innerText;
+            const status = document.getElementById('report-status').innerText;
             
             let html = `
-                <div class="text-center mb-6 border-b pb-4">
-                    <h2 class="text-2xl font-bold uppercase">Boletim Escolar Unificado - CONCENAL</h2>
-                    <p class="text-lg font-bold mt-2">Aluno(a): ${student.name}</p>
-                    <p class="text-sm">Turma: ${student.class} | Ano Letivo: ${now.getFullYear()}</p>
+                <div class="flex items-center gap-6 mb-6 pb-4 border-b-2 border-school-green">
+                    <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" onerror="this.src='https://placehold.co/150x50/png?text=CONCENAL'" class="h-16">
+                    <div>
+                        <h2 class="text-2xl font-bold text-gray-800 leading-none mb-1">${student.name}</h2>
+                        <p class="text-[10px] text-school-green uppercase font-bold tracking-widest">Histórico Acadêmico Unificado • ${appData.currentClass} • ${now.getFullYear()}</p>
+                    </div>
+                </div>
+
+                <div class="mb-6 grid grid-cols-4 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-xl border border-blue-100">
+                        <p class="text-[10px] font-bold text-blue-500 uppercase tracking-widest mb-1">Média Global</p>
+                        <h3 class="text-2xl font-bold text-blue-700">${avg}</h3>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-100">
+                        <p class="text-[10px] font-bold text-green-500 uppercase tracking-widest mb-1">Frequência</p>
+                        <h3 class="text-2xl font-bold text-green-700">${freq}</h3>
+                    </div>
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                        <p class="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Faltas</p>
+                        <h3 class="text-xl font-bold text-red-700 mt-1">${faults}</h3>
+                    </div>
+                    <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
+                        <p class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-1">Status Atual</p>
+                        <h3 class="text-sm font-bold text-gray-800 mt-2">${status}</h3>
+                    </div>
                 </div>
             `;
             
-            // Copia a tabela exata que já foi renderizada no modal
+            // Copia a tabela exata que já foi renderizada no modal, com estilização forçada
             const tableHTML = document.querySelector('#modal-report table').outerHTML;
-            html += tableHTML;
+            html += `<div class="mb-6 border border-gray-200 rounded-lg overflow-hidden">${tableHTML}</div>`;
 
             // Observações
-            html += `<h3 class="text-sm font-bold uppercase mt-8 border-b pb-2 mb-4">Pareceres Pedagógicos</h3>`;
-            const obsItems = document.querySelectorAll('#observations-list div.bg-white');
-            if(obsItems.length === 0) html += '<p class="text-xs italic text-gray-500">Nenhum parecer registrado.</p>';
-            obsItems.forEach(el => {
-                html += `<div class="mb-4 text-xs"><div class="font-bold border-b pb-1 mb-1">${el.querySelector('.flex span').innerText}</div><p>${el.querySelector('p').innerText}</p></div>`;
-            });
+            html += `<h3 class="text-sm font-bold uppercase mt-8 border-b-2 border-school-green pb-2 mb-4 text-school-green tracking-widest">Pareceres Pedagógicos</h3>`;
+            const obsItems = document.querySelectorAll('#observations-list > div.bg-white');
+            if(obsItems.length === 0) {
+                html += '<p class="text-xs italic text-gray-500">Nenhum parecer registrado no sistema.</p>';
+            } else {
+                html += `<div class="grid grid-cols-1 gap-3">`;
+                obsItems.forEach(el => {
+                    const headerHtml = el.querySelector('.flex').innerHTML;
+                    const pText = el.querySelector('p').innerText;
+                    html += `<div class="bg-gray-50 p-4 rounded-xl border border-gray-200 text-xs break-inside-avoid">
+                        <div class="flex justify-between font-bold border-b border-gray-200 pb-2 mb-2 text-[10px] uppercase text-gray-500">${headerHtml}</div>
+                        <p class="text-gray-800 leading-relaxed">${pText}</p>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
 
             printArea.innerHTML = html;
             window.print();
