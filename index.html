@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - 2026</title>
+    <title>DIÁRIO ESCOLAR - CONCENAL</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -190,8 +190,8 @@
                         <thead class="bg-gray-50 text-gray-400 font-bold text-[10px] uppercase">
                             <tr>
                                 <th class="px-4 py-4 text-left w-56 sticky left-0 bg-gray-50 shadow-sm border-r z-10">Aluno</th>
-                                <th class="w-14">U1</th><th class="w-14">U2</th><th class="w-14">U3</th><th class="w-14">U4</th><th class="w-14">U5</th><th class="w-14">U6</th>
-                                <th class="w-16 text-yellow-600 bg-yellow-50/50 border-l" title="Pontos Extras (Soma na Média)"><i class="fas fa-star mr-1"></i> Extra</th>
+                                <th class="w-16">U1</th><th class="w-16">U2</th><th class="w-16">U3</th><th class="w-16">U4</th><th class="w-16">U5</th><th class="w-16">U6</th>
+                                <th class="w-10 text-yellow-600 bg-yellow-50/50 border-l" title="Habilitar Pontos Extras (Por Unidade)"><i class="fas fa-star"></i></th>
                                 <th class="w-24 bg-blue-50 text-blue-700 border-l">Faltas</th>
                                 <th class="w-16 bg-gray-100 text-gray-600 border-l">Média</th>
                                 <th class="w-20 text-red-600 border-l">Rec</th>
@@ -229,7 +229,7 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto"><table class="min-w-full divide-y divide-gray-100"><tbody id="attendance-body" class="bg-white"></tbody></table></div>
-                <div class="p-4 bg-gray-50 border-t flex justify-end gap-2" id="attendance-actions">
+                <div class="p-4 bg-gray-50 border-t flex justify-end gap-2 items-center" id="attendance-actions">
                     <!-- Preenchido dinamicamente no JS -->
                 </div>
             </div>
@@ -364,7 +364,7 @@
                 <!-- Zerar Notas -->
                 <div class="bg-orange-50 border border-orange-100 rounded-xl p-4">
                     <h4 class="font-bold text-orange-800 text-xs uppercase mb-2"><i class="fas fa-eraser mr-1"></i> Zerar Notas da Turma</h4>
-                    <p class="text-[10px] text-orange-600 mb-3">Limpa todas as notas de todos os alunos APENAS na disciplina atual (<span id="mng-subj-name" class="font-bold"></span>).</p>
+                    <p class="text-[10px] text-orange-600 mb-3">Limpa todas as notas e extras de todos os alunos APENAS na disciplina atual (<span id="mng-subj-name" class="font-bold"></span>).</p>
                     <button onclick="clearAllGrades()" class="w-full bg-orange-500 text-white px-4 py-2.5 rounded-lg text-xs font-bold uppercase shadow hover:bg-orange-600 transition">Zerar Notas Disciplina</button>
                 </div>
 
@@ -406,7 +406,7 @@
                         <button onclick="closeModal('modal-chat')" class="text-gray-400 hover:text-red-500 transition hidden md:block"><i class="fas fa-times fa-lg"></i></button>
                     </div>
                 </div>
-                <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-[#F3F4F6] flex flex-col gap-2">
+                <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-[#F3F4F6] flex flex-col gap-2 relative">
                     <!-- Mensagens -->
                 </div>
                 <div id="chat-attachment-preview" class="hidden bg-gray-100 p-2 text-xs text-gray-600 border-t flex justify-between items-center">
@@ -418,7 +418,7 @@
                         <input type="file" id="chat-file" class="hidden" onchange="handleChatFile(this)">
                         <i class="fas fa-paperclip fa-lg"></i>
                     </label>
-                    <input type="text" id="chat-input" class="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-school-green focus:ring-1 focus:ring-school-green transition" placeholder="Digite sua mensagem..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                    <input type="text" id="chat-input" class="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-school-green focus:ring-1 focus:ring-school-green transition" placeholder="Digite sua mensagem..." onkeypress="if(event.key === 'Enter') { event.preventDefault(); sendChatMessage(); }">
                     <button onclick="sendChatMessage()" class="bg-school-green text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-green-700 transition shadow-md"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
@@ -869,6 +869,7 @@
         let activitiesUnsubscribe = null;
         let userProfileUnsubscribe = null;
         let notificationsUnsubscribe = null;
+        let chatUnsubscribe = null;
 
         // --- INICIALIZAÇÃO FIREBASE REFORÇADA ---
         const initFirebase = async () => {
@@ -1778,17 +1779,22 @@
         function calculateStatus(d, subjName) {
             let sum = 0, filled = 0;
             if(d.units && Array.isArray(d.units)) {
-                d.units.forEach(u => { if (u !== null && u !== "") { sum += parseFloat(u); filled++; } });
+                for(let i=0; i<6; i++) {
+                    if (d.units[i] !== null && d.units[i] !== "") {
+                        let base = parseFloat(d.units[i]);
+                        // Pontuação Extra na unidade atual (se habilitado)
+                        let ext = (d.extraEnabled && d.extras && d.extras[i]) ? parseFloat(d.extras[i]) : 0;
+                        let unitTotal = base + ext;
+                        if(unitTotal > 10.0) unitTotal = 10.0; // Teto de nota
+                        
+                        sum += unitTotal;
+                        filled++;
+                    }
+                }
             }
-            
-            // Pontos Extras Logic
-            let ext = (d.extraEnabled && d.extra) ? parseFloat(d.extra) : 0;
             
             let avgNum = filled > 0 ? (sum / filled) : 0;
             if (filled === 6) avgNum = (sum / 6);
-            
-            avgNum += ext; // Soma extra
-            if (avgNum > 10) avgNum = 10.0; // Teto de nota
             
             let avg = filled > 0 ? avgNum.toFixed(1) : '-';
 
@@ -2040,7 +2046,8 @@
             listenForNotifications();
 
             // CHAT SYNC
-            getCollection('concenal_chat').onSnapshot(snap => {
+            if (chatUnsubscribe) chatUnsubscribe();
+            chatUnsubscribe = getCollection('concenal_chat').onSnapshot(snap => {
                 let messages = [];
                 let newMessagesArrived = false;
 
@@ -2101,7 +2108,7 @@
 
             currentChatMessages.forEach(m => {
                 const isSent = m.from === currentUser?.id;
-                const date = new Date(m.timestamp).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'});
+                const date = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
                 let fH = '';
                 if(m.file) {
                      if(m.file.type.startsWith('image')) fH = `<img src="${m.file.data}" class="max-h-48 rounded-lg mb-2 shadow-sm cursor-pointer" onclick="viewDoc('${m.file.data}')">`;
@@ -2125,7 +2132,8 @@
                     </div>
                 `;
             });
-            div.scrollTop = div.scrollHeight;
+            
+            setTimeout(() => { div.scrollTop = div.scrollHeight; }, 50);
         }
 
         // --- SCHEDULE (HORÁRIOS) & CALENDAR ---
@@ -2348,10 +2356,11 @@
         function ensureSubjectData(student, subject) {
             if (!student.subjects) student.subjects = {};
             if (!student.subjects[subject]) {
-                student.subjects[subject] = { units: [null,null,null,null,null,null], attendance: {}, dailyLogs: {}, recovery: null, observations: [], extra: null, extraEnabled: false };
+                student.subjects[subject] = { units: [null,null,null,null,null,null], extras: [null,null,null,null,null,null], attendance: {}, dailyLogs: {}, recovery: null, observations: [], extraEnabled: false };
             } else {
                 const d = student.subjects[subject];
                 if (!d.units || !Array.isArray(d.units)) d.units = [null,null,null,null,null,null];
+                if (!d.extras || !Array.isArray(d.extras)) d.extras = [null,null,null,null,null,null];
                 if (!d.attendance) d.attendance = {};
                 if (!d.dailyLogs) d.dailyLogs = {};
                 if (!d.observations) d.observations = [];
@@ -2385,7 +2394,11 @@
                 const sd = ensureSubjectData(s, subj);
                 for(let i=0; i<6; i++) {
                     if(sd.units[i] !== null && sd.units[i] !== "") {
-                        classSums[i] += parseFloat(sd.units[i]);
+                        let base = parseFloat(sd.units[i]);
+                        let ext = (sd.extraEnabled && sd.extras && sd.extras[i]) ? parseFloat(sd.extras[i]) : 0;
+                        let final = base + ext;
+                        if(final > 10.0) final = 10.0;
+                        classSums[i] += final;
                         classCounts[i]++;
                     }
                 }
@@ -2393,9 +2406,17 @@
 
             const classAvgs = classSums.map((sum, i) => classCounts[i] > 0 ? parseFloat((sum / classCounts[i]).toFixed(1)) : null);
 
-            // Dados Gráfico
+            // Dados Gráfico do Aluno (Nota + Extra)
             const labels = ['U1', 'U2', 'U3', 'U4', 'U5', 'U6'];
-            const studentData = units.map(u => u !== null && u !== "" ? parseFloat(u) : null);
+            const studentData = units.map((u, i) => {
+                if(u !== null && u !== "") {
+                    let base = parseFloat(u);
+                    let ext = (d.extraEnabled && d.extras && d.extras[i]) ? parseFloat(d.extras[i]) : 0;
+                    let final = base + ext;
+                    return final > 10.0 ? 10.0 : final;
+                }
+                return null;
+            });
 
             // Análise e Alertas Inteligentes
             let alertsHtml = '';
@@ -2559,8 +2580,8 @@
                 students.forEach(s => {
                     const sd = ensureSubjectData(s, appData.currentSubject);
                     sd.units = [null,null,null,null,null,null];
+                    sd.extras = [null,null,null,null,null,null];
                     sd.recovery = null;
-                    sd.extra = null;
                     sd.extraEnabled = false;
                     batch.update(getCollection('concenal_students').doc(s.id), { [`subjects.${appData.currentSubject}`]: sd });
                 });
@@ -2616,7 +2637,6 @@
 
             list.forEach(s => {
                 const d = ensureSubjectData(s, appData.currentSubject); const c = calculateStatus(d, appData.currentSubject);
-                let ext = d.extra || '';
                 let extEnabled = d.extraEnabled || false;
                 
                 let warningIcon = (c.average !== '-' && parseFloat(c.average) < 6.0) ? `<i class="fas fa-exclamation-triangle text-orange-500 ml-2" title="Risco de Reprovação"></i>` : '';
@@ -2644,17 +2664,21 @@
                         </div>
                     </td>`;
                 
+                // Unidades + Extra por Unidade
                 for(let i=0; i<6; i++) { 
                     const v = d.units[i] ?? ''; 
-                    row += `<td class="px-1 border-l print-border"><input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-transparent focus:outline-none ${v!==''&&v<6?'text-red-600 font-bold':'text-green-700'}" value="${v}" onchange="updateGrade('${s.id}',${i},this.value)"></td>`; 
+                    const eVal = (d.extras && d.extras[i]) ? d.extras[i] : '';
+                    
+                    row += `<td class="px-1 border-l print-border align-middle">
+                                <input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-transparent focus:outline-none py-1 ${v!==''&&v<6?'text-red-600 font-bold':'text-green-700'}" value="${v}" onchange="updateGrade('${s.id}',${i},this.value)">
+                                ${extEnabled ? `<input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center text-[10px] text-yellow-600 bg-yellow-50 border-t border-yellow-200 focus:outline-none placeholder-yellow-300 py-1" placeholder="+ Extra" value="${eVal}" onchange="updateExtra('${s.id}',${i},this.value)">` : ''}
+                            </td>`; 
                 }
 
+                // Botão Global da Estrela do Aluno (Ativa para todas as unidades dele)
                 row += `
-                    <td class="px-1 border-l print-border bg-yellow-50/50 relative group">
-                        <div class="flex items-center justify-center gap-1">
-                            <button onclick="toggleExtra('${s.id}')" ${!canEdit?'disabled':''} class="${extEnabled ? 'text-yellow-500' : 'text-gray-300'} hover:scale-110 transition"><i class="fas fa-star"></i></button>
-                            ${extEnabled ? `<input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-10 p-1 rounded border border-yellow-200 text-center focus:outline-none text-yellow-700 font-bold text-xs shadow-sm bg-white" value="${ext}" onchange="updateExtra('${s.id}',this.value)" placeholder="0.0">` : ''}
-                        </div>
+                    <td class="px-1 border-l print-border bg-yellow-50/50 text-center">
+                        <button onclick="toggleExtra('${s.id}')" ${!canEdit?'disabled':''} class="${extEnabled ? 'text-yellow-500' : 'text-gray-300'} hover:scale-110 transition p-2"><i class="fas fa-star"></i></button>
                     </td>
                     <td class="px-1 text-center font-bold border-l cursor-pointer print-border ${c.freq<75?'text-red-700 bg-red-50':'text-blue-800'}" onclick="openReportModal('${s.id}')">${c.faults} <span class="text-[8px] font-normal opacity-40">${c.freq}%</span></td>
                     <td class="px-2 text-center font-bold border-l text-gray-700 print-border">${c.average}</td>
@@ -2671,8 +2695,8 @@
             const s = appData.students.find(x => x.id === id);
             const sd = ensureSubjectData(s, appData.currentSubject);
             sd.extraEnabled = !sd.extraEnabled;
-            if(!sd.extraEnabled) sd.extra = null; // Zera se desativado
-            getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{extraEnabled: sd.extraEnabled, extra: sd.extra}}},{merge:true});
+            if(!sd.extraEnabled) sd.extras = [null,null,null,null,null,null]; // Zera se desativado
+            getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{extraEnabled: sd.extraEnabled, extras: sd.extras}}},{merge:true});
             renderGradesTable();
         }
 
@@ -2686,17 +2710,18 @@
             students.forEach(s => {
                 const sd = ensureSubjectData(s, appData.currentSubject);
                 sd.extraEnabled = newState;
-                if(!newState) sd.extra = null;
-                batch.update(getCollection('concenal_students').doc(s.id), { [`subjects.${appData.currentSubject}.extraEnabled`]: newState, [`subjects.${appData.currentSubject}.extra`]: sd.extra });
+                if(!newState) sd.extras = [null,null,null,null,null,null];
+                batch.update(getCollection('concenal_students').doc(s.id), { [`subjects.${appData.currentSubject}.extraEnabled`]: newState, [`subjects.${appData.currentSubject}.extras`]: sd.extras });
             });
             batch.commit().then(() => renderGradesTable());
         }
 
-        function updateExtra(id, v) {
+        function updateExtra(id, i, v) {
             const s = appData.students.find(x => x.id === id); 
             const sd = ensureSubjectData(s, appData.currentSubject); 
-            sd.extra = v; 
-            getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{extra:sd.extra}}},{merge:true}); 
+            if (!sd.extras) sd.extras = [null,null,null,null,null,null];
+            sd.extras[i] = v; 
+            getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{extras:sd.extras}}},{merge:true}); 
         }
 
         function clearStudentGrades(id) {
@@ -2704,8 +2729,8 @@
                 const s = appData.students.find(x => x.id === id);
                 const sd = ensureSubjectData(s, appData.currentSubject);
                 sd.units = [null,null,null,null,null,null];
+                sd.extras = [null,null,null,null,null,null];
                 sd.recovery = null;
-                sd.extra = null;
                 sd.extraEnabled = false;
                 getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:sd}},{merge:true}).then(() => renderGradesTable());
             }
@@ -2738,15 +2763,22 @@
                  currentUser.assignments[appData.currentSubject] && 
                  currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
             ); 
+            const isAdminOrCoord = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord');
             const students = getStudentsByClass();
             
             const actionsContainer = document.getElementById('attendance-actions');
             if (actionsContainer) {
-                // SÓ mostra o PDF se não for o responsável. O botão salvar mostra só para quem edita.
-                actionsContainer.innerHTML = `
-                    ${!isParent ? `<button onclick="openReportsModal('attendance')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>` : ''}
-                    ${canE ? `<button onclick="saveDailyAttendance()" class="bg-school-green text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-green-700 transition flex items-center gap-2"><i class="fas fa-save"></i> Salvar Chamada</button>` : ''}
-                `;
+                let html = '';
+                if(!isParent) {
+                    html += `<button onclick="openReportsModal('attendance')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>`;
+                }
+                if(isAdminOrCoord) {
+                    html += `<button onclick="deleteAttendanceDay('${date}')" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-red-700 transition flex items-center gap-2"><i class="fas fa-trash"></i> Apagar Dia</button>`;
+                }
+                if(canE) {
+                    html += `<button onclick="saveDailyAttendance()" class="bg-school-green text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-green-700 transition flex items-center gap-2"><i class="fas fa-save"></i> Salvar Chamada</button>`;
+                }
+                actionsContainer.innerHTML = html;
             }
 
             // Render History Strip
@@ -2804,6 +2836,26 @@
             });
         }
         
+        async function deleteAttendanceDay(date) {
+            if(!date) return;
+            if(confirm(`Tem certeza que deseja apagar toda a chamada e registros do dia ${date.split('-').reverse().join('/')} para esta disciplina?\nIsso removerá a frequência lançada de TODOS os alunos da turma.`)) {
+                let b = db.batch();
+                getStudentsByClass().forEach(s => {
+                    const sub = ensureSubjectData(s, appData.currentSubject);
+                    if(sub.attendance && sub.attendance[date]) {
+                        delete sub.attendance[date];
+                        b.set(getCollection('concenal_students').doc(s.id), {subjects:{[appData.currentSubject]:{attendance:sub.attendance}}},{merge:true});
+                    }
+                });
+                await b.commit();
+                alert("Chamada do dia removida com sucesso!");
+                
+                const attDate = document.getElementById('attendance-date');
+                if(attDate) attDate.value = today;
+                renderAttendanceTable();
+            }
+        }
+
         function changeAttendanceDate(dateStr) {
             const attDate = document.getElementById('attendance-date');
             if(attDate) attDate.value = dateStr;
@@ -3329,8 +3381,12 @@
                     let row = `<tr class="hover:bg-gray-50"><td class="px-4 py-3 text-left font-bold border-r text-gray-800">${subjName}</td>`;
                     for(let i=0; i<6; i++) {
                         const uVal = d.units?.[i];
-                        const vClass = (uVal && uVal < 6) ? 'text-red-500 font-bold' : '';
-                        row += `<td class="${vClass}">${uVal !== undefined && uVal !== null ? uVal : '-'}</td>`;
+                        const extVal = (d.extraEnabled && d.extras && d.extras[i]) ? parseFloat(d.extras[i]) : 0;
+                        let final = (uVal !== undefined && uVal !== null && uVal !== "") ? (parseFloat(uVal) + extVal) : null;
+                        if(final > 10.0) final = 10.0;
+                        
+                        const vClass = (final !== null && final < 6) ? 'text-red-500 font-bold' : '';
+                        row += `<td class="${vClass}">${final !== null ? final : '-'}</td>`;
                     }
                     row += `<td class="border-l font-bold ${c.freq < 75 ? 'text-red-600' : 'text-blue-600'}">${c.faults}</td>`;
                     row += `<td class="border-l font-bold text-gray-800">${c.average}</td>`;
