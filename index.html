@@ -378,7 +378,7 @@
         </div>
     </div>
 
-    <!-- MODAL: CHAT RESTAURADO (COMUNICADOR REDESENHADO) -->
+    <!-- MODAL: CHAT RESTAURADO (COMUNICADOR REDESENHADO E CORRIGIDO) -->
     <div id="modal-chat" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[120] flex items-center justify-center p-2 md:p-6 backdrop-blur-md">
         <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col md:flex-row overflow-hidden relative border border-gray-200">
             <!-- Sidebar (Lista de Usuários com Busca e Filtros) -->
@@ -857,6 +857,8 @@
         const WEEKDAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
         const today = new Date().toISOString().split('T')[0];
         
+        let currentRecipientRole = ''; // Variável global de controle de cargo no chat
+        
         function getTimeslotsForClass(className) {
             if (!className) return [];
             return className.includes('EM') 
@@ -1231,11 +1233,7 @@
                 if(mobileChatHeader) mobileChatHeader.querySelector('button').classList.add('hidden'); // hide back button
                 
                 // Encontrar o Admin para redirecionar (Direção)
-                getCollection('concenal_users').where('role', 'in', ['admin', 'coord']).get().then(snap => {
-                    const adminDoc = snap.docs.find(d => d.data().role === 'admin') || snap.docs[0];
-                    const adminId = adminDoc ? adminDoc.id : 'admin_master';
-                    setChatRecipient(adminId, 'Direção (Atendimento ao Pai/Responsável)', 'Atendimento Oficial');
-                });
+                setChatRecipient('direcao', 'Direção (Atendimento ao Pai/Responsável)', 'Atendimento Oficial');
             } else {
                 const chatSidebar = document.getElementById('chat-sidebar');
                 if(chatSidebar) chatSidebar.classList.remove('hidden');
@@ -1250,6 +1248,7 @@
         function setChatRecipient(id, name, roleDesc = '') {
             chatRecipient = id;
             chatRecipientName = name;
+            currentRecipientRole = roleDesc;
             
             const btnClear = document.getElementById('btn-clear-chat');
             if(btnClear) btnClear.classList.toggle('hidden', id === 'global' && currentUser.role !== 'admin' && currentUser.role !== 'coord');
@@ -1323,7 +1322,7 @@
             
             // Keep Global first
             let htmlContent = `
-                <button onclick="setChatRecipient('global', 'Avisos Gerais', 'Mural da Escola')" id="chat-btn-global" class="w-full text-left p-3 rounded-xl border-2 border-transparent transition hover:border-green-200 bg-white shadow-sm flex items-center justify-between mb-2">
+                <button onclick="setChatRecipient('global', 'Avisos Gerais', 'Mural da Escola')" id="chat-btn-global" class="w-full text-left p-3 rounded-xl border-2 border-transparent transition hover:border-green-200 bg-white shadow-sm flex items-center justify-between mb-2 border-green-300 bg-green-50">
                     <div class="flex items-center gap-2 overflow-hidden">
                         <div class="w-10 h-10 flex-shrink-0 bg-school-green text-white rounded-full flex items-center justify-center text-sm font-bold shadow-inner"><i class="fas fa-bullhorn"></i></div>
                         <div class="leading-none overflow-hidden text-left">
@@ -1385,6 +1384,8 @@
                 await getCollection('concenal_chat').add(msgData);
                 input.value = '';
                 clearChatAttachment();
+                const div = document.getElementById('chat-messages');
+                if(div) setTimeout(() => div.scrollTop = div.scrollHeight, 100);
             } catch(e) {
                 console.error(e);
                 alert("Erro ao enviar: " + e.message);
@@ -1427,11 +1428,19 @@
                 const batch = db.batch();
                 snap.forEach(doc => {
                     const m = doc.data();
-                    if ((m.from === currentUser.id && m.to === chatRecipient) || 
-                        (m.to === currentUser.id && m.from === chatRecipient) || 
-                        (chatRecipient === 'global' && m.to === 'global')) {
-                        batch.delete(doc.ref);
+                    let shouldDelete = false;
+
+                    if (chatRecipient === 'global' && m.to === 'global') {
+                        shouldDelete = true;
+                    } else if (currentUser.role === 'parent' && (m.from === currentUser.id || m.to === currentUser.id)) {
+                        shouldDelete = true;
+                    } else if (currentRecipientRole === 'Responsável' && (m.from === chatRecipient || m.to === chatRecipient)) {
+                        shouldDelete = true;
+                    } else if ((m.from === currentUser.id && m.to === chatRecipient) || (m.to === currentUser.id && m.from === chatRecipient)) {
+                        shouldDelete = true;
                     }
+
+                    if (shouldDelete) batch.delete(doc.ref);
                 });
                 await batch.commit();
             }
@@ -2153,17 +2162,25 @@
                     messages.push({ docId, ...m });
                     
                     if (!isFirstChatLoad && !knownMessages.has(docId)) {
-                        // Verifica se a mensagem é endereçada ao usuário atual (ou global se for prof/coord/admin)
+                        const iAmParent = currentUser?.role === 'parent';
+                        const iAmAdmin = currentUser?.role === 'admin' || currentUser?.role === 'coord';
+
+                        // É para mim se:
+                        // 1. Eu sou o destinatário direto
+                        // 2. Foi pro Global e eu não sou pai
+                        // 3. Foi pra "direcao" e eu sou admin/coord
                         const isForMe = (m.to === currentUser?.id) || 
-                                        (m.to === 'global' && currentUser?.role !== 'parent') || 
-                                        (currentUser?.role === 'admin' && m.to === 'admin_master') || // Admins read messages sent to fallback admin
-                                        (currentUser?.role === 'coord');
+                                        (m.to === 'global' && !iAmParent) || 
+                                        (m.to === 'direcao' && iAmAdmin);
                                         
                         const isFromMe = m.from === currentUser?.id;
                         
                         if (isForMe && !isFromMe) {
                             newMessagesArrived = true;
-                            const senderId = m.to === 'global' ? 'global' : m.from;
+                            let senderId = m.from;
+                            if (m.to === 'global') senderId = 'global';
+                            // Se veio para 'direcao', o senderId é mantido como m.from (o pai),
+                            // o que é perfeito para a bolinha de notificação aparecer no nome do pai!
                             
                             const modalChat = document.getElementById('modal-chat');
                             const isChatModalOpen = modalChat ? !modalChat.classList.contains('hidden') : false;
@@ -2199,11 +2216,33 @@
             currentChatMessages = allMessages.filter(m => {
                 if (chatRecipient === 'global') return m.to === 'global';
                 
-                // Allow fallback admin viewing logic for parents talking to "Direção"
-                const toMatches = (m.to === chatRecipient) || (chatRecipient === 'admin_master' && m.to === currentUser?.id) || (currentUser?.role === 'admin' && m.to === 'admin_master');
-                const fromMatches = (m.from === chatRecipient) || (m.from === currentUser?.id);
+                const iAmParent = currentUser?.role === 'parent';
+                const iAmStaff = currentUser?.role === 'admin' || currentUser?.role === 'coord';
                 
-                return toMatches && fromMatches;
+                // Se eu sou o pai conversando com a direção
+                if (iAmParent) {
+                    // Vejo mensagens que EU mandei (pra direcao ou qualquer admin) 
+                    const sentByMe = m.from === currentUser?.id;
+                    // Vejo mensagens que a direção mandou PARA MIM
+                    const sentToMe = m.to === currentUser?.id;
+                    return sentByMe || sentToMe;
+                }
+
+                // Se eu sou Admin/Coord conversando com um pai
+                const isRecipientParent = currentRecipientRole === 'Responsável';
+                if (iAmStaff && isRecipientParent) {
+                   // Vejo o que o pai mandou (pra direcao ou qualquer admin)
+                   const sentByParent = m.from === chatRecipient;
+                   // Vejo o que EU ou OUTROS admins mandamos para o pai
+                   const sentToParent = m.to === chatRecipient;
+                   return sentByParent || sentToParent;
+                }
+
+                // Caso Padrão (Prof <-> Prof, Prof <-> Admin, etc): Exatamente 1 pra 1
+                const fromMeToThem = m.from === currentUser?.id && m.to === chatRecipient;
+                const fromThemToMe = m.from === chatRecipient && m.to === currentUser?.id;
+
+                return fromMeToThem || fromThemToMe;
             });
 
             currentChatMessages.forEach(m => {
@@ -2221,10 +2260,14 @@
                 let delBtnHtml = canDelete ? `<button onclick="deleteMsg('${m.docId}')" class="absolute -top-2 -right-2 text-red-500 bg-white rounded-full opacity-0 group-hover:opacity-100 transition z-10 w-6 h-6 flex items-center justify-center shadow-md border border-gray-100 hover:bg-red-50"><i class="fas fa-times"></i></button>` : '';
 
                 const extraBorder = isSent ? "border border-green-200" : "border border-gray-200";
+                
+                let toTag = '';
+                if(m.to === 'global') toTag = '• MURAL';
+                else if (m.to === 'direcao') toTag = '• P/ DIREÇÃO';
 
                 div.innerHTML += `
                     <div class="chat-msg ${isSent?'sent':'received'} p-3 shadow-sm group ${extraBorder}">
-                        <div class="text-[8px] font-bold text-gray-500 uppercase tracking-tighter mb-1">${m.fromName} ${m.to === 'global' ? '• MURAL' : ''}</div>
+                        <div class="text-[8px] font-bold text-gray-500 uppercase tracking-tighter mb-1">${m.fromName} ${toTag}</div>
                         ${fH}
                         <div class="text-xs leading-relaxed text-gray-800 break-words">${m.text}</div>
                         <div class="text-[7px] text-right mt-1 opacity-40 font-bold">${date}</div>
@@ -2604,7 +2647,8 @@
                 analyticsChart = new Chart(ctx, {
                     type: 'line', data: { labels: labels, datasets: datasets },
                     options: {
-                        layout: { padding: { top: 15 } }, // Ajuste para a bolinha do 10 não cortar
+                        clip: false, // <-- Evita que o Chart.js corte os dados no limite da grade
+                        layout: { padding: { top: 20, right: 10, left: 10 } }, // <-- Dá espaço para a bolinha renderizar
                         responsive: true, maintainAspectRatio: false,
                         scales: { y: { beginAtZero: true, max: 10, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
                         plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }
@@ -2662,7 +2706,8 @@
                         }]
                     },
                     options: {
-                        layout: { padding: { top: 15 } },
+                        clip: false,
+                        layout: { padding: { top: 20 } },
                         responsive: true, maintainAspectRatio: false,
                         scales: { y: { beginAtZero: true, max: 100, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
                         plugins: { legend: { display: false } }
@@ -2976,7 +3021,7 @@
                 
                 let act = (st === 'F' && currentUser && currentUser.role === 'parent') ? 
                     `<button onclick="openJustifyModal('${s.id}')" class="ml-2 text-[10px] text-blue-600 underline font-bold uppercase tracking-tighter">Justificar</button>` : 
-                    ((j && doc) ? `<button onclick="viewDoc('${doc}')" class="ml-2 text-blue-500 hover:scale-110 transition"><i class="fas fa-paperclip"></i></button>` : '');
+                    ((j && doc) ? `<button onclick="viewDoc('${doc}')" class="ml-2 text-blue-50 hover:scale-110 transition"><i class="fas fa-paperclip"></i></button>` : '');
                 
                 let infoHtml = tName ? `<div class="text-[8px] text-gray-400 font-normal uppercase tracking-tighter mt-1">${tName}</div>` : '';
 
@@ -3609,7 +3654,8 @@
                     },
                     options: {
                         animation: false, // Desabilitado para garantir renderização imediata na impressão
-                        layout: { padding: { top: 15 } },
+                        clip: false,
+                        layout: { padding: { top: 20 } },
                         responsive: true, maintainAspectRatio: false,
                         scales: { y: { beginAtZero: true, max: 10, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
                         plugins: { legend: { display: false } }
@@ -3633,7 +3679,8 @@
                     },
                     options: {
                         animation: false, // Desabilitado para impressão
-                        layout: { padding: { top: 15 } },
+                        clip: false,
+                        layout: { padding: { top: 20 } },
                         responsive: true, maintainAspectRatio: false,
                         scales: { y: { beginAtZero: true, max: 100, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
                         plugins: { legend: { display: false } }
