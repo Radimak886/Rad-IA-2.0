@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - 2026</title>
+    <title>DIÁRIO ESCOLAR</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -451,15 +451,15 @@
         </div>
     </div>
 
-    <!-- MODAL: ANÁLISE DE DESEMPENHO (GRÁFICO) -->
+    <!-- MODAL: ANÁLISE DE DESEMPENHO (GRÁFICO NOTAS) -->
     <div id="modal-analytics" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
             <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
                 <div class="flex items-center gap-3">
                     <div class="bg-purple-100 text-purple-600 w-10 h-10 flex items-center justify-center rounded-lg shadow-sm"><i class="fas fa-chart-line text-lg"></i></div>
                     <div>
                         <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm leading-tight" id="analytics-student-name">--</h3>
-                        <p class="text-[10px] text-gray-500 uppercase font-bold">Análise de Desempenho • <span id="analytics-subject" class="text-purple-600">--</span></p>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold">Análise de Desempenho (Notas) • <span id="analytics-subject" class="text-purple-600">--</span></p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-analytics')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
@@ -468,19 +468,34 @@
                 <h4 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-3 border-b pb-1">Alertas e Diagnóstico</h4>
                 <div id="analytics-alerts" class="mb-6 grid gap-2"></div>
                 
-                <div class="grid md:grid-cols-2 gap-6">
-                    <div>
-                        <h4 class="text-xs font-bold uppercase text-school-green tracking-widest mb-3 border-b border-green-100 pb-1"><i class="fas fa-graduation-cap mr-1"></i> Evolução de Notas</h4>
-                        <div class="relative h-56 w-full"><canvas id="analyticsChart"></canvas></div>
-                    </div>
-                    <div>
-                        <h4 class="text-xs font-bold uppercase text-blue-600 tracking-widest mb-3 border-b border-blue-100 pb-1"><i class="fas fa-user-check mr-1"></i> Frequência (%) vs Turma</h4>
-                        <div class="relative h-56 w-full"><canvas id="attendanceChart"></canvas></div>
-                    </div>
-                </div>
+                <h4 class="text-xs font-bold uppercase text-school-green tracking-widest mb-3 border-b border-green-100 pb-1"><i class="fas fa-graduation-cap mr-1"></i> Evolução de Notas</h4>
+                <div class="relative h-64 w-full"><canvas id="analyticsChart"></canvas></div>
             </div>
             <div class="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-2">
                 <button onclick="closeModal('modal-analytics')" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold uppercase hover:bg-gray-300 transition shadow-sm">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ANÁLISE DE FREQUÊNCIA (GRÁFICO) -->
+    <div id="modal-attendance-analytics" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-100 text-blue-600 w-10 h-10 flex items-center justify-center rounded-lg shadow-sm"><i class="fas fa-user-check text-lg"></i></div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm leading-tight" id="att-analytics-student-name">--</h3>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold">Análise de Frequência • <span id="att-analytics-subject" class="text-blue-600">--</span></p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-attendance-analytics')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div class="p-6 bg-white overflow-y-auto flex-1">
+                <h4 class="text-xs font-bold uppercase text-blue-600 tracking-widest mb-3 border-b border-blue-100 pb-1">Frequência (%) vs Turma</h4>
+                <div class="relative h-56 w-full"><canvas id="attendanceChart"></canvas></div>
+            </div>
+            <div class="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-2">
+                <button onclick="closeModal('modal-attendance-analytics')" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold uppercase hover:bg-gray-300 transition shadow-sm">Fechar</button>
             </div>
         </div>
     </div>
@@ -746,7 +761,7 @@
 
     <!-- MODAL RELATÓRIO V29 (ACADÊMICO UNIFICADO) -->
     <div id="modal-report" class="fixed inset-0 bg-black bg-opacity-70 hidden z-[90] flex items-center justify-center p-4 overflow-y-auto">
-        <div class="bg-white rounded-2xl w-full max-w-4xl flex flex-col max-h-[90vh] shadow-2xl">
+        <div class="bg-white rounded-2xl w-full max-w-5xl flex flex-col max-h-[90vh] shadow-2xl">
             <div class="p-6 border-b flex justify-between items-start bg-gray-50 rounded-t-2xl">
                 <div class="flex items-center gap-4">
                     <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" onerror="this.src='https://placehold.co/150x50/png?text=CONCENAL'" class="h-12 bg-white p-1 rounded shadow-sm">
@@ -780,6 +795,18 @@
                     <div class="bg-gray-50 p-4 rounded-xl border border-gray-200">
                         <p class="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-1">Status Atual</p>
                         <h3 class="text-sm font-bold text-gray-800 mt-2" id="report-status">--</h3>
+                    </div>
+                </div>
+
+                <!-- Gráficos Unificados -->
+                <div class="grid md:grid-cols-2 gap-6 mb-6 no-print">
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <h4 class="text-[10px] font-bold text-school-green uppercase tracking-widest mb-2 text-center"><i class="fas fa-graduation-cap mr-1"></i> Desempenho (Média Final por Disciplina)</h4>
+                        <div class="relative h-48 w-full"><canvas id="reportGradesChart"></canvas></div>
+                    </div>
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm">
+                        <h4 class="text-[10px] font-bold text-blue-600 uppercase tracking-widest mb-2 text-center"><i class="fas fa-user-check mr-1"></i> Frequência (%) por Disciplina</h4>
+                        <div class="relative h-48 w-full"><canvas id="reportFreqChart"></canvas></div>
                     </div>
                 </div>
 
@@ -2577,6 +2604,7 @@
                 analyticsChart = new Chart(ctx, {
                     type: 'line', data: { labels: labels, datasets: datasets },
                     options: {
+                        layout: { padding: { top: 15 } }, // Ajuste para a bolinha do 10 não cortar
                         responsive: true, maintainAspectRatio: false,
                         scales: { y: { beginAtZero: true, max: 10, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
                         plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }
@@ -2584,7 +2612,39 @@
                 });
             }
 
-            // 2. Gráfico Novo: Frequência
+            const modalAnalytics = document.getElementById('modal-analytics');
+            if(modalAnalytics) modalAnalytics.classList.remove('hidden');
+        };
+
+        // --- MÓDULO: ANÁLISE DE FREQUÊNCIA ---
+        window.openAttendanceAnalytics = function(studentId) {
+            const student = appData.students.find(s => s.id === studentId);
+            if(!student) return;
+            const subj = appData.currentSubject;
+            if(!subj) return alert("Selecione uma disciplina primeiro.");
+
+            const nameEl = document.getElementById('att-analytics-student-name');
+            if(nameEl) nameEl.innerText = student.name;
+            
+            const subjEl = document.getElementById('att-analytics-subject');
+            if(subjEl) subjEl.innerText = subj;
+
+            const d = ensureSubjectData(student, subj);
+            const c = calculateStatus(d, subj);
+            const studentFreq = c.freq !== '-' ? parseFloat(c.freq) : 0;
+
+            let classTotalFreq = 0;
+            let classFreqCount = 0;
+            getStudentsByClass().forEach(s => {
+                const sd = ensureSubjectData(s, subj);
+                const sc = calculateStatus(sd, subj);
+                if(sc.freq !== '-') {
+                    classTotalFreq += parseFloat(sc.freq);
+                    classFreqCount++;
+                }
+            });
+            const classAvgFreq = classFreqCount > 0 ? (classTotalFreq / classFreqCount).toFixed(1) : 0;
+
             const canvasAtt = document.getElementById('attendanceChart');
             if(canvasAtt) {
                 const ctxAtt = canvasAtt.getContext('2d');
@@ -2593,18 +2653,16 @@
                 window.attendanceChartInstance = new Chart(ctxAtt, {
                     type: 'bar',
                     data: {
-                        labels: ['Frequência do Aluno', 'Frequência da Turma'],
+                        labels: ['Frequência do Aluno', 'Média da Turma'],
                         datasets: [{
                             label: '% de Presença',
                             data: [studentFreq, classAvgFreq],
-                            backgroundColor: [
-                                studentFreq >= 75 ? '#3B82F6' : '#EF4444', 
-                                '#9CA3AF'
-                            ],
+                            backgroundColor: [ studentFreq >= 75 ? '#3B82F6' : '#EF4444', '#9CA3AF' ],
                             borderRadius: 6
                         }]
                     },
                     options: {
+                        layout: { padding: { top: 15 } },
                         responsive: true, maintainAspectRatio: false,
                         scales: { y: { beginAtZero: true, max: 100, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
                         plugins: { legend: { display: false } }
@@ -2612,7 +2670,7 @@
                 });
             }
 
-            const modalAnalytics = document.getElementById('modal-analytics');
+            const modalAnalytics = document.getElementById('modal-attendance-analytics');
             if(modalAnalytics) modalAnalytics.classList.remove('hidden');
         };
 
@@ -2770,7 +2828,7 @@
                     <td class="px-1 border-l print-border bg-yellow-50/50 text-center">
                         <button onclick="toggleExtra('${s.id}')" ${!canEdit?'disabled':''} class="${extEnabled ? 'text-yellow-500' : 'text-gray-300'} hover:scale-110 transition p-2"><i class="fas fa-star"></i></button>
                     </td>
-                    <td class="px-1 text-center font-bold border-l cursor-pointer print-border ${c.freq<75?'text-red-700 bg-red-50':'text-blue-800'}" onclick="openReportModal('${s.id}')">${c.faults} <span class="text-[8px] font-normal opacity-40">${c.freq}%</span></td>
+                    <td class="px-1 text-center font-bold border-l print-border ${c.freq<75?'text-red-700 bg-red-50':'text-blue-800'}">${c.faults} <span class="text-[8px] font-normal opacity-40">${c.freq}%</span></td>
                     <td class="px-2 text-center font-bold border-l text-gray-700 print-border">${c.average}</td>
                     <td class="px-1 border-l print-border"><input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-gray-50 rounded" value="${d.recovery||''}" onchange="updateRecovery('${s.id}',this.value)"></td>
                     <td class="px-2 text-center border-l print-border"><span class="${c.statusClass}">${c.status||'--'}</span></td>
@@ -2922,7 +2980,20 @@
                 
                 let infoHtml = tName ? `<div class="text-[8px] text-gray-400 font-normal uppercase tracking-tighter mt-1">${tName}</div>` : '';
 
-                tbody.innerHTML += `<tr class="border-b border-gray-50"><td class="px-6 py-4 font-bold text-gray-700 flex justify-between items-center">${s.name} ${act}</td><td class="px-6 py-4 text-center"><button id="btn-att-${s.id}" onclick="toggleAtt('${s.id}')" ${!canE?'disabled':''} class="w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition flex flex-col items-center justify-center ${btnCls} mx-auto"><span>${btnTxt}</span></button>${infoHtml}</td></tr>`;
+                tbody.innerHTML += `
+                    <tr class="border-b border-gray-50">
+                        <td class="px-6 py-4 font-bold text-gray-700 flex justify-between items-center">
+                            <div class="flex items-center gap-2">
+                                <button onclick="openAttendanceAnalytics('${s.id}')" class="text-blue-500 hover:scale-110 transition no-print" title="Ver Gráfico de Frequência"><i class="fas fa-chart-bar"></i></button>
+                                ${s.name} 
+                            </div>
+                            ${act}
+                        </td>
+                        <td class="px-6 py-4 text-center">
+                            <button id="btn-att-${s.id}" onclick="toggleAtt('${s.id}')" ${!canE?'disabled':''} class="w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition flex flex-col items-center justify-center ${btnCls} mx-auto"><span>${btnTxt}</span></button>
+                            ${infoHtml}
+                        </td>
+                    </tr>`;
             });
         }
         
@@ -3454,9 +3525,14 @@
             }
 
             let totalAvg = 0, avgCount = 0, totalFaultsGlobal = 0, totalDaysGlobal = 0;
+            
+            // Arrays para o gráfico de relatório unificado
+            let chartLabels = [];
+            let chartGrades = [];
+            let chartFreqs = [];
 
             subjectsToDisplay.sort().forEach(subjName => {
-                const d = student.subjects?.[subjName] || { units: [], attendance: {}, recovery: null };
+                const d = student.subjects?.[subjName] || { units: [], extras: [], attendance: {}, recovery: null, extraEnabled: false };
                 const c = calculateStatus(d, subjName);
 
                 totalFaultsGlobal += c.faults;
@@ -3467,13 +3543,18 @@
                     avgCount++;
                 }
 
+                // Coletar dados pro gráfico
+                chartLabels.push(subjName.substring(0, 15) + (subjName.length > 15 ? '...' : ''));
+                chartGrades.push(c.average !== '-' ? parseFloat(c.average) : 0);
+                chartFreqs.push(c.freq !== '-' ? parseFloat(c.freq) : 0);
+
                 if(tbody) {
                     let row = `<tr class="hover:bg-gray-50"><td class="px-4 py-3 text-left font-bold border-r text-gray-800">${subjName}</td>`;
                     for(let i=0; i<6; i++) {
                         const uVal = d.units?.[i];
-                        const extVal = (d.extraEnabled && d.extras && d.extras[i]) ? parseFloat(d.extras[i]) : 0;
-                        let final = (uVal !== undefined && uVal !== null && uVal !== "") ? (parseFloat(uVal) + extVal) : null;
-                        if(final > 10.0) final = 10.0;
+                        const extVal = (d.extraEnabled && d.extras && d.extras[i] && !isNaN(d.extras[i])) ? parseFloat(d.extras[i]) : 0;
+                        let final = (uVal !== undefined && uVal !== null && uVal !== "" && !isNaN(uVal)) ? (parseFloat(uVal) + extVal) : null;
+                        if(final !== null && final > 10.0) final = 10.0;
                         
                         const vClass = (final !== null && final < 6) ? 'text-red-500 font-bold' : '';
                         row += `<td class="${vClass}">${final !== null ? final : '-'}</td>`;
@@ -3510,6 +3591,55 @@
             
             const rStatus = document.getElementById('report-status');
             if(rStatus) rStatus.innerText = globalStatus;
+
+            // Renderizar Gráficos do Relatório Unificado
+            if(window.reportGradesChartInst) window.reportGradesChartInst.destroy();
+            const ctxG = document.getElementById('reportGradesChart');
+            if (ctxG) {
+                window.reportGradesChartInst = new Chart(ctxG.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'Média Final',
+                            data: chartGrades,
+                            backgroundColor: '#10B981',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        animation: false, // Desabilitado para garantir renderização imediata na impressão
+                        layout: { padding: { top: 15 } },
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, max: 10, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
+
+            if(window.reportFreqChartInst) window.reportFreqChartInst.destroy();
+            const ctxF = document.getElementById('reportFreqChart');
+            if (ctxF) {
+                window.reportFreqChartInst = new Chart(ctxF.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'Frequência %',
+                            data: chartFreqs,
+                            backgroundColor: '#3B82F6',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        animation: false, // Desabilitado para impressão
+                        layout: { padding: { top: 15 } },
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, max: 100, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
+                        plugins: { legend: { display: false } }
+                    }
+                });
+            }
             
             // Observações (Unificadas)
             const obsList = document.getElementById('observations-list'); 
@@ -3572,6 +3702,12 @@
             const freq = document.getElementById('report-freq') ? document.getElementById('report-freq').innerText : '--';
             const faults = document.getElementById('report-days-count') ? document.getElementById('report-days-count').innerText : '--';
             const status = document.getElementById('report-status') ? document.getElementById('report-status').innerText : '--';
+
+            // Capturar as imagens base64 dos gráficos para o PDF
+            const gradesImgCanvas = document.getElementById('reportGradesChart');
+            const freqImgCanvas = document.getElementById('reportFreqChart');
+            const gradesImg = gradesImgCanvas ? gradesImgCanvas.toDataURL('image/png') : '';
+            const freqImg = freqImgCanvas ? freqImgCanvas.toDataURL('image/png') : '';
             
             let html = `
                 <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #047857;">
@@ -3598,6 +3734,17 @@
                     <div style="background-color: #f9fafb; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb;">
                         <p style="font-size: 10px; font-weight: bold; color: #6b7280; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 4px 0;">Status Atual</p>
                         <h3 style="font-size: 14px; font-weight: bold; color: #1f2937; margin: 8px 0 0 0;">${status}</h3>
+                    </div>
+                </div>
+
+                <div style="display: flex; gap: 16px; margin-bottom: 24px; page-break-inside: avoid;">
+                    <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; text-align: center; background: white;">
+                        <h4 style="font-size: 10px; text-transform: uppercase; color: #047857; margin-bottom: 8px;">Média Final por Disciplina</h4>
+                        <img src="${gradesImg}" style="max-width: 100%; height: 160px; object-fit: contain;">
+                    </div>
+                    <div style="flex: 1; border: 1px solid #e5e7eb; border-radius: 8px; padding: 12px; text-align: center; background: white;">
+                        <h4 style="font-size: 10px; text-transform: uppercase; color: #2563eb; margin-bottom: 8px;">Frequência (%) por Disciplina</h4>
+                        <img src="${freqImg}" style="max-width: 100%; height: 160px; object-fit: contain;">
                     </div>
                 </div>
             `;
@@ -3923,4 +4070,3 @@
     </script>
 </body>
 </html>
-
