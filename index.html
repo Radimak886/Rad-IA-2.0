@@ -3,10 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - 2026</title>
+    <title>DIÁRIO ESCOLAR - CONCENAL</title>
     
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js para Gráficos -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
@@ -340,6 +344,36 @@
 
     <!-- MODAIS GERAIS -->
 
+    <!-- MODAL: ANÁLISE DE DESEMPENHO (GRÁFICO) -->
+    <div id="modal-analytics" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-purple-100 text-purple-600 w-10 h-10 flex items-center justify-center rounded-lg shadow-sm"><i class="fas fa-chart-line text-lg"></i></div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm leading-tight" id="analytics-student-name">--</h3>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold">Análise de Desempenho • <span id="analytics-subject" class="text-purple-600">--</span></p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-analytics')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div class="p-6 bg-white overflow-y-auto flex-1">
+                <h4 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-3 border-b pb-1">Alertas e Diagnóstico</h4>
+                <div id="analytics-alerts" class="mb-6 grid gap-2">
+                    <!-- Preenchido via JS -->
+                </div>
+                
+                <h4 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-3 border-b pb-1">Evolução de Notas</h4>
+                <div class="relative h-64 w-full">
+                    <canvas id="analyticsChart"></canvas>
+                </div>
+            </div>
+            <div class="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-2">
+                <button onclick="closeModal('modal-analytics')" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold uppercase hover:bg-gray-300 transition shadow-sm">Fechar</button>
+            </div>
+        </div>
+    </div>
+
     <!-- MODAL: RELATÓRIOS PDF (NOVO) -->
     <div id="modal-reports" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
@@ -599,73 +633,6 @@
         </div>
     </div>
 
-    <!-- MODAL: CHAT INTERNO -->
-    <div id="modal-chat" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-5xl h-[85vh] flex flex-col overflow-hidden">
-            <div class="p-4 bg-school-green text-white flex justify-between items-center z-10">
-                <div class="flex items-center gap-3">
-                    <i class="fas fa-comments text-2xl"></i>
-                    <div>
-                        <h3 class="font-bold leading-none mb-1">Comunicação</h3>
-                        <div class="text-[10px] text-green-100 uppercase font-bold tracking-widest flex items-center gap-2">
-                            <span id="chat-recipient-info">Avisos Gerais</span>
-                        </div>
-                    </div>
-                </div>
-                <div class="flex gap-4 items-center">
-                    <button id="btn-clear-chat" onclick="clearConversation()" class="hidden text-[10px] bg-red-600 hover:bg-red-700 text-white px-3 py-1.5 rounded uppercase font-bold tracking-widest shadow-sm transition"><i class="fas fa-trash-alt mr-1"></i> Limpar Conversa</button>
-                    <button onclick="closeModal('modal-chat')" class="hover:text-red-200 transition p-2"><i class="fas fa-times fa-lg"></i></button>
-                </div>
-            </div>
-            
-            <div class="flex flex-1 overflow-hidden relative">
-                <!-- Sidebar Contatos -->
-                <div id="chat-sidebar" class="w-full md:w-72 border-r bg-gray-50 overflow-y-auto flex flex-col z-10 hidden md:flex absolute md:static inset-0">
-                    <div class="p-3">
-                        <button onclick="setChatRecipient('global', 'Avisos Gerais')" class="w-full text-left p-4 rounded-xl border-2 border-transparent transition hover:border-green-300 bg-white shadow-sm flex items-center gap-3 mb-4 relative" id="chat-btn-global">
-                            <div class="w-10 h-10 bg-green-100 text-school-green rounded-full flex items-center justify-center"><i class="fas fa-bullhorn"></i></div>
-                            <div class="flex-1">
-                                <div class="text-sm font-bold text-gray-700 leading-none flex justify-between">Mural Geral</div>
-                                <div class="text-[9px] text-gray-400 mt-1 uppercase font-bold">Público</div>
-                            </div>
-                        </button>
-                        <div class="text-[9px] font-bold text-gray-400 uppercase tracking-widest mb-3 ml-2 border-b pb-1">Diretório Interno</div>
-                        <div id="chat-user-list" class="space-y-1"></div>
-                    </div>
-                </div>
-
-                <!-- Mensagens -->
-                <div class="flex-1 flex flex-col bg-white w-full" id="chat-main-window">
-                    <div class="md:hidden bg-gray-100 p-2 border-b text-xs flex justify-between items-center" id="mobile-chat-header">
-                        <button onclick="document.getElementById('chat-sidebar').classList.remove('hidden'); document.getElementById('chat-main-window').classList.add('hidden');" class="text-blue-600 font-bold"><i class="fas fa-chevron-left"></i> Voltar</button>
-                        <span class="font-bold text-gray-600 uppercase" id="mobile-chat-title">Mural Geral</span>
-                    </div>
-
-                    <div id="chat-messages" class="flex-1 overflow-y-auto p-4 bg-gray-100 flex flex-col gap-2"></div>
-                    
-                    <div id="chat-attachment-preview" class="hidden p-3 bg-blue-50 border-t flex items-center justify-between">
-                        <div class="flex items-center gap-2">
-                            <i class="fas fa-file-alt text-blue-500"></i>
-                            <span id="attachment-name" class="text-xs text-blue-800 font-bold truncate max-w-[200px]"></span>
-                        </div>
-                        <button onclick="clearChatAttachment()" class="text-red-500 hover:text-red-700 p-2"><i class="fas fa-times-circle"></i></button>
-                    </div>
-
-                    <div id="chat-input-area" class="p-4 border-t bg-white flex gap-2 items-center">
-                        <label class="cursor-pointer text-gray-400 hover:text-school-green p-2 transition">
-                            <i class="fas fa-paperclip fa-lg"></i>
-                            <input type="file" id="chat-file" class="hidden" onchange="handleChatFile(this)">
-                        </label>
-                        <input id="chat-input" class="flex-1 border-2 border-gray-100 p-3 rounded-xl text-sm outline-none focus:border-school-green transition" placeholder="Escreva sua mensagem..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
-                        <button onclick="sendChatMessage()" class="bg-school-green text-white p-3 rounded-xl w-12 h-12 flex items-center justify-center shadow-lg hover:bg-green-700 transition">
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
     <!-- MODAL RELATÓRIO V29 (ACADÊMICO UNIFICADO) -->
     <div id="modal-report" class="fixed inset-0 bg-black bg-opacity-70 hidden z-[90] flex items-center justify-center p-4 overflow-y-auto">
         <div class="bg-white rounded-2xl w-full max-w-4xl flex flex-col max-h-[90vh] shadow-2xl">
@@ -759,7 +726,6 @@
                 : ["7h", "8h", "9h", "10h", "10h50"];
         }
 
-        // PADRÕES PRÉ-PREENCHIDOS PARA BANCO DE DADOS (HORÁRIO E CALENDÁRIO 2026)
         const DEFAULT_SCHEDULE = {
             "6A": {
                 "Segunda-7h": "Matemática", "Segunda-8h": "Ciências", "Segunda-9h": "Português", "Segunda-10h": "Geografia", "Segunda-10h50": "História",
@@ -842,17 +808,18 @@
         
         // --- ESTADO GLOBAL ---
         let db, auth, currentUser = null;
+        let analyticsChart = null; // Instância do gráfico
         let appData = {
             students: [],
             activities: [],
-            schedule: {}, // Mapeamento: Turma -> grade de horarios
-            calendar: [], // Eventos
+            schedule: {}, 
+            calendar: [], 
             currentClass: '',
             currentSubject: '',
             currentMode: 'grades',
             allSubjects: [],
             allClasses: [],
-            curriculum: {}, // Mapeamento Turma -> Matérias
+            curriculum: {}, 
             isProcessing: false
         };
         
@@ -989,7 +956,8 @@
                         loadParentSubjectsAndPopulate();
                     }
                     
-                    if(!document.getElementById('modal-users').classList.contains('hidden')) {
+                    const modalUsers = document.getElementById('modal-users');
+                    if (modalUsers && !modalUsers.classList.contains('hidden')) {
                        renderAssignmentsUI();
                     }
                     
@@ -1002,16 +970,19 @@
                     if (user) checkLocalSession();
                 });
 
-                document.getElementById('attendance-date').value = today;
-                document.getElementById('daily-date').value = today;
-                document.getElementById('new-observation-date').value = today;
+                // Check if element exists before setting value to avoid null reference error
+                const dateInputs = ['attendance-date', 'daily-date', 'new-observation-date'];
+                dateInputs.forEach(id => {
+                    const el = document.getElementById(id);
+                    if (el) el.value = today;
+                });
                 
-                setupScreen.classList.add('hidden');
+                if(setupScreen) setupScreen.classList.add('hidden');
 
             } catch (e) {
                 console.error("Firebase Initialization Critical Error:", e);
                 if(setupErrorLog) setupErrorLog.innerText = e.message;
-                setupScreen.classList.remove('hidden');
+                if(setupScreen) setupScreen.classList.remove('hidden');
             }
         };
 
@@ -1043,8 +1014,13 @@
         }
 
         // --- GLOBAL SCOPE FUNCTIONS ---
-        function closeModal(id) { document.getElementById(id).classList.add('hidden'); }
+        function closeModal(id) { 
+            const el = document.getElementById(id);
+            if(el) el.classList.add('hidden'); 
+        }
+        
         function switchMode(m) { appData.currentMode = m; updateUI(); }
+        
         function changeSubject(v) { 
             appData.currentSubject = v; 
             if(currentUser && currentUser.role !== 'parent') populateClassSelect(); 
@@ -1055,9 +1031,17 @@
             updateUI(); 
             if(appData.currentMode === 'schedule') renderScheduleView();
         }
-        function openAddModal() { document.getElementById('modal-add').classList.remove('hidden'); }
+        function openAddModal() { 
+            const el = document.getElementById('modal-add');
+            if(el) el.classList.remove('hidden'); 
+        }
         function showHistory(id) { openReportModal(id); }
-        function openUsersModal() { document.getElementById('modal-users').classList.remove('hidden'); loadUsersList(); switchUserTab('teacher'); }
+        function openUsersModal() { 
+            const el = document.getElementById('modal-users');
+            if(el) el.classList.remove('hidden'); 
+            loadUsersList(); 
+            switchUserTab('teacher'); 
+        }
 
         function checkLocalSession() {
             const s = localStorage.getItem('concenal_v29_session');
@@ -1067,10 +1051,12 @@
                     showApp(); 
                 } catch(e) {
                     localStorage.removeItem('concenal_v29_session');
-                    document.getElementById('login-screen').classList.remove('hidden'); 
+                    const loginScreen = document.getElementById('login-screen');
+                    if(loginScreen) loginScreen.classList.remove('hidden'); 
                 }
             } else { 
-                document.getElementById('login-screen').classList.remove('hidden'); 
+                const loginScreen = document.getElementById('login-screen');
+                if(loginScreen) loginScreen.classList.remove('hidden'); 
             }
         }
 
@@ -1079,7 +1065,7 @@
             if(!currentUser || currentUser.role === 'parent') return;
             try {
                 await getCollection('concenal_notifications').add({
-                    type: type, // 'Chamada', 'Diário', 'Atividade'
+                    type: type, 
                     description: description,
                     teacherName: currentUser.displayName || currentUser.name,
                     className: appData.currentClass,
@@ -1090,7 +1076,8 @@
         }
 
         function openNotifications() {
-            document.getElementById('modal-notifications').classList.remove('hidden');
+            const modalNotif = document.getElementById('modal-notifications');
+            if(modalNotif) modalNotif.classList.remove('hidden');
             const mainBadge = document.getElementById('notif-badge');
             if(mainBadge) mainBadge.classList.add('hidden');
         }
@@ -1146,12 +1133,16 @@
         }
 
         function openChat() {
-            document.getElementById('modal-chat').classList.remove('hidden');
+            const modalChat = document.getElementById('modal-chat');
+            if(modalChat) modalChat.classList.remove('hidden');
             
             // Pais são direcionados direto para a Direção e a sidebar é ocultada
             if(currentUser.role === 'parent') {
-                document.getElementById('chat-sidebar').classList.add('hidden');
-                document.getElementById('mobile-chat-header').classList.add('hidden');
+                const chatSidebar = document.getElementById('chat-sidebar');
+                if(chatSidebar) chatSidebar.classList.add('hidden');
+                
+                const mobileChatHeader = document.getElementById('mobile-chat-header');
+                if(mobileChatHeader) mobileChatHeader.classList.add('hidden');
                 
                 // Procura um admin para direcionar
                 getCollection('concenal_users').where('role', '==', 'admin').limit(1).get().then(snap => {
@@ -1161,8 +1152,12 @@
                     }
                 });
             } else {
-                document.getElementById('chat-sidebar').classList.remove('hidden');
-                if(window.innerWidth < 768) document.getElementById('mobile-chat-header').classList.remove('hidden');
+                const chatSidebar = document.getElementById('chat-sidebar');
+                if(chatSidebar) chatSidebar.classList.remove('hidden');
+                
+                const mobileChatHeader = document.getElementById('mobile-chat-header');
+                if(window.innerWidth < 768 && mobileChatHeader) mobileChatHeader.classList.remove('hidden');
+                
                 if (chatRecipient === 'global') setChatRecipient('global', 'Avisos Gerais');
             }
             
@@ -1177,8 +1172,11 @@
             const btnClear = document.getElementById('btn-clear-chat');
             if(btnClear) btnClear.classList.toggle('hidden', id === 'global' && currentUser.role !== 'admin' && currentUser.role !== 'coord');
 
-            document.getElementById('chat-recipient-info').innerText = name;
-            document.getElementById('mobile-chat-title').innerText = name;
+            const chatRecipInfo = document.getElementById('chat-recipient-info');
+            if(chatRecipInfo) chatRecipInfo.innerText = name;
+            
+            const mobileChatTitle = document.getElementById('mobile-chat-title');
+            if(mobileChatTitle) mobileChatTitle.innerText = name;
             
             unreadCounts[id] = 0;
             updateUnreadBadges();
@@ -1188,8 +1186,11 @@
             if(activeBtn) activeBtn.classList.add('border-green-300', 'bg-green-50');
 
             if(window.innerWidth < 768 && currentUser.role !== 'parent') {
-                document.getElementById('chat-sidebar').classList.add('hidden');
-                document.getElementById('chat-main-window').classList.remove('hidden');
+                const chatSidebar = document.getElementById('chat-sidebar');
+                if(chatSidebar) chatSidebar.classList.add('hidden');
+                
+                const chatMainWindow = document.getElementById('chat-main-window');
+                if(chatMainWindow) chatMainWindow.classList.remove('hidden');
             }
 
             renderChatMessages(allChatMessagesMaster);
@@ -1227,6 +1228,8 @@
 
         async function sendChatMessage() {
             const input = document.getElementById('chat-input');
+            if(!input) return;
+            
             const text = input.value.trim();
             if (!text && !currentChatFile) return;
 
@@ -1247,7 +1250,7 @@
                 input.value = '';
                 clearChatAttachment();
                 const div = document.getElementById('chat-messages');
-                setTimeout(() => div.scrollTop = div.scrollHeight, 100);
+                if(div) setTimeout(() => div.scrollTop = div.scrollHeight, 100);
             } catch(e) {
                 console.error(e);
                 alert("Erro ao enviar: " + e.message);
@@ -1268,15 +1271,21 @@
                     type: file.type,
                     data: e.target.result
                 };
-                document.getElementById('chat-attachment-preview').classList.remove('hidden');
-                document.getElementById('attachment-name').innerText = file.name;
+                const chatAttachmentPreview = document.getElementById('chat-attachment-preview');
+                if(chatAttachmentPreview) chatAttachmentPreview.classList.remove('hidden');
+                
+                const attachmentName = document.getElementById('attachment-name');
+                if(attachmentName) attachmentName.innerText = file.name;
             };
         }
 
         function clearChatAttachment() {
             currentChatFile = null;
-            document.getElementById('chat-file').value = '';
-            document.getElementById('chat-attachment-preview').classList.add('hidden');
+            const chatFile = document.getElementById('chat-file');
+            if(chatFile) chatFile.value = '';
+            
+            const chatAttachmentPreview = document.getElementById('chat-attachment-preview');
+            if(chatAttachmentPreview) chatAttachmentPreview.classList.add('hidden');
         }
 
         function deleteMsg(docId) {
@@ -1308,51 +1317,57 @@
         }
 
         function openCoordPanel() {
-            document.getElementById('modal-coord').classList.remove('hidden');
+            const modalCoord = document.getElementById('modal-coord');
+            if(modalCoord) modalCoord.classList.remove('hidden');
             loadCoordData();
         }
 
         async function loadCoordData() {
             const teachersList = document.getElementById('coord-teachers-list');
             const pendingList = document.getElementById('coord-pending-list');
-            teachersList.innerHTML = '<p class="text-xs text-gray-500"><i class="fas fa-spinner fa-spin"></i> Carregando...</p>';
-            pendingList.innerHTML = '<p class="text-xs text-gray-500"><i class="fas fa-spinner fa-spin"></i> Carregando...</p>';
+            
+            if(teachersList) teachersList.innerHTML = '<p class="text-xs text-gray-500"><i class="fas fa-spinner fa-spin"></i> Carregando...</p>';
+            if(pendingList) pendingList.innerHTML = '<p class="text-xs text-gray-500"><i class="fas fa-spinner fa-spin"></i> Carregando...</p>';
 
             const usersSnap = await getCollection('concenal_users').where('role', 'in', ['teacher', 'coord', 'admin']).get();
-            teachersList.innerHTML = '';
-            usersSnap.forEach(doc => {
-                const u = doc.data();
-                teachersList.innerHTML += `<div class="p-2 bg-gray-50 rounded border mb-1 text-xs flex justify-between items-center"><span class="font-bold">${u.displayName || u.name}</span><span class="text-[9px] uppercase text-gray-400 bg-white px-2 py-0.5 rounded border">${u.role}</span></div>`;
-            });
+            if(teachersList) {
+                teachersList.innerHTML = '';
+                usersSnap.forEach(doc => {
+                    const u = doc.data();
+                    teachersList.innerHTML += `<div class="p-2 bg-gray-50 rounded border mb-1 text-xs flex justify-between items-center"><span class="font-bold">${u.displayName || u.name}</span><span class="text-[9px] uppercase text-gray-400 bg-white px-2 py-0.5 rounded border">${u.role}</span></div>`;
+                });
+            }
 
-            pendingList.innerHTML = '';
-            let hasPending = false;
-            appData.students.forEach(s => {
-                if(s.subjects) {
-                    Object.entries(s.subjects).forEach(([subj, data]) => {
-                        if(data.attendance) {
-                            Object.entries(data.attendance).forEach(([date, att]) => {
-                                if(typeof att === 'object' && att.pendingReview) {
-                                    hasPending = true;
-                                    const btn = att.doc ? `<button onclick="viewDoc('${att.doc}')" class="text-blue-500 bg-blue-50 w-6 h-6 rounded-full hover:bg-blue-100 mx-2"><i class="fas fa-paperclip"></i></button>` : '';
-                                    pendingList.innerHTML += `
-                                        <div class="p-3 bg-orange-50 border border-orange-100 rounded-lg mb-2 text-xs shadow-sm">
-                                            <div class="font-bold flex justify-between text-gray-800">${s.name} ${btn}</div>
-                                            <div class="text-[10px] text-gray-500 mb-1 font-bold uppercase tracking-widest">${subj} - ${date.split('-').reverse().join('/')}</div>
-                                            <div class="italic mb-3 text-gray-600 bg-white p-2 border rounded">"${att.reason}"</div>
-                                            <div class="flex gap-2">
-                                                <button onclick="resolveJustification('${s.id}', '${subj}', '${date}', true)" class="flex-1 bg-green-500 text-white font-bold px-2 py-1.5 rounded shadow hover:bg-green-600 transition">Aprovar Justificativa</button>
-                                                <button onclick="resolveJustification('${s.id}', '${subj}', '${date}', false)" class="flex-1 bg-red-500 text-white font-bold px-2 py-1.5 rounded shadow hover:bg-red-600 transition">Rejeitar</button>
+            if(pendingList) {
+                pendingList.innerHTML = '';
+                let hasPending = false;
+                appData.students.forEach(s => {
+                    if(s.subjects) {
+                        Object.entries(s.subjects).forEach(([subj, data]) => {
+                            if(data.attendance) {
+                                Object.entries(data.attendance).forEach(([date, att]) => {
+                                    if(typeof att === 'object' && att.pendingReview) {
+                                        hasPending = true;
+                                        const btn = att.doc ? `<button onclick="viewDoc('${att.doc}')" class="text-blue-500 bg-blue-50 w-6 h-6 rounded-full hover:bg-blue-100 mx-2"><i class="fas fa-paperclip"></i></button>` : '';
+                                        pendingList.innerHTML += `
+                                            <div class="p-3 bg-orange-50 border border-orange-100 rounded-lg mb-2 text-xs shadow-sm">
+                                                <div class="font-bold flex justify-between text-gray-800">${s.name} ${btn}</div>
+                                                <div class="text-[10px] text-gray-500 mb-1 font-bold uppercase tracking-widest">${subj} - ${date.split('-').reverse().join('/')}</div>
+                                                <div class="italic mb-3 text-gray-600 bg-white p-2 border rounded">"${att.reason}"</div>
+                                                <div class="flex gap-2">
+                                                    <button onclick="resolveJustification('${s.id}', '${subj}', '${date}', true)" class="flex-1 bg-green-500 text-white font-bold px-2 py-1.5 rounded shadow hover:bg-green-600 transition">Aprovar Justificativa</button>
+                                                    <button onclick="resolveJustification('${s.id}', '${subj}', '${date}', false)" class="flex-1 bg-red-500 text-white font-bold px-2 py-1.5 rounded shadow hover:bg-red-600 transition">Rejeitar</button>
+                                                </div>
                                             </div>
-                                        </div>
-                                    `;
-                                }
-                            });
-                        }
-                    });
-                }
-            });
-            if(!hasPending) pendingList.innerHTML = '<div class="text-xs text-gray-400 italic">Nenhuma pendência encontrada.</div>';
+                                        `;
+                                    }
+                                });
+                            }
+                        });
+                    }
+                });
+                if(!hasPending) pendingList.innerHTML = '<div class="text-xs text-gray-400 italic">Nenhuma pendência encontrada.</div>';
+            }
         }
 
         function resolveJustification(sid, subj, date, approved) {
@@ -1450,7 +1465,8 @@
             tempCurriculum = JSON.parse(JSON.stringify(appData.curriculum));
             
             switchConfigTab('classes');
-            document.getElementById('modal-config').classList.remove('hidden');
+            const modalConfig = document.getElementById('modal-config');
+            if(modalConfig) modalConfig.classList.remove('hidden');
         }
 
         function switchConfigTab(tab) {
@@ -1474,13 +1490,14 @@
             if (tab === 'subjects') renderConfigSubjects();
             if (tab === 'curriculum') {
                 const select = document.getElementById('config-curriculum-class');
-                select.innerHTML = tempConfigClasses.map(c => `<option value="${c}">${c}</option>`).join('');
+                if(select) select.innerHTML = tempConfigClasses.map(c => `<option value="${c}">${c}</option>`).join('');
                 renderCurriculumCheckboxes();
             }
         }
 
         function renderConfigClasses() {
             const list = document.getElementById('config-classes-list');
+            if(!list) return;
             list.innerHTML = tempConfigClasses.map((c, i) => `
                 <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
                     <span class="font-bold text-gray-700 text-sm">${c}</span>
@@ -1495,6 +1512,7 @@
 
         function renderConfigSubjects() {
             const list = document.getElementById('config-subjects-list');
+            if(!list) return;
             list.innerHTML = tempConfigSubjects.map((s, i) => `
                 <div class="flex justify-between items-center bg-gray-50 p-3 rounded-lg border border-gray-100">
                     <span class="font-bold text-gray-700 text-sm">${s}</span>
@@ -1510,7 +1528,10 @@
         function renderCurriculumCheckboxes() {
             const cClass = document.getElementById('config-curriculum-class');
             const container = document.getElementById('config-curriculum-checkboxes');
-            if(!cClass || !cClass.value) { container.innerHTML = ''; return; }
+            if(!cClass || !cClass.value || !container) { 
+                if(container) container.innerHTML = ''; 
+                return; 
+            }
             
             const currentSubjInClass = tempCurriculum[cClass.value] || [];
             
@@ -1530,17 +1551,20 @@
                 tempCurriculum[cClass] = tempCurriculum[cClass].filter(s => s !== subj);
             }
             renderCurriculumCheckboxes(); 
-            document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
+            const warn = document.getElementById('cfg-unsaved-warn');
+            if(warn) warn.innerText = '* Alterações pendentes de salvamento.';
         }
 
         function addConfigClass() {
             const input = document.getElementById('config-new-class');
+            if(!input) return;
             const val = input.value.trim().toUpperCase();
             if(val && !tempConfigClasses.includes(val)) {
                 tempConfigClasses.push(val);
                 input.value = '';
                 renderConfigClasses();
-                document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
+                const warn = document.getElementById('cfg-unsaved-warn');
+                if(warn) warn.innerText = '* Alterações pendentes de salvamento.';
             }
         }
 
@@ -1550,7 +1574,8 @@
                 tempConfigClasses.splice(idx, 1);
                 delete tempCurriculum[cName];
                 renderConfigClasses();
-                document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
+                const warn = document.getElementById('cfg-unsaved-warn');
+                if(warn) warn.innerText = '* Alterações pendentes de salvamento.';
             }
         }
 
@@ -1567,19 +1592,22 @@
                     delete tempCurriculum[oldName];
                 }
                 renderConfigClasses();
-                document.getElementById('cfg-unsaved-warn').innerText = '* Renomeação aguardando salvamento.';
+                const warn = document.getElementById('cfg-unsaved-warn');
+                if(warn) warn.innerText = '* Renomeação aguardando salvamento.';
             }
         }
 
         function addConfigSubject() {
             const input = document.getElementById('config-new-subject');
+            if(!input) return;
             const val = input.value.trim();
             const formattedVal = val.charAt(0).toUpperCase() + val.slice(1);
             if(formattedVal && !tempConfigSubjects.includes(formattedVal)) {
                 tempConfigSubjects.push(formattedVal);
                 input.value = '';
                 renderConfigSubjects();
-                document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
+                const warn = document.getElementById('cfg-unsaved-warn');
+                if(warn) warn.innerText = '* Alterações pendentes de salvamento.';
             }
         }
 
@@ -1591,7 +1619,8 @@
                     tempCurriculum[c] = tempCurriculum[c].filter(s => s !== sName);
                 });
                 renderConfigSubjects();
-                document.getElementById('cfg-unsaved-warn').innerText = '* Alterações pendentes de salvamento.';
+                const warn = document.getElementById('cfg-unsaved-warn');
+                if(warn) warn.innerText = '* Alterações pendentes de salvamento.';
             }
         }
 
@@ -1604,8 +1633,11 @@
 
             if(confirm(`ATENÇÃO! Renomear a disciplina vai iniciar uma operação pesada no banco de dados para migrar as notas antigas para o novo nome. Deseja prosseguir?`)) {
                 try {
-                    document.getElementById('modal-config').classList.add('opacity-50', 'pointer-events-none');
-                    document.getElementById('cfg-unsaved-warn').innerText = 'Aplicando migração no banco de dados... Aguarde.';
+                    const modalConfig = document.getElementById('modal-config');
+                    if(modalConfig) modalConfig.classList.add('opacity-50', 'pointer-events-none');
+                    
+                    const warn = document.getElementById('cfg-unsaved-warn');
+                    if(warn) warn.innerText = 'Aplicando migração no banco de dados... Aguarde.';
                     
                     tempConfigSubjects[idx] = newName;
                     Object.keys(tempCurriculum).forEach(c => {
@@ -1646,12 +1678,13 @@
 
                     alert("Disciplina renomeada e notas migradas com sucesso!");
                     renderConfigSubjects();
-                    document.getElementById('cfg-unsaved-warn').innerText = '';
+                    if(warn) warn.innerText = '';
 
                 } catch (e) {
                     alert("Erro na migração: " + e.message);
                 } finally {
-                    document.getElementById('modal-config').classList.remove('opacity-50', 'pointer-events-none');
+                    const modalConfig = document.getElementById('modal-config');
+                    if(modalConfig) modalConfig.classList.remove('opacity-50', 'pointer-events-none');
                 }
             }
         }
@@ -1659,8 +1692,11 @@
         async function saveGlobalConfig() {
             try {
                 appData.isProcessing = true;
-                document.getElementById('modal-config').classList.add('opacity-50', 'pointer-events-none');
-                document.getElementById('cfg-unsaved-warn').innerText = 'Salvando...';
+                const modalConfig = document.getElementById('modal-config');
+                if(modalConfig) modalConfig.classList.add('opacity-50', 'pointer-events-none');
+                
+                const warn = document.getElementById('cfg-unsaved-warn');
+                if(warn) warn.innerText = 'Salvando...';
                 
                 const payload = { 
                     subjects: tempConfigSubjects, 
@@ -1675,13 +1711,14 @@
                 }
                 
                 alert("Configurações atualizadas no sistema!");
-                document.getElementById('cfg-unsaved-warn').innerText = '';
+                if(warn) warn.innerText = '';
                 closeModal('modal-config');
             } catch(e) {
                 alert("Erro ao salvar: " + e.message);
             } finally {
                 appData.isProcessing = false;
-                document.getElementById('modal-config').classList.remove('opacity-50', 'pointer-events-none');
+                const modalConfig = document.getElementById('modal-config');
+                if(modalConfig) modalConfig.classList.remove('opacity-50', 'pointer-events-none');
             }
         }
 
@@ -1729,71 +1766,97 @@
         }
 
         // Login Logic
-        document.getElementById('login-form').addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const u = document.getElementById('username').value.trim().toLowerCase();
-            const p = document.getElementById('password').value.trim();
-            const errEl = document.getElementById('login-error');
-            errEl.classList.add('hidden');
+        const loginForm = document.getElementById('login-form');
+        if(loginForm) {
+            loginForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const uInput = document.getElementById('username');
+                const pInput = document.getElementById('password');
+                const errEl = document.getElementById('login-error');
+                
+                if(!uInput || !pInput || !errEl) return;
+                
+                const u = uInput.value.trim().toLowerCase();
+                const p = pInput.value.trim();
+                errEl.classList.add('hidden');
 
-            try {
-                let foundUser = null;
-                if (u === "admin" && p === "1234") {
-                     foundUser = { id: 'admin_master', name: "Admin Geral", displayName: "Direção Geral", role: "admin", subjects: appData.allSubjects, classes: appData.allClasses };
-                } else {
-                    const snap = await getCollection('concenal_users').get();
-                    const foundDoc = snap.docs.find(doc => {
-                        const d = doc.data();
-                        return d.username === u && d.password === p;
-                    });
-                    if (foundDoc) {
-                        foundUser = { id: foundDoc.id, ...foundDoc.data() };
+                try {
+                    let foundUser = null;
+                    if (u === "admin" && p === "1234") {
+                         foundUser = { id: 'admin_master', name: "Admin Geral", displayName: "Direção Geral", role: "admin", subjects: appData.allSubjects, classes: appData.allClasses };
+                    } else {
+                        const snap = await getCollection('concenal_users').get();
+                        const foundDoc = snap.docs.find(doc => {
+                            const d = doc.data();
+                            return d.username === u && d.password === p;
+                        });
+                        if (foundDoc) {
+                            foundUser = { id: foundDoc.id, ...foundDoc.data() };
+                        }
                     }
-                }
 
-                if (foundUser) {
-                    currentUser = foundUser;
-                    localStorage.setItem('concenal_v29_session', JSON.stringify(currentUser));
-                    showApp();
-                } else {
-                    throw new Error("Invalid credentials");
+                    if (foundUser) {
+                        currentUser = foundUser;
+                        localStorage.setItem('concenal_v29_session', JSON.stringify(currentUser));
+                        showApp();
+                    } else {
+                        throw new Error("Invalid credentials");
+                    }
+                } catch (error) {
+                    console.error(error);
+                    errEl.classList.remove('hidden');
                 }
-            } catch (error) {
-                console.error(error);
-                errEl.classList.remove('hidden');
-            }
-        });
+            });
+        }
 
         function logout() { localStorage.removeItem('concenal_v29_session'); location.reload(); }
 
         function showApp() {
-            document.getElementById('login-screen').classList.add('hidden');
-            document.getElementById('app-screen').classList.remove('hidden');
-            document.getElementById('user-display-name').innerText = currentUser.displayName || currentUser.name;
+            const loginScreen = document.getElementById('login-screen');
+            if(loginScreen) loginScreen.classList.add('hidden');
+            
+            const appScreen = document.getElementById('app-screen');
+            if(appScreen) appScreen.classList.remove('hidden');
+            
+            const userDisplayName = document.getElementById('user-display-name');
+            if(userDisplayName) userDisplayName.innerText = currentUser.displayName || currentUser.name;
 
             const isParent = currentUser.role === 'parent';
             const isAdmin = currentUser.role === 'admin';
             const isCoord = currentUser.role === 'coord';
 
             // Controles de visibilidade baseados no papel (role)
-            document.getElementById('btn-admin').classList.toggle('hidden', !isAdmin);
-            document.getElementById('btn-coord').classList.toggle('hidden', !isAdmin && !isCoord);
-            document.getElementById('btn-config').classList.toggle('hidden', !isAdmin);
+            const btnAdmin = document.getElementById('btn-admin');
+            if(btnAdmin) btnAdmin.classList.toggle('hidden', !isAdmin);
+            
+            const btnCoord = document.getElementById('btn-coord');
+            if(btnCoord) btnCoord.classList.toggle('hidden', !isAdmin && !isCoord);
+            
+            const btnConfig = document.getElementById('btn-config');
+            if(btnConfig) btnConfig.classList.toggle('hidden', !isAdmin);
             
             const btnNotif = document.getElementById('btn-notifications');
             if (btnNotif) btnNotif.classList.toggle('hidden', !isAdmin && !isCoord);
 
+            const btnChat = document.getElementById('btn-chat');
+            if (btnChat) btnChat.classList.toggle('hidden', isParent); // Chat button shown differently or hidden
+
             // Abas Novas: Apenas Prof/Coord/Admin
-            document.getElementById('nav-schedule').classList.toggle('hidden', isParent);
-            document.getElementById('nav-calendar').classList.toggle('hidden', isParent);
+            const navSchedule = document.getElementById('nav-schedule');
+            if(navSchedule) navSchedule.classList.toggle('hidden', isParent);
+            
+            const navCalendar = document.getElementById('nav-calendar');
+            if(navCalendar) navCalendar.classList.toggle('hidden', isParent);
             
             const classTabs = document.getElementById('class-tabs');
+            const classSelect = document.getElementById('class-select');
+            
             if(isParent) {
-                classTabs.innerHTML = '';
-                document.getElementById('class-select').parentElement.classList.add('hidden');
+                if(classTabs) classTabs.innerHTML = '';
+                if(classSelect && classSelect.parentElement) classSelect.parentElement.classList.add('hidden');
             } else {
-                classTabs.innerHTML = '';
-                document.getElementById('class-select').parentElement.classList.remove('hidden');
+                if(classTabs) classTabs.innerHTML = '';
+                if(classSelect && classSelect.parentElement) classSelect.parentElement.classList.remove('hidden');
             }
 
             if (currentUser.id === 'admin_master') {
@@ -1870,7 +1933,9 @@
         }
 
         function startRealtimeSync() {
-            document.getElementById('loading-overlay').classList.remove('hidden');
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if(loadingOverlay) loadingOverlay.classList.remove('hidden');
+            
             if (unsubscribe) unsubscribe();
             unsubscribe = getCollection('concenal_students').onSnapshot(snap => {
                 const list = [];
@@ -1893,10 +1958,10 @@
                     updateUI();
                 }
                 
-                document.getElementById('loading-overlay').classList.add('hidden');
+                if(loadingOverlay) loadingOverlay.classList.add('hidden');
             }, error => {
                 console.error("Firestore sync error:", error);
-                document.getElementById('loading-overlay').classList.add('hidden');
+                if(loadingOverlay) loadingOverlay.classList.add('hidden');
             });
 
             if (activitiesUnsubscribe) activitiesUnsubscribe();
@@ -1933,7 +1998,9 @@
                             newMessagesArrived = true;
                             const senderId = m.to === 'global' ? 'global' : m.from;
                             
-                            const isChatModalOpen = !document.getElementById('modal-chat').classList.contains('hidden');
+                            const modalChat = document.getElementById('modal-chat');
+                            const isChatModalOpen = modalChat ? !modalChat.classList.contains('hidden') : false;
+                            
                             if (!isChatModalOpen || chatRecipient !== senderId) {
                                 showToast(`Nova mensagem de ${m.fromName}`, m.text || "Anexo enviado");
                                 unreadCounts[senderId] = (unreadCounts[senderId] || 0) + 1;
@@ -1950,7 +2017,8 @@
                 messages.sort((a, b) => a.timestamp - b.timestamp);
                 allChatMessagesMaster = messages.slice(-200); 
 
-                if(!document.getElementById('modal-chat').classList.contains('hidden')) {
+                const modalChat = document.getElementById('modal-chat');
+                if(modalChat && !modalChat.classList.contains('hidden')) {
                     renderChatMessages(allChatMessagesMaster);
                 }
             });
@@ -1999,32 +2067,36 @@
         // --- SCHEDULE (HORÁRIOS) & CALENDAR ---
         function renderScheduleView() {
             const className = appData.currentClass;
-            document.getElementById('schedule-class-name').innerText = className || 'Nenhuma turma selecionada';
+            const schClassNameEl = document.getElementById('schedule-class-name');
+            if(schClassNameEl) schClassNameEl.innerText = className || 'Nenhuma turma selecionada';
             
             const tbody = document.getElementById('schedule-body');
-            tbody.innerHTML = '';
+            if(tbody) tbody.innerHTML = '';
             
             if(!className) return;
 
             const canEdit = currentUser.role === 'admin' || currentUser.role === 'coord';
-            document.getElementById('schedule-admin-controls').classList.toggle('hidden', !canEdit);
+            const schedAdminControls = document.getElementById('schedule-admin-controls');
+            if(schedAdminControls) schedAdminControls.classList.toggle('hidden', !canEdit);
 
             const sch = appData.schedule[className] || {};
             const activeSlots = getTimeslotsForClass(className);
 
-            activeSlots.forEach(time => {
-                let row = `<tr><td class="border border-gray-200 p-2 font-bold text-gray-500 bg-gray-50">${time}</td>`;
-                WEEKDAYS.forEach(day => {
-                    const val = sch[`${day}-${time}`] || '';
-                    if(canEdit) {
-                        row += `<td class="border border-gray-200 p-1"><input type="text" value="${val}" id="sch-${day}-${time}" class="w-full text-center text-xs p-1 outline-none focus:bg-green-50 uppercase font-bold text-school-green" placeholder="-"></td>`;
-                    } else {
-                        row += `<td class="border border-gray-200 p-2 text-xs font-bold text-school-green uppercase">${val || '-'}</td>`;
-                    }
+            if(tbody) {
+                activeSlots.forEach(time => {
+                    let row = `<tr><td class="border border-gray-200 p-2 font-bold text-gray-500 bg-gray-50">${time}</td>`;
+                    WEEKDAYS.forEach(day => {
+                        const val = sch[`${day}-${time}`] || '';
+                        if(canEdit) {
+                            row += `<td class="border border-gray-200 p-1"><input type="text" value="${val}" id="sch-${day}-${time}" class="w-full text-center text-xs p-1 outline-none focus:bg-green-50 uppercase font-bold text-school-green" placeholder="-"></td>`;
+                        } else {
+                            row += `<td class="border border-gray-200 p-2 text-xs font-bold text-school-green uppercase">${val || '-'}</td>`;
+                        }
+                    });
+                    row += `</tr>`;
+                    tbody.innerHTML += row;
                 });
-                row += `</tr>`;
-                tbody.innerHTML += row;
-            });
+            }
             
             // Calcula dias letivos estimados por disciplina baseando-se no preenchimento
             const counts = {};
@@ -2034,13 +2106,15 @@
             });
             
             const countDiv = document.getElementById('schedule-days-count');
-            countDiv.innerHTML = '';
-            Object.keys(counts).forEach(k => {
-                // Cálculo estimado: vezes por semana * aprox 40 semanas letivas no ano
-                const estimativaAno = counts[k] * 40; 
-                countDiv.innerHTML += `<span class="bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 font-bold">${k}: ~${estimativaAno} aulas/ano</span>`;
-            });
-            if(Object.keys(counts).length === 0) countDiv.innerHTML = '<span class="text-gray-400 italic">Preencha o horário para calcular a estimativa.</span>';
+            if(countDiv) {
+                countDiv.innerHTML = '';
+                Object.keys(counts).forEach(k => {
+                    // Cálculo estimado: vezes por semana * aprox 40 semanas letivas no ano
+                    const estimativaAno = counts[k] * 40; 
+                    countDiv.innerHTML += `<span class="bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 font-bold">${k}: ~${estimativaAno} aulas/ano</span>`;
+                });
+                if(Object.keys(counts).length === 0) countDiv.innerHTML = '<span class="text-gray-400 italic">Preencha o horário para calcular a estimativa.</span>';
+            }
         }
 
         async function saveSchedule() {
@@ -2069,9 +2143,12 @@
 
         function renderCalendarView() {
             const canEdit = currentUser.role === 'admin' || currentUser.role === 'coord';
-            document.getElementById('calendar-admin-controls').classList.toggle('hidden', !canEdit);
+            
+            const calAdminControls = document.getElementById('calendar-admin-controls');
+            if(calAdminControls) calAdminControls.classList.toggle('hidden', !canEdit);
             
             const list = document.getElementById('calendar-list');
+            if(!list) return;
             list.innerHTML = '';
 
             const events = [...appData.calendar].sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -2116,9 +2193,15 @@
         }
 
         async function addCalendarEvent() {
-            const d = document.getElementById('cal-date').value;
-            const t = document.getElementById('cal-type').value;
-            const desc = document.getElementById('cal-desc').value.trim();
+            const dInput = document.getElementById('cal-date');
+            const tInput = document.getElementById('cal-type');
+            const descInput = document.getElementById('cal-desc');
+            
+            if(!dInput || !tInput || !descInput) return;
+
+            const d = dInput.value;
+            const t = tInput.value;
+            const desc = descInput.value.trim();
 
             if(!d || !desc) return alert("Preencha a data e a descrição.");
 
@@ -2126,7 +2209,7 @@
             
             try {
                 await getCollection('concenal_config').doc('general').set({ calendar: appData.calendar }, { merge: true });
-                document.getElementById('cal-desc').value = '';
+                descInput.value = '';
                 renderCalendarView();
             } catch(e) {
                 alert("Erro ao salvar: " + e.message);
@@ -2212,6 +2295,152 @@
             return student.subjects[subject];
         }
 
+        // --- MÓDULO: ANÁLISE DE DESEMPENHO (CHART.JS) ---
+        // Aqui está a definição correta e global da função.
+        window.openAnalytics = function(studentId) {
+            const student = appData.students.find(s => s.id === studentId);
+            if(!student) return;
+            const subj = appData.currentSubject;
+            if(!subj) return alert("Selecione uma disciplina primeiro.");
+
+            const nameEl = document.getElementById('analytics-student-name');
+            if(nameEl) nameEl.innerText = student.name;
+            
+            const subjEl = document.getElementById('analytics-subject');
+            if(subjEl) subjEl.innerText = subj;
+
+            const d = ensureSubjectData(student, subj);
+            const units = d.units || [null,null,null,null,null,null];
+
+            // Médias da Turma para Comparativo
+            let classSums = [0,0,0,0,0,0];
+            let classCounts = [0,0,0,0,0,0];
+            const classStudents = getStudentsByClass(); 
+
+            classStudents.forEach(s => {
+                const sd = ensureSubjectData(s, subj);
+                for(let i=0; i<6; i++) {
+                    if(sd.units[i] !== null && sd.units[i] !== "") {
+                        classSums[i] += parseFloat(sd.units[i]);
+                        classCounts[i]++;
+                    }
+                }
+            });
+
+            const classAvgs = classSums.map((sum, i) => classCounts[i] > 0 ? parseFloat((sum / classCounts[i]).toFixed(1)) : null);
+
+            // Dados Gráfico
+            const labels = ['U1', 'U2', 'U3', 'U4', 'U5', 'U6'];
+            const studentData = units.map(u => u !== null && u !== "" ? parseFloat(u) : null);
+
+            // Análise e Alertas Inteligentes
+            let alertsHtml = '';
+            let validUnits = [];
+            studentData.forEach((v, i) => { if(v !== null) validUnits.push({val: v, idx: i}); });
+
+            // Análise de Queda ou Aumento
+            if(validUnits.length >= 2) {
+                const last = validUnits[validUnits.length-1];
+                const prev = validUnits[validUnits.length-2];
+                const diff = last.val - prev.val;
+                if(diff < 0) {
+                    alertsHtml += `<div class="bg-red-50 text-red-700 p-3 rounded-lg border border-red-200 text-xs font-bold shadow-sm"><i class="fas fa-arrow-down mr-2"></i> Queda de rendimento identificada: A nota caiu ${Math.abs(diff).toFixed(1)} pontos da U${prev.idx+1} para a U${last.idx+1}.</div>`;
+                } else if (diff > 0) {
+                    alertsHtml += `<div class="bg-green-50 text-green-700 p-3 rounded-lg border border-green-200 text-xs font-bold shadow-sm"><i class="fas fa-arrow-up mr-2"></i> Aumento de rendimento: A nota subiu ${Math.abs(diff).toFixed(1)} pontos da U${prev.idx+1} para a U${last.idx+1}.</div>`;
+                }
+            }
+
+            const c = calculateStatus(d, subj);
+            const currAvg = parseFloat(c.average);
+
+            // Alerta Risco Reprovação (Menor que 6)
+            if(c.average !== '-' && currAvg < 6.0) {
+                alertsHtml += `<div class="bg-orange-50 text-orange-700 p-3 rounded-lg border border-orange-200 text-xs font-bold shadow-sm animate-pulse"><i class="fas fa-exclamation-triangle mr-2 text-lg"></i> Alerta de Risco: Média atual de ${currAvg} (abaixo de 6.0). O aluno corre risco de recuperação/reprovação na disciplina. Intervenção sugerida.</div>`;
+            }
+
+            const isStaff = currentUser.role !== 'parent';
+
+            // Comparativo Geral
+            if(isStaff && c.average !== '-') {
+                let totalClassSum = 0; let totalClassCount = 0;
+                classAvgs.forEach(v => { if(v !== null) { totalClassSum+=parseFloat(v); totalClassCount++; }});
+                let overallClassAvg = totalClassCount > 0 ? (totalClassSum/totalClassCount).toFixed(1) : '-';
+
+                if(overallClassAvg !== '-') {
+                    if(currAvg > parseFloat(overallClassAvg)) {
+                        alertsHtml += `<div class="bg-blue-50 text-blue-700 p-3 rounded-lg border border-blue-200 text-xs font-bold shadow-sm"><i class="fas fa-info-circle mr-2"></i> Acima da Média: O aluno está rendendo acima da média geral da turma (${overallClassAvg}).</div>`;
+                    } else if (currAvg < parseFloat(overallClassAvg)) {
+                        alertsHtml += `<div class="bg-yellow-50 text-yellow-700 p-3 rounded-lg border border-yellow-200 text-xs font-bold shadow-sm"><i class="fas fa-info-circle mr-2"></i> Abaixo da Média: O aluno está rendendo abaixo da média geral da turma (${overallClassAvg}).</div>`;
+                    }
+                }
+            }
+
+            if(!alertsHtml) alertsHtml = `<div class="text-gray-400 text-xs italic bg-gray-50 p-3 rounded-lg border border-gray-100">Nenhum alerta crítico no momento. Continue acompanhando.</div>`;
+            
+            const alertsContainer = document.getElementById('analytics-alerts');
+            if(alertsContainer) alertsContainer.innerHTML = alertsHtml;
+
+            // Renderiza o Chart.js
+            const canvas = document.getElementById('analyticsChart');
+            if(!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            if(analyticsChart) analyticsChart.destroy();
+
+            const datasets = [
+                {
+                    label: 'Nota do Aluno',
+                    data: studentData,
+                    borderColor: '#10B981', // Verde School
+                    backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                    borderWidth: 3,
+                    tension: 0.3,
+                    fill: true,
+                    pointBackgroundColor: '#047857',
+                    pointRadius: 5,
+                    pointHoverRadius: 7
+                }
+            ];
+
+            // Adiciona a linha de média da turma SÓ para professores/direção
+            if(isStaff) {
+                datasets.push({
+                    label: 'Média da Turma',
+                    data: classAvgs,
+                    borderColor: '#9CA3AF', 
+                    borderDash: [5, 5],
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: false,
+                    pointBackgroundColor: '#4B5563',
+                    pointRadius: 3
+                });
+            }
+
+            analyticsChart = new Chart(ctx, {
+                type: 'line',
+                data: { labels: labels, datasets: datasets },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { 
+                        y: { 
+                            beginAtZero: true, 
+                            max: 10,
+                            grid: { color: '#F3F4F6' }
+                        },
+                        x: { grid: { display: false } }
+                    },
+                    plugins: { 
+                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } 
+                    }
+                }
+            });
+
+            const modalAnalytics = document.getElementById('modal-analytics');
+            if(modalAnalytics) modalAnalytics.classList.remove('hidden');
+        };
+
         // --- RENDER VIEWS ---
         function renderGradesTable() {
             // Professor SÓ edita se a turma X for atribuída à matéria Y dele. Admin edita tudo.
@@ -2239,14 +2468,20 @@
             const emptyState = document.getElementById('empty-state');
             
             if(list.length === 0 || (!appData.currentClass && currentUser.role !== 'parent') || !appData.currentSubject) { 
-                if (emptyState) emptyState.classList.remove('hidden'); 
+                const emptySt = document.getElementById('empty-state');
+                if (emptySt) emptySt.classList.remove('hidden'); 
                 return; 
             }
-            if (emptyState) emptyState.classList.add('hidden');
+            const emptySt2 = document.getElementById('empty-state');
+            if (emptySt2) emptySt2.classList.add('hidden');
 
             list.forEach(s => {
                 const d = ensureSubjectData(s, appData.currentSubject); const c = calculateStatus(d, appData.currentSubject);
-                let row = `<tr class="hover:bg-gray-50 transition border-b border-gray-100"><td class="px-4 py-4 border-r flex justify-between items-center sticky left-0 bg-white print-border"><div><span class="font-bold text-gray-700">${s.name}</span><br><span class="text-[9px] text-gray-300 font-mono text-left block w-20 truncate no-print">${s.id}</span></div><div class="flex gap-2"><button onclick="openReportModal('${s.id}')" class="text-blue-500 hover:scale-110 transition no-print"><i class="fas fa-file-alt"></i></button>${canEdit?`<button onclick="deleteStudent('${s.id}')" class="text-red-300 hover:text-red-500 transition no-print"><i class="fas fa-trash"></i></button>`:''}</div></td>`;
+                
+                // Ícone de alerta ao lado do nome se o aluno tiver média abaixo de 6
+                let warningIcon = (c.average !== '-' && parseFloat(c.average) < 6.0) ? `<i class="fas fa-exclamation-triangle text-orange-500 ml-2" title="Risco de Reprovação"></i>` : '';
+
+                let row = `<tr class="hover:bg-gray-50 transition border-b border-gray-100"><td class="px-4 py-4 border-r flex justify-between items-center sticky left-0 bg-white print-border"><div><span class="font-bold text-gray-700">${s.name}${warningIcon}</span><br><span class="text-[9px] text-gray-300 font-mono text-left block w-20 truncate no-print">${s.id}</span></div><div class="flex gap-2"><button onclick="openAnalytics('${s.id}')" class="text-purple-500 hover:scale-110 transition no-print" title="Análise de Desempenho"><i class="fas fa-chart-line"></i></button><button onclick="openReportModal('${s.id}')" class="text-blue-500 hover:scale-110 transition no-print"><i class="fas fa-file-alt"></i></button>${canEdit?`<button onclick="deleteStudent('${s.id}')" class="text-red-300 hover:text-red-500 transition no-print"><i class="fas fa-trash"></i></button>`:''}</div></td>`;
                 for(let i=0; i<6; i++) { 
                     const v = d.units[i] ?? ''; 
                     row += `<td class="px-1 border-l print-border"><input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-transparent focus:outline-none ${v!==''&&v<6?'text-red-600 font-bold':'text-green-700'}" value="${v}" onchange="updateGrade('${s.id}',${i},this.value)"></td>`; 
@@ -2335,7 +2570,8 @@
         }
         
         function changeAttendanceDate(dateStr) {
-            document.getElementById('attendance-date').value = dateStr;
+            const attDate = document.getElementById('attendance-date');
+            if(attDate) attDate.value = dateStr;
             renderAttendanceTable();
         }
 
@@ -2373,7 +2609,8 @@
         }
 
         function changeDailyDate(dateStr) {
-            document.getElementById('daily-date').value = dateStr;
+            const dailyDate = document.getElementById('daily-date');
+            if(dailyDate) dailyDate.value = dateStr;
             loadDailyData();
         }
 
@@ -2506,13 +2743,25 @@
 
         // --- ATIVIDADES PDF ACTIONS ---
         function openSendActivityModal() {
-            document.getElementById('act-title').value = '';
-            document.getElementById('act-file').value = '';
+            const actTitle = document.getElementById('act-title');
+            if(actTitle) actTitle.value = '';
+            
+            const actFile = document.getElementById('act-file');
+            if(actFile) actFile.value = '';
+            
             currentActivityFile = null;
-            document.getElementById('act-file-name').innerText = 'Clique ou arraste o PDF aqui';
-            document.getElementById('act-class-display').innerText = appData.currentClass;
-            document.getElementById('act-subj-display').innerText = appData.currentSubject;
-            document.getElementById('modal-send-activity').classList.remove('hidden');
+            
+            const actFileName = document.getElementById('act-file-name');
+            if(actFileName) actFileName.innerText = 'Clique ou arraste o PDF aqui';
+            
+            const actClassDisplay = document.getElementById('act-class-display');
+            if(actClassDisplay) actClassDisplay.innerText = appData.currentClass;
+            
+            const actSubjDisplay = document.getElementById('act-subj-display');
+            if(actSubjDisplay) actSubjDisplay.innerText = appData.currentSubject;
+            
+            const modalSendActivity = document.getElementById('modal-send-activity');
+            if(modalSendActivity) modalSendActivity.classList.remove('hidden');
         }
 
         function previewActivityFile(input) {
@@ -2523,7 +2772,10 @@
                 input.value = '';
                 return alert("O arquivo excede o limite de 800KB. Compacte o PDF antes de enviar.");
             }
-            document.getElementById('act-file-name').innerText = file.name;
+            
+            const actFileName = document.getElementById('act-file-name');
+            if(actFileName) actFileName.innerText = file.name;
+            
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = e => {
@@ -2532,7 +2784,10 @@
         }
 
         async function submitActivity() {
-            const title = document.getElementById('act-title').value.trim();
+            const actTitleInput = document.getElementById('act-title');
+            if(!actTitleInput) return;
+            const title = actTitleInput.value.trim();
+            
             if(!title || !currentActivityFile) return alert("Preencha o título e selecione um arquivo PDF.");
             
             try {
@@ -2577,6 +2832,7 @@
             };
 
             const btn = document.getElementById(`btn-att-${id}`);
+            if(!btn) return;
 
             if (nw === 'P') {
                 btn.className = "w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition flex flex-col items-center justify-center bg-green-100 text-green-800 border-green-200 mx-auto";
@@ -2604,7 +2860,11 @@
         }
         
         async function saveDailyAttendance(){ 
-            const d=document.getElementById('attendance-date').value; let b=db.batch(); 
+            const attDateInput = document.getElementById('attendance-date');
+            if(!attDateInput) return;
+            const d = attDateInput.value; 
+            
+            let b=db.batch(); 
             getStudentsByClass().forEach(s=>{ 
                 const sub=ensureSubjectData(s, appData.currentSubject); 
                 sub.attendance[d]=tempAttendance[s.id]; 
@@ -2617,7 +2877,11 @@
         }
 
         async function saveDailyLog(){ 
-            const d=document.getElementById('daily-date').value; let b=db.batch(); 
+            const dailyDateInput = document.getElementById('daily-date');
+            if(!dailyDateInput) return;
+            const d = dailyDateInput.value; 
+            
+            let b=db.batch(); 
             getStudentsByClass().forEach(s=>{ 
                 const sub=ensureSubjectData(s, appData.currentSubject); 
                 sub.dailyLogs[d]=tempDaily[s.id]; 
@@ -2632,30 +2896,62 @@
         function updateGrade(id,i,v){ const s=appData.students.find(x=>x.id===id); const sd=ensureSubjectData(s,appData.currentSubject); sd.units[i]=v; getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{units:sd.units}}},{merge:true}); }
         function updateRecovery(id,v){ const s=appData.students.find(x=>x.id===id); getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{recovery:v}}},{merge:true}); }
         function deleteStudent(id){ if(confirm("Remover aluno?")) getCollection('concenal_students').doc(id).delete(); }
-        function addStudent(){ const n=document.getElementById('new-name').value; if(!n) return; getCollection('concenal_students').add({name:n, class:appData.currentClass, subjects:{}}); closeModal('modal-add'); }
-        async function importStudents(){ const l=document.getElementById('import-list').value.split('\n'); let b=db.batch(); l.forEach(n=>{ if(n.trim()) b.set(getCollection('concenal_students').doc(),{name:n.trim(),class:appData.currentClass,subjects:{}}); }); await b.commit(); closeModal('modal-import'); }
+        function addStudent(){ 
+            const newNameInput = document.getElementById('new-name');
+            if(!newNameInput) return;
+            const n = newNameInput.value; 
+            if(!n) return; 
+            getCollection('concenal_students').add({name:n, class:appData.currentClass, subjects:{}}); 
+            closeModal('modal-add'); 
+        }
+        
+        async function importStudents(){ 
+            const importListInput = document.getElementById('import-list');
+            if(!importListInput) return;
+            const l = importListInput.value.split('\n'); 
+            
+            let b=db.batch(); 
+            l.forEach(n=>{ 
+                if(n.trim()) b.set(getCollection('concenal_students').doc(),{name:n.trim(),class:appData.currentClass,subjects:{}}); 
+            }); 
+            await b.commit(); 
+            closeModal('modal-import'); 
+        }
 
         // --- RELATÓRIOS PDF NATIVOS ---
         function openReportsModal(type) {
-            document.getElementById('report-type-input').value = type;
+            const reportTypeInput = document.getElementById('report-type-input');
+            if(reportTypeInput) reportTypeInput.value = type;
+            
             const title = type === 'attendance' ? 'Relatório de Frequência' : 'Relatório Diário de Bordo';
-            document.getElementById('reports-modal-title').innerText = title;
+            const modalTitle = document.getElementById('reports-modal-title');
+            if(modalTitle) modalTitle.innerText = title;
             
             // Carregar lista de alunos da turma atual
             const stSelect = document.getElementById('report-student');
-            stSelect.innerHTML = '<option value="all">Todos os Alunos</option>';
-            getStudentsByClass().forEach(s => {
-                stSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
-            });
+            if(stSelect) {
+                stSelect.innerHTML = '<option value="all">Todos os Alunos</option>';
+                getStudentsByClass().forEach(s => {
+                    stSelect.innerHTML += `<option value="${s.id}">${s.name}</option>`;
+                });
+            }
 
-            document.getElementById('modal-reports').classList.remove('hidden');
+            const modalReports = document.getElementById('modal-reports');
+            if(modalReports) modalReports.classList.remove('hidden');
         }
 
         function generateFilteredPDF() {
-            const type = document.getElementById('report-type-input').value; // 'attendance' or 'daily'
-            const period = document.getElementById('report-period').value;
-            const studentId = document.getElementById('report-student').value;
+            const reportTypeInput = document.getElementById('report-type-input');
+            const type = reportTypeInput ? reportTypeInput.value : '';
+            
+            const reportPeriodInput = document.getElementById('report-period');
+            const period = reportPeriodInput ? reportPeriodInput.value : 'all';
+            
+            const reportStudentInput = document.getElementById('report-student');
+            const studentId = reportStudentInput ? reportStudentInput.value : 'all';
+            
             const printArea = document.getElementById('print-area');
+            if(!printArea) return;
             
             let studentsToPrint = getStudentsByClass();
             if(studentId !== 'all') {
@@ -2759,10 +3055,12 @@
         function openReportModal(id){
             currentStudentForReport=appData.students.find(s=>s.id===id); if(!currentStudentForReport) return;
             const student = currentStudentForReport;
-            document.getElementById('report-name').innerText=student.name; 
+            
+            const reportNameEl = document.getElementById('report-name');
+            if(reportNameEl) reportNameEl.innerText=student.name; 
             
             const tbody = document.getElementById('unified-report-body');
-            tbody.innerHTML = '';
+            if(tbody) tbody.innerHTML = '';
             
             // Identificar quais disciplinas exibir (baseado no currículo da turma)
             let subjectsToDisplay = appData.curriculum[student.class] || [];
@@ -2774,7 +3072,7 @@
                 });
             }
 
-            if(subjectsToDisplay.length === 0) {
+            if(subjectsToDisplay.length === 0 && tbody) {
                 tbody.innerHTML = '<tr><td colspan="11" class="p-6 text-gray-400">Nenhum dado cadastrado.</td></tr>';
             }
 
@@ -2792,79 +3090,107 @@
                     avgCount++;
                 }
 
-                let row = `<tr class="hover:bg-gray-50"><td class="px-4 py-3 text-left font-bold border-r text-gray-800">${subjName}</td>`;
-                for(let i=0; i<6; i++) {
-                    const uVal = d.units?.[i];
-                    const vClass = (uVal && uVal < 6) ? 'text-red-500 font-bold' : '';
-                    row += `<td class="${vClass}">${uVal !== undefined && uVal !== null ? uVal : '-'}</td>`;
+                if(tbody) {
+                    let row = `<tr class="hover:bg-gray-50"><td class="px-4 py-3 text-left font-bold border-r text-gray-800">${subjName}</td>`;
+                    for(let i=0; i<6; i++) {
+                        const uVal = d.units?.[i];
+                        const vClass = (uVal && uVal < 6) ? 'text-red-500 font-bold' : '';
+                        row += `<td class="${vClass}">${uVal !== undefined && uVal !== null ? uVal : '-'}</td>`;
+                    }
+                    row += `<td class="border-l font-bold ${c.freq < 75 ? 'text-red-600' : 'text-blue-600'}">${c.faults}</td>`;
+                    row += `<td class="border-l font-bold text-gray-800">${c.average}</td>`;
+                    row += `<td class="border-l font-bold text-red-500">${d.recovery || '-'}</td>`;
+                    row += `<td class="border-l"><span class="${c.statusClass}">${c.status}</span></td></tr>`;
+                    tbody.innerHTML += row;
                 }
-                row += `<td class="border-l font-bold ${c.freq < 75 ? 'text-red-600' : 'text-blue-600'}">${c.faults}</td>`;
-                row += `<td class="border-l font-bold text-gray-800">${c.average}</td>`;
-                row += `<td class="border-l font-bold text-red-500">${d.recovery || '-'}</td>`;
-                row += `<td class="border-l"><span class="${c.statusClass}">${c.status}</span></td></tr>`;
-                tbody.innerHTML += row;
             });
 
             // Resumo Global Topo
             const finalGlobalAvg = avgCount > 0 ? (totalAvg / avgCount).toFixed(1) : '-';
             const finalGlobalFreq = totalDaysGlobal > 0 ? (((totalDaysGlobal - totalFaultsGlobal) / totalDaysGlobal) * 100).toFixed(1) : '-';
             
-            document.getElementById('report-avg').innerText = finalGlobalAvg;
-            document.getElementById('report-freq').innerText = finalGlobalFreq !== '-' ? finalGlobalFreq + '%' : '-';
-            document.getElementById('report-days-count').innerText = `Total Faltas: ${totalFaultsGlobal}`;
-            if(finalGlobalFreq !== '-') document.getElementById('report-freq-bar').style.width = finalGlobalFreq + '%';
+            const rAvg = document.getElementById('report-avg');
+            if(rAvg) rAvg.innerText = finalGlobalAvg;
+            
+            const rFreq = document.getElementById('report-freq');
+            if(rFreq) rFreq.innerText = finalGlobalFreq !== '-' ? finalGlobalFreq + '%' : '-';
+            
+            const rDays = document.getElementById('report-days-count');
+            if(rDays) rDays.innerText = `Total Faltas: ${totalFaultsGlobal}`;
+            
+            if(finalGlobalFreq !== '-') {
+                const rBar = document.getElementById('report-freq-bar');
+                if(rBar) rBar.style.width = finalGlobalFreq + '%';
+            }
             
             let globalStatus = "CURSANDO";
             if(finalGlobalAvg !== '-' && finalGlobalAvg >= 6.0 && finalGlobalFreq >= 75) globalStatus = "APROVADO GERAL";
             if(finalGlobalFreq !== '-' && finalGlobalFreq < 75) globalStatus = "REPROVADO POR FALTAS";
-            document.getElementById('report-status').innerText = globalStatus;
+            
+            const rStatus = document.getElementById('report-status');
+            if(rStatus) rStatus.innerText = globalStatus;
             
             // Observações (Unificadas)
             const obsList = document.getElementById('observations-list'); 
-            obsList.innerHTML = '';
-            let allObs = [];
-            if(student.subjects) {
-                Object.entries(student.subjects).forEach(([subj, data]) => {
-                    if(data.observations) {
-                        data.observations.forEach(o => allObs.push({subj, ...o}));
-                    }
+            if(obsList) {
+                obsList.innerHTML = '';
+                let allObs = [];
+                if(student.subjects) {
+                    Object.entries(student.subjects).forEach(([subj, data]) => {
+                        if(data.observations) {
+                            data.observations.forEach(o => allObs.push({subj, ...o}));
+                        }
+                    });
+                }
+
+                if(allObs.length === 0) obsList.innerHTML = '<div class="text-xs text-gray-400 italic">Sem pareceres registrados.</div>';
+
+                // Ordena observações por data simulada (Atenção: formato BR dd/mm/yyyy dificulta sort direto, simplificando)
+                allObs.reverse().forEach(o => {
+                    obsList.innerHTML += `<div class="bg-white border border-gray-100 p-3 rounded-xl shadow-sm text-xs"><div class="flex justify-between text-[10px] text-gray-400 font-bold uppercase mb-1"><span><b class="text-school-green">${o.subj}</b> - ${o.date}</span><span>${o.author}</span></div><p class="text-gray-700 leading-relaxed">${o.text}</p></div>`;
                 });
             }
-
-            if(allObs.length === 0) obsList.innerHTML = '<div class="text-xs text-gray-400 italic">Sem pareceres registrados.</div>';
-
-            // Ordena observações por data simulada (Atenção: formato BR dd/mm/yyyy dificulta sort direto, simplificando)
-            allObs.reverse().forEach(o => {
-                obsList.innerHTML += `<div class="bg-white border border-gray-100 p-3 rounded-xl shadow-sm text-xs"><div class="flex justify-between text-[10px] text-gray-400 font-bold uppercase mb-1"><span><b class="text-school-green">${o.subj}</b> - ${o.date}</span><span>${o.author}</span></div><p class="text-gray-700 leading-relaxed">${o.text}</p></div>`;
-            });
             
             const isP = currentUser && currentUser.role === 'parent'; 
-            document.getElementById('report-tools').classList.toggle('hidden', isP || !appData.currentSubject); 
-            document.getElementById('obs-subject-label').innerText = appData.currentSubject || '';
-            document.getElementById('modal-report').classList.remove('hidden');
+            
+            const repTools = document.getElementById('report-tools');
+            if(repTools) repTools.classList.toggle('hidden', isP || !appData.currentSubject); 
+            
+            const obsSubjLabel = document.getElementById('obs-subject-label');
+            if(obsSubjLabel) obsSubjLabel.innerText = appData.currentSubject || '';
+            
+            const modalRep = document.getElementById('modal-report');
+            if(modalRep) modalRep.classList.remove('hidden');
         }
 
         async function addObservation(){ 
-            const t = document.getElementById('new-observation-text').value; 
-            const d = document.getElementById('new-observation-date').value;
+            const tInput = document.getElementById('new-observation-text');
+            const dInput = document.getElementById('new-observation-date');
+            if(!tInput || !dInput) return;
+            
+            const t = tInput.value; 
+            const d = dInput.value;
             if(!t || !appData.currentSubject) return;
+            
             const s = currentStudentForReport;
             const sd = ensureSubjectData(s, appData.currentSubject);
             sd.observations.push({date: d.split('-').reverse().join('/'), text: t, author: currentUser.displayName || currentUser.name});
             await getCollection('concenal_students').doc(s.id).set({subjects:{[appData.currentSubject]:{observations:sd.observations}}},{merge:true});
-            document.getElementById('new-observation-text').value = ''; 
+            tInput.value = ''; 
             openReportModal(s.id);
         }
 
         function printUnifiedReport() {
             const printArea = document.getElementById('print-area');
+            if(!printArea) return;
+            
             const student = currentStudentForReport;
             const now = new Date();
 
-            const avg = document.getElementById('report-avg').innerText;
-            const freq = document.getElementById('report-freq').innerText;
-            const faults = document.getElementById('report-days-count').innerText;
-            const status = document.getElementById('report-status').innerText;
+            const avg = document.getElementById('report-avg') ? document.getElementById('report-avg').innerText : '--';
+            const freq = document.getElementById('report-freq') ? document.getElementById('report-freq').innerText : '--';
+            const faults = document.getElementById('report-days-count') ? document.getElementById('report-days-count').innerText : '--';
+            const status = document.getElementById('report-status') ? document.getElementById('report-status').innerText : '--';
             
             let html = `
                 <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #047857;">
@@ -2959,14 +3285,24 @@
 
         function openJustifyModal(sid){
             currentJustificationStudentId = sid;
-            currentJustificationDate = document.getElementById('attendance-date').value;
-            document.getElementById('just-date-display').innerText = `${currentJustificationDate.split('-').reverse().join('/')} - ${appData.currentSubject}`;
-            document.getElementById('modal-justification').classList.remove('hidden');
+            const attDateInput = document.getElementById('attendance-date');
+            currentJustificationDate = attDateInput ? attDateInput.value : '';
+            
+            const justDateDisplay = document.getElementById('just-date-display');
+            if(justDateDisplay) justDateDisplay.innerText = `${currentJustificationDate.split('-').reverse().join('/')} - ${appData.currentSubject}`;
+            
+            const modalJust = document.getElementById('modal-justification');
+            if(modalJust) modalJust.classList.remove('hidden');
         }
 
         async function submitJustification() {
-            const f = document.getElementById('just-file').files[0];
-            const reason = document.getElementById('just-reason').value;
+            const fInput = document.getElementById('just-file');
+            const reasonInput = document.getElementById('just-reason');
+            
+            if(!fInput || !reasonInput) return;
+            
+            const f = fInput.files[0];
+            const reason = reasonInput.value;
             
             const save = (b64) => {
                 const s = appData.students.find(x => x.id === currentJustificationStudentId);
@@ -3002,10 +3338,17 @@
         // --- GESTÃO USUÁRIOS E ASSIGNMENTS ---
         function switchUserTab(t){ 
             creatingUserType=t; 
-            document.getElementById('tab-teacher').className=t==='teacher'?"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition bg-white shadow-sm text-gray-800":"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition text-gray-400";
-            document.getElementById('tab-parent').className=t==='parent'?"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition bg-white shadow-sm text-gray-800":"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition text-gray-400";
-            document.getElementById('field-teacher-subj').classList.toggle('hidden', t!=='teacher');
-            document.getElementById('field-parent-student').classList.toggle('hidden', t!=='parent');
+            const tabTeacher = document.getElementById('tab-teacher');
+            if(tabTeacher) tabTeacher.className=t==='teacher'?"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition bg-white shadow-sm text-gray-800":"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition text-gray-400";
+            
+            const tabParent = document.getElementById('tab-parent');
+            if(tabParent) tabParent.className=t==='parent'?"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition bg-white shadow-sm text-gray-800":"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition text-gray-400";
+            
+            const fieldTeacher = document.getElementById('field-teacher-subj');
+            if(fieldTeacher) fieldTeacher.classList.toggle('hidden', t!=='teacher');
+            
+            const fieldParent = document.getElementById('field-parent-student');
+            if(fieldParent) fieldParent.classList.toggle('hidden', t!=='parent');
             
             if(t === 'teacher') renderAssignmentsUI();
             loadUsersList();
@@ -3013,6 +3356,8 @@
 
         function toggleSubjClasses(checkbox, safeSubj) {
             const div = document.getElementById(`classes-for-${safeSubj}`);
+            if(!div) return;
+            
             if (checkbox.checked) {
                 div.classList.remove('hidden');
             } else {
@@ -3046,12 +3391,21 @@
         }
 
         async function saveUserOps() {
-            const id = document.getElementById('edit-user-id').value;
-            const n = document.getElementById('new-u-name').value;
-            const d = document.getElementById('new-u-display').value;
-            const l = document.getElementById('new-u-login').value;
-            const p = document.getElementById('new-u-pass').value;
-            const r = document.getElementById('new-u-role').value;
+            const idInput = document.getElementById('edit-user-id');
+            const nInput = document.getElementById('new-u-name');
+            const dInput = document.getElementById('new-u-display');
+            const lInput = document.getElementById('new-u-login');
+            const pInput = document.getElementById('new-u-pass');
+            const rInput = document.getElementById('new-u-role');
+
+            if(!idInput || !nInput || !dInput || !lInput || !pInput || !rInput) return;
+
+            const id = idInput.value;
+            const n = nInput.value;
+            const d = dInput.value;
+            const l = lInput.value;
+            const p = pInput.value;
+            const r = rInput.value;
 
             let data = { name: n, displayName: d, username: l.toLowerCase(), role: creatingUserType === 'parent' ? 'parent' : r };
             if(p) data.password = p;
@@ -3072,7 +3426,8 @@
                 Object.values(assignments).forEach(clist => clist.forEach(c => uniqueClasses.add(c)));
                 data.classes = Array.from(uniqueClasses);
             } else { 
-                data.studentId = document.getElementById('new-u-student-id').value; 
+                const studentIdInput = document.getElementById('new-u-student-id');
+                if(studentIdInput) data.studentId = studentIdInput.value; 
             }
 
             if(!n || !l) return alert("Preencha os campos obrigatórios.");
@@ -3095,12 +3450,24 @@
 
         function editUser(id, dataStr) {
             const data = JSON.parse(decodeURIComponent(dataStr));
-            document.getElementById('edit-user-id').value = id;
-            document.getElementById('new-u-name').value = data.name;
-            document.getElementById('new-u-display').value = data.displayName || '';
-            document.getElementById('new-u-login').value = data.username;
-            document.getElementById('new-u-pass').value = '';
-            document.getElementById('new-u-role').value = data.role || 'teacher';
+            
+            const editId = document.getElementById('edit-user-id');
+            if(editId) editId.value = id;
+            
+            const nName = document.getElementById('new-u-name');
+            if(nName) nName.value = data.name;
+            
+            const nDisp = document.getElementById('new-u-display');
+            if(nDisp) nDisp.value = data.displayName || '';
+            
+            const nLog = document.getElementById('new-u-login');
+            if(nLog) nLog.value = data.username;
+            
+            const nPass = document.getElementById('new-u-pass');
+            if(nPass) nPass.value = '';
+            
+            const nRole = document.getElementById('new-u-role');
+            if(nRole) nRole.value = data.role || 'teacher';
             
             let assignments = data.assignments || {};
             if (Object.keys(assignments).length === 0 && data.subjects && data.classes) {
@@ -3109,21 +3476,36 @@
             
             renderAssignmentsUI(assignments);
 
-            if(data.studentId) document.getElementById('new-u-student-id').value = data.studentId;
-            document.getElementById('btn-save-user').innerText = "Atualizar Cadastro";
-            document.getElementById('btn-cancel-edit').classList.remove('hidden');
+            if(data.studentId) {
+                const sId = document.getElementById('new-u-student-id');
+                if(sId) sId.value = data.studentId;
+            }
+            
+            const btnSaveUser = document.getElementById('btn-save-user');
+            if(btnSaveUser) btnSaveUser.innerText = "Atualizar Cadastro";
+            
+            const btnCancel = document.getElementById('btn-cancel-edit');
+            if(btnCancel) btnCancel.classList.remove('hidden');
         }
 
         function cancelEdit() {
-            document.getElementById('edit-user-id').value = '';
+            const editId = document.getElementById('edit-user-id');
+            if(editId) editId.value = '';
+            
             document.querySelectorAll('#modal-users input[type=text], #modal-users input[type=password]').forEach(i=>i.value='');
             renderAssignmentsUI({});
-            document.getElementById('btn-save-user').innerText = "Salvar Cadastro";
-            document.getElementById('btn-cancel-edit').classList.add('hidden');
+            
+            const btnSaveUser = document.getElementById('btn-save-user');
+            if(btnSaveUser) btnSaveUser.innerText = "Salvar Cadastro";
+            
+            const btnCancel = document.getElementById('btn-cancel-edit');
+            if(btnCancel) btnCancel.classList.add('hidden');
         }
 
         function loadUsersList() {
-            const list = document.getElementById('users-list'); list.innerHTML = '<div class="p-8 text-center"><i class="fas fa-circle-notch fa-spin"></i></div>';
+            const list = document.getElementById('users-list'); 
+            if(!list) return;
+            list.innerHTML = '<div class="p-8 text-center"><i class="fas fa-circle-notch fa-spin"></i></div>';
             
             getCollection('concenal_users').get().then(snap => {
                 list.innerHTML = '';
