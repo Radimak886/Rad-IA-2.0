@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - 2026</title>
+    <title>DIÁRIO ESCOLAR - CONCENAL</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -54,7 +54,7 @@
             .print-bg-gray { background-color: #f9fafb !important; }
         }
 
-        .chat-msg { max-width: 85%; border-radius: 12px; margin-bottom: 8px; position: relative; }
+        .chat-msg { max-width: 80%; border-radius: 12px; margin-bottom: 8px; padding: 10px 14px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
         .chat-msg.sent { align-self: flex-end; background-color: #dcf8c6; border-bottom-right-radius: 0; border: 1px solid #c5e1a5; }
         .chat-msg.received { align-self: flex-start; background-color: #ffffff; border-bottom-left-radius: 0; border: 1px solid #e0e0e0; }
         
@@ -378,48 +378,74 @@
         </div>
     </div>
 
-    <!-- MODAL: CHAT RESTAURADO (COMUNICADOR) -->
-    <div id="modal-chat" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[120] flex items-center justify-center p-2 md:p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col md:flex-row overflow-hidden relative">
-            <!-- Sidebar -->
-            <div id="chat-sidebar" class="w-full md:w-1/3 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
-                <div class="p-4 border-b bg-school-green text-white flex justify-between items-center">
-                    <h3 class="font-bold uppercase tracking-widest text-xs"><i class="fas fa-comments mr-2"></i> Mensagens</h3>
+    <!-- MODAL: CHAT RESTAURADO (COMUNICADOR REDESENHADO) -->
+    <div id="modal-chat" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[120] flex items-center justify-center p-2 md:p-6 backdrop-blur-md">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col md:flex-row overflow-hidden relative border border-gray-200">
+            <!-- Sidebar (Lista de Usuários com Busca e Filtros) -->
+            <div id="chat-sidebar" class="w-full md:w-[35%] bg-[#f8fafc] border-r border-gray-200 flex flex-col h-full">
+                <!-- Cabeçalho Sidebar -->
+                <div class="p-4 border-b bg-school-green text-white flex justify-between items-center shadow-sm">
+                    <div class="flex items-center gap-2">
+                        <div class="bg-white text-school-green w-8 h-8 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-comments"></i></div>
+                        <h3 class="font-bold uppercase tracking-widest text-xs">Mensagens</h3>
+                    </div>
                     <button onclick="closeModal('modal-chat')" class="text-green-200 hover:text-white transition md:hidden"><i class="fas fa-times fa-lg"></i></button>
                 </div>
+                
+                <!-- Busca e Filtros (Oculto para Pais) -->
+                <div id="chat-search-container" class="px-4 py-3 border-b bg-white">
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
+                        <input type="text" id="chat-search-input" onkeyup="filterChat()" class="w-full border border-gray-200 pl-8 p-2 rounded-xl text-xs outline-none focus:border-school-green focus:ring-1 focus:ring-school-green bg-gray-50 transition" placeholder="Buscar por nome...">
+                    </div>
+                    <div class="flex gap-2 mt-3 overflow-x-auto hide-scroll-x pb-1" id="chat-filter-pills">
+                        <button onclick="filterChatRole('all')" class="text-[10px] bg-school-green text-white px-3 py-1.5 rounded-lg font-bold shadow-sm whitespace-nowrap transition filter-pill">Todos</button>
+                        <button onclick="filterChatRole('teacher')" class="text-[10px] bg-gray-100 text-gray-500 hover:bg-gray-200 px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition filter-pill">Professores</button>
+                        <button onclick="filterChatRole('parent')" class="text-[10px] bg-gray-100 text-gray-500 hover:bg-gray-200 px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition filter-pill">Pais / Alunos</button>
+                        <button onclick="filterChatRole('coord')" class="text-[10px] bg-gray-100 text-gray-500 hover:bg-gray-200 px-3 py-1.5 rounded-lg font-bold whitespace-nowrap transition filter-pill">Coord / Dir</button>
+                    </div>
+                </div>
+
+                <!-- Lista de Contatos -->
                 <div class="p-2 overflow-y-auto flex-1 hide-scroll-x" id="chat-user-list">
                     <!-- Lista de usuários carregada via JS -->
                 </div>
             </div>
-            <!-- Main Chat -->
-            <div id="chat-main-window" class="w-full md:w-2/3 flex flex-col h-full bg-white hidden md:flex absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
+            
+            <!-- Main Chat (Janela de Conversa) -->
+            <div id="chat-main-window" class="w-full md:w-[65%] flex flex-col h-full bg-white hidden md:flex absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
                 <div class="p-4 border-b bg-white flex justify-between items-center shadow-sm z-10" id="mobile-chat-header">
                     <div class="flex items-center gap-3">
-                        <button onclick="document.getElementById('chat-main-window').classList.add('hidden'); document.getElementById('chat-sidebar').classList.remove('hidden');" class="md:hidden text-gray-500"><i class="fas fa-arrow-left"></i></button>
+                        <button onclick="document.getElementById('chat-main-window').classList.add('hidden'); document.getElementById('chat-sidebar').classList.remove('hidden');" class="md:hidden text-gray-500 hover:text-school-green p-2"><i class="fas fa-arrow-left"></i></button>
                         <div>
-                            <h3 class="font-bold text-gray-800 text-sm" id="chat-recipient-info">Avisos Gerais</h3>
-                            <p class="text-[10px] text-school-green uppercase font-bold tracking-widest">Chat Seguro</p>
+                            <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2" id="chat-recipient-info">Avisos Gerais <i class="fas fa-check-circle text-blue-500 text-[10px]" title="Oficial"></i></h3>
+                            <p class="text-[10px] text-school-green uppercase font-bold tracking-widest" id="chat-recipient-role">Mural da Escola</p>
                         </div>
                     </div>
-                    <div class="flex gap-3">
-                        <button id="btn-clear-chat" onclick="clearConversation()" class="text-red-400 hover:text-red-600 transition" title="Limpar Conversa"><i class="fas fa-trash"></i></button>
-                        <button onclick="closeModal('modal-chat')" class="text-gray-400 hover:text-red-500 transition hidden md:block"><i class="fas fa-times fa-lg"></i></button>
+                    <div class="flex items-center gap-3">
+                        <button id="btn-clear-chat" onclick="clearConversation()" class="bg-red-50 text-red-500 hover:bg-red-100 w-8 h-8 rounded-full flex items-center justify-center transition" title="Limpar Conversa"><i class="fas fa-eraser"></i></button>
+                        <button onclick="closeModal('modal-chat')" class="bg-gray-100 text-gray-500 hover:bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center transition hidden md:flex"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
-                <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-[#F3F4F6] flex flex-col gap-2 relative">
-                    <!-- Mensagens -->
+                
+                <!-- Área de Mensagens (Estilo WhatsApp) -->
+                <div id="chat-messages" class="flex-1 p-6 overflow-y-auto bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50 flex flex-col gap-3 relative">
+                    <!-- Mensagens inseridas via JS -->
                 </div>
-                <div id="chat-attachment-preview" class="hidden bg-gray-100 p-2 text-xs text-gray-600 border-t flex justify-between items-center">
-                    <span><i class="fas fa-paperclip mr-1"></i> <span id="attachment-name"></span></span>
-                    <button onclick="clearChatAttachment()" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+                
+                <div id="chat-attachment-preview" class="hidden bg-blue-50 p-3 text-xs text-blue-800 border-t border-blue-100 flex justify-between items-center shadow-inner">
+                    <span class="font-bold flex items-center"><i class="fas fa-file-pdf text-red-500 mr-2 text-lg"></i> Anexo: <span id="attachment-name" class="ml-1 opacity-75"></span></span>
+                    <button onclick="clearChatAttachment()" class="text-red-500 hover:text-red-700 bg-white w-6 h-6 rounded-full flex items-center justify-center shadow-sm"><i class="fas fa-times"></i></button>
                 </div>
-                <div class="p-3 bg-white border-t flex items-center gap-2">
-                    <label class="cursor-pointer text-gray-400 hover:text-school-green transition p-2">
+                
+                <!-- Input de Mensagem -->
+                <div class="p-3 bg-white border-t flex items-center gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
+                    <label class="cursor-pointer text-gray-400 hover:text-school-green transition p-2 bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center">
                         <input type="file" id="chat-file" class="hidden" onchange="handleChatFile(this)">
-                        <i class="fas fa-paperclip fa-lg"></i>
+                        <i class="fas fa-paperclip"></i>
                     </label>
-                    <input type="text" id="chat-input" class="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-school-green focus:ring-1 focus:ring-school-green transition" placeholder="Digite sua mensagem..." onkeypress="if(event.key === 'Enter') { event.preventDefault(); sendChatMessage(); }">
-                    <button onclick="sendChatMessage()" class="bg-school-green text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-green-700 transition shadow-md"><i class="fas fa-paper-plane"></i></button>
+                    <input type="text" id="chat-input" class="flex-1 border border-gray-200 rounded-full px-5 py-3 text-sm focus:outline-none focus:border-school-green focus:ring-2 focus:ring-green-100 transition bg-gray-50" placeholder="Escreva sua mensagem aqui..." onkeypress="if(event.key === 'Enter') { event.preventDefault(); sendChatMessage(); }">
+                    <button onclick="sendChatMessage()" class="bg-school-green text-white w-12 h-12 rounded-full flex items-center justify-center hover:bg-green-700 transition shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"><i class="fas fa-paper-plane"></i></button>
                 </div>
             </div>
         </div>
@@ -427,7 +453,7 @@
 
     <!-- MODAL: ANÁLISE DE DESEMPENHO (GRÁFICO) -->
     <div id="modal-analytics" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+        <div class="bg-white rounded-2xl w-full max-w-4xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
             <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
                 <div class="flex items-center gap-3">
                     <div class="bg-purple-100 text-purple-600 w-10 h-10 flex items-center justify-center rounded-lg shadow-sm"><i class="fas fa-chart-line text-lg"></i></div>
@@ -442,8 +468,16 @@
                 <h4 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-3 border-b pb-1">Alertas e Diagnóstico</h4>
                 <div id="analytics-alerts" class="mb-6 grid gap-2"></div>
                 
-                <h4 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-3 border-b pb-1">Evolução de Notas</h4>
-                <div class="relative h-64 w-full"><canvas id="analyticsChart"></canvas></div>
+                <div class="grid md:grid-cols-2 gap-6">
+                    <div>
+                        <h4 class="text-xs font-bold uppercase text-school-green tracking-widest mb-3 border-b border-green-100 pb-1"><i class="fas fa-graduation-cap mr-1"></i> Evolução de Notas</h4>
+                        <div class="relative h-56 w-full"><canvas id="analyticsChart"></canvas></div>
+                    </div>
+                    <div>
+                        <h4 class="text-xs font-bold uppercase text-blue-600 tracking-widest mb-3 border-b border-blue-100 pb-1"><i class="fas fa-user-check mr-1"></i> Frequência (%) vs Turma</h4>
+                        <div class="relative h-56 w-full"><canvas id="attendanceChart"></canvas></div>
+                    </div>
+                </div>
             </div>
             <div class="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-2">
                 <button onclick="closeModal('modal-analytics')" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold uppercase hover:bg-gray-300 transition shadow-sm">Fechar</button>
@@ -860,6 +894,7 @@
         let knownMessages = new Set();
         let isFirstChatLoad = true;
         let unreadCounts = {};
+        let currentChatFilterRole = 'all'; // Chat search state
 
         let currentStudentForReport = null;
         let currentJustificationStudentId = null;
@@ -1129,7 +1164,6 @@
 
         function playSound() {
             try {
-                // Bipe curto e profissional
                 const audio = new Audio('data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU'+Array(100).join('A'));
                 audio.volume = 0.5;
                 audio.play().catch(e=>{});
@@ -1161,36 +1195,32 @@
             const modalChat = document.getElementById('modal-chat');
             if(modalChat) modalChat.classList.remove('hidden');
             
-            // Pais são direcionados direto para a Direção e a sidebar é ocultada
+            // Layout exclusivo: Pais só falam com a Direção
             if(currentUser.role === 'parent') {
                 const chatSidebar = document.getElementById('chat-sidebar');
                 if(chatSidebar) chatSidebar.classList.add('hidden');
                 
                 const mobileChatHeader = document.getElementById('mobile-chat-header');
-                if(mobileChatHeader) mobileChatHeader.classList.add('hidden');
+                if(mobileChatHeader) mobileChatHeader.querySelector('button').classList.add('hidden'); // hide back button
                 
-                // Procura um admin para direcionar
-                getCollection('concenal_users').where('role', '==', 'admin').limit(1).get().then(snap => {
-                    if(!snap.empty) {
-                        const adminDoc = snap.docs[0];
-                        setChatRecipient(adminDoc.id, 'Direção (Atendimento ao Pai/Responsável)');
-                    }
+                // Encontrar o Admin para redirecionar (Direção)
+                getCollection('concenal_users').where('role', 'in', ['admin', 'coord']).get().then(snap => {
+                    const adminDoc = snap.docs.find(d => d.data().role === 'admin') || snap.docs[0];
+                    const adminId = adminDoc ? adminDoc.id : 'admin_master';
+                    setChatRecipient(adminId, 'Direção (Atendimento ao Pai/Responsável)', 'Atendimento Oficial');
                 });
             } else {
                 const chatSidebar = document.getElementById('chat-sidebar');
                 if(chatSidebar) chatSidebar.classList.remove('hidden');
                 
-                const mobileChatHeader = document.getElementById('mobile-chat-header');
-                if(window.innerWidth < 768 && mobileChatHeader) mobileChatHeader.classList.remove('hidden');
-                
-                if (chatRecipient === 'global') setChatRecipient('global', 'Avisos Gerais');
+                if (chatRecipient === 'global') setChatRecipient('global', 'Avisos Gerais', 'Mural da Escola');
             }
             
             const div = document.getElementById('chat-messages');
             if (div) div.scrollTop = div.scrollHeight;
         }
 
-        function setChatRecipient(id, name) {
+        function setChatRecipient(id, name, roleDesc = '') {
             chatRecipient = id;
             chatRecipientName = name;
             
@@ -1198,15 +1228,15 @@
             if(btnClear) btnClear.classList.toggle('hidden', id === 'global' && currentUser.role !== 'admin' && currentUser.role !== 'coord');
 
             const chatRecipInfo = document.getElementById('chat-recipient-info');
-            if(chatRecipInfo) chatRecipInfo.innerText = name;
+            if(chatRecipInfo) chatRecipInfo.innerHTML = `${name} ${id === 'global' ? '<i class="fas fa-check-circle text-blue-500 text-[10px]" title="Oficial"></i>' : ''}`;
             
-            const mobileChatTitle = document.getElementById('mobile-chat-title');
-            if(mobileChatTitle) mobileChatTitle.innerText = name;
+            const chatRecipRole = document.getElementById('chat-recipient-role');
+            if(chatRecipRole) chatRecipRole.innerText = roleDesc;
             
             unreadCounts[id] = 0;
             updateUnreadBadges();
             
-            document.querySelectorAll('#chat-sidebar button').forEach(b => b.classList.remove('border-green-300', 'bg-green-50'));
+            document.querySelectorAll('#chat-sidebar button.chat-user-item, #chat-btn-global').forEach(b => b.classList.remove('border-green-300', 'bg-green-50'));
             const activeBtn = document.getElementById(id === 'global' ? 'chat-btn-global' : `chat-btn-${id}`);
             if(activeBtn) activeBtn.classList.add('border-green-300', 'bg-green-50');
 
@@ -1221,48 +1251,88 @@
             renderChatMessages(allChatMessagesMaster);
         }
 
+        function filterChatRole(role) {
+            currentChatFilterRole = role;
+            
+            // Update pills UI
+            document.querySelectorAll('.filter-pill').forEach(btn => {
+                btn.classList.remove('bg-school-green', 'text-white', 'shadow-sm');
+                btn.classList.add('bg-gray-100', 'text-gray-500');
+            });
+            const activePill = event.currentTarget;
+            if(activePill) {
+                activePill.classList.remove('bg-gray-100', 'text-gray-500');
+                activePill.classList.add('bg-school-green', 'text-white', 'shadow-sm');
+            }
+            
+            filterChat();
+        }
+
+        function filterChat() {
+            const term = document.getElementById('chat-search-input') ? document.getElementById('chat-search-input').value.toLowerCase() : '';
+            const items = document.querySelectorAll('.chat-user-item');
+            
+            items.forEach(item => {
+                const name = item.getAttribute('data-name').toLowerCase();
+                const role = item.getAttribute('data-role');
+                const roleMatch = currentChatFilterRole === 'all' || role === currentChatFilterRole;
+                const termMatch = name.includes(term);
+                
+                if (roleMatch && termMatch) item.classList.remove('hidden');
+                else item.classList.add('hidden');
+            });
+            
+            const btnGlobal = document.getElementById('chat-btn-global');
+            if(btnGlobal) {
+                btnGlobal.classList.toggle('hidden', currentChatFilterRole === 'parent' || term.length > 0);
+            }
+        }
+
         async function loadChatUsers() {
-            if(currentUser.role === 'parent') return; // Pais não carregam lista
+            if(currentUser.role === 'parent') return; 
             
             const list = document.getElementById('chat-user-list');
             if(!list) return;
-            const snap = await getCollection('concenal_users').get();
-            list.innerHTML = '';
             
-            // Botão do grupo/mural global sempre no topo para quem não é pai
-            list.innerHTML += `
-                <button onclick="setChatRecipient('global', 'Avisos Gerais')" id="chat-btn-global" class="w-full text-left p-3 rounded-xl border-2 border-transparent transition hover:border-green-200 bg-white shadow-sm flex items-center justify-between group mb-2 border-green-300 bg-green-50">
+            // Keep Global first
+            let htmlContent = `
+                <button onclick="setChatRecipient('global', 'Avisos Gerais', 'Mural da Escola')" id="chat-btn-global" class="w-full text-left p-3 rounded-xl border-2 border-transparent transition hover:border-green-200 bg-white shadow-sm flex items-center justify-between mb-2">
                     <div class="flex items-center gap-2 overflow-hidden">
-                        <div class="w-8 h-8 flex-shrink-0 bg-school-green text-white rounded-full flex items-center justify-center text-xs font-bold"><i class="fas fa-bullhorn"></i></div>
+                        <div class="w-10 h-10 flex-shrink-0 bg-school-green text-white rounded-full flex items-center justify-center text-sm font-bold shadow-inner"><i class="fas fa-bullhorn"></i></div>
                         <div class="leading-none overflow-hidden text-left">
-                            <div class="text-xs font-bold text-gray-700 truncate">Avisos Gerais</div>
-                            <div class="text-[8px] text-gray-400 mt-1 uppercase truncate">Mural da Escola</div>
+                            <div class="text-xs font-bold text-gray-800 truncate">Avisos Gerais</div>
+                            <div class="text-[9px] text-gray-400 mt-1 uppercase truncate font-bold">Mural da Escola</div>
                         </div>
                     </div>
-                    <span id="unread-global" class="bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center hidden font-bold shadow-sm">0</span>
+                    <span id="unread-global" class="bg-red-500 text-white text-[9px] w-5 h-5 rounded-full flex items-center justify-center hidden font-bold shadow-md">0</span>
                 </button>
             `;
 
+            const snap = await getCollection('concenal_users').get();
             snap.forEach(doc => {
                 const u = doc.data();
                 if(doc.id === currentUser.id) return;
                 
-                // Professores veem: Professores, Coord, Admin. Admin/Coord veem todos, inclusive pais.
                 if(currentUser.role === 'teacher' && u.role === 'parent') return;
 
-                list.innerHTML += `
-                    <button onclick="setChatRecipient('${doc.id}', '${u.displayName || u.name}')" id="chat-btn-${doc.id}" class="w-full text-left p-3 rounded-xl border-2 border-transparent transition hover:border-green-200 bg-white shadow-sm flex items-center justify-between group mb-2">
-                        <div class="flex items-center gap-2 overflow-hidden">
-                            <div class="w-8 h-8 flex-shrink-0 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-xs font-bold">${(u.displayName || u.name).charAt(0).toUpperCase()}</div>
+                let roleDisplay = u.role === 'parent' ? 'Responsável' : (u.role === 'teacher' ? 'Professor' : 'Coord / Dir');
+                let roleColor = u.role === 'parent' ? 'text-gray-400' : 'text-blue-500';
+
+                htmlContent += `
+                    <button onclick="setChatRecipient('${doc.id}', '${u.displayName || u.name}', '${roleDisplay}')" id="chat-btn-${doc.id}" data-name="${u.displayName || u.name}" data-role="${u.role}" class="chat-user-item w-full text-left p-3 rounded-xl border-2 border-transparent transition hover:border-green-200 bg-white shadow-sm flex items-center justify-between mb-2">
+                        <div class="flex items-center gap-3 overflow-hidden">
+                            <div class="w-10 h-10 flex-shrink-0 bg-gray-100 rounded-full flex items-center justify-center text-gray-500 text-sm font-bold border border-gray-200">${(u.displayName || u.name).charAt(0).toUpperCase()}</div>
                             <div class="leading-none overflow-hidden text-left">
-                                <div class="text-xs font-bold text-gray-700 truncate">${u.displayName || u.name}</div>
-                                <div class="text-[8px] text-gray-400 mt-1 uppercase truncate">${u.role === 'parent' ? 'Responsável' : u.role}</div>
+                                <div class="text-xs font-bold text-gray-700 truncate mb-1">${u.displayName || u.name}</div>
+                                <div class="text-[9px] ${roleColor} uppercase truncate font-bold tracking-wider">${roleDisplay}</div>
                             </div>
                         </div>
-                        <span id="unread-${doc.id}" class="bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center hidden font-bold shadow-sm">0</span>
+                        <span id="unread-${doc.id}" class="bg-red-500 text-white text-[9px] w-5 h-5 rounded-full flex items-center justify-center hidden font-bold shadow-md">0</span>
                     </button>
                 `;
             });
+            list.innerHTML = htmlContent;
+            filterChat();
         }
 
         async function sendChatMessage() {
@@ -1288,8 +1358,6 @@
                 await getCollection('concenal_chat').add(msgData);
                 input.value = '';
                 clearChatAttachment();
-                const div = document.getElementById('chat-messages');
-                if(div) setTimeout(() => div.scrollTop = div.scrollHeight, 100);
             } catch(e) {
                 console.error(e);
                 alert("Erro ao enviar: " + e.message);
@@ -1299,22 +1367,16 @@
         function handleChatFile(input) {
             const file = input.files[0];
             if (!file) return;
-            // Limite de 2MB para base64 dentro do documento Firestore
             if (file.size > 2 * 1024 * 1024) return alert('Tamanho máximo permitido: 2MB');
             
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = e => {
-                currentChatFile = {
-                    name: file.name,
-                    type: file.type,
-                    data: e.target.result
-                };
-                const chatAttachmentPreview = document.getElementById('chat-attachment-preview');
-                if(chatAttachmentPreview) chatAttachmentPreview.classList.remove('hidden');
-                
-                const attachmentName = document.getElementById('attachment-name');
-                if(attachmentName) attachmentName.innerText = file.name;
+                currentChatFile = { name: file.name, type: file.type, data: e.target.result };
+                const preview = document.getElementById('chat-attachment-preview');
+                if(preview) preview.classList.remove('hidden');
+                const attName = document.getElementById('attachment-name');
+                if(attName) attName.innerText = file.name;
             };
         }
 
@@ -1322,13 +1384,11 @@
             currentChatFile = null;
             const chatFile = document.getElementById('chat-file');
             if(chatFile) chatFile.value = '';
-            
-            const chatAttachmentPreview = document.getElementById('chat-attachment-preview');
-            if(chatAttachmentPreview) chatAttachmentPreview.classList.add('hidden');
+            const preview = document.getElementById('chat-attachment-preview');
+            if(preview) preview.classList.add('hidden');
         }
 
         function deleteMsg(docId) {
-            // Qualquer um pode deletar sua própria mensagem ou admin deleta qualquer uma.
             if(confirm("Excluir esta mensagem permanentemente?")) {
                 getCollection('concenal_chat').doc(docId).delete();
             }
@@ -1780,10 +1840,10 @@
             let sum = 0, filled = 0;
             if(d.units && Array.isArray(d.units)) {
                 for(let i=0; i<6; i++) {
-                    if (d.units[i] !== null && d.units[i] !== "") {
-                        let base = parseFloat(d.units[i]);
+                    if (d.units[i] !== null && d.units[i] !== "" && !isNaN(d.units[i])) {
+                        let base = parseFloat(d.units[i]) || 0;
                         // Pontuação Extra na unidade atual (se habilitado)
-                        let ext = (d.extraEnabled && d.extras && d.extras[i]) ? parseFloat(d.extras[i]) : 0;
+                        let ext = (d.extraEnabled && d.extras && d.extras[i] && !isNaN(d.extras[i])) ? parseFloat(d.extras[i]) : 0;
                         let unitTotal = base + ext;
                         if(unitTotal > 10.0) unitTotal = 10.0; // Teto de nota
                         
@@ -1806,7 +1866,7 @@
             
             if(filled >= 3) {
                 const numAvg = parseFloat(avg);
-                const rVal = (d.recovery !== null && d.recovery !== undefined && d.recovery !== "") ? parseFloat(d.recovery) : null;
+                const rVal = (d.recovery !== null && d.recovery !== undefined && d.recovery !== "" && !isNaN(d.recovery)) ? parseFloat(d.recovery) : null;
                 
                 if(numAvg < 6.0) { 
                     if(rVal !== null) { 
@@ -1909,7 +1969,7 @@
             if (btnNotif) btnNotif.classList.toggle('hidden', !isAdmin && !isCoord);
 
             const btnChat = document.getElementById('btn-chat');
-            if (btnChat) btnChat.classList.toggle('hidden', isParent); // Chat button shown differently or hidden
+            if (btnChat) btnChat.classList.toggle('hidden', isParent); // Chat button shown differently ou hidden temporariamente dependendo do caso. Modificamos na aba abaixo
 
             // Abas Novas: Apenas Prof/Coord/Admin
             const navSchedule = document.getElementById('nav-schedule');
@@ -1924,6 +1984,15 @@
             if(isParent) {
                 if(classTabs) classTabs.innerHTML = '';
                 if(classSelect && classSelect.parentElement) classSelect.parentElement.classList.add('hidden');
+                
+                // Mudar icone do chat para pais
+                if (btnChat) {
+                    btnChat.classList.remove('hidden');
+                    btnChat.innerHTML = '<i class="fas fa-headset"></i> Atendimento';
+                    btnChat.classList.replace('bg-green-800', 'bg-blue-600');
+                    btnChat.classList.replace('hover:bg-green-700', 'hover:bg-blue-700');
+                    btnChat.classList.replace('border-green-700', 'border-blue-700');
+                }
             } else {
                 if(classTabs) classTabs.innerHTML = '';
                 if(classSelect && classSelect.parentElement) classSelect.parentElement.classList.remove('hidden');
@@ -2060,7 +2129,7 @@
                         // Verifica se a mensagem é endereçada ao usuário atual (ou global se for prof/coord/admin)
                         const isForMe = (m.to === currentUser?.id) || 
                                         (m.to === 'global' && currentUser?.role !== 'parent') || 
-                                        (currentUser?.role === 'admin') || 
+                                        (currentUser?.role === 'admin' && m.to === 'admin_master') || // Admins read messages sent to fallback admin
                                         (currentUser?.role === 'coord');
                                         
                         const isFromMe = m.from === currentUser?.id;
@@ -2102,8 +2171,12 @@
             
             currentChatMessages = allMessages.filter(m => {
                 if (chatRecipient === 'global') return m.to === 'global';
-                return (m.from === currentUser?.id && m.to === chatRecipient) || 
-                       (m.to === currentUser?.id && m.from === chatRecipient);
+                
+                // Allow fallback admin viewing logic for parents talking to "Direção"
+                const toMatches = (m.to === chatRecipient) || (chatRecipient === 'admin_master' && m.to === currentUser?.id) || (currentUser?.role === 'admin' && m.to === 'admin_master');
+                const fromMatches = (m.from === chatRecipient) || (m.from === currentUser?.id);
+                
+                return toMatches && fromMatches;
             });
 
             currentChatMessages.forEach(m => {
@@ -2389,13 +2462,23 @@
             let classSums = [0,0,0,0,0,0];
             let classCounts = [0,0,0,0,0,0];
             const classStudents = getStudentsByClass(); 
+            
+            let classTotalFreq = 0;
+            let classFreqCount = 0;
 
             classStudents.forEach(s => {
                 const sd = ensureSubjectData(s, subj);
+                const sc = calculateStatus(sd, subj);
+                
+                if(sc.freq !== '-') {
+                    classTotalFreq += parseFloat(sc.freq);
+                    classFreqCount++;
+                }
+
                 for(let i=0; i<6; i++) {
-                    if(sd.units[i] !== null && sd.units[i] !== "") {
+                    if(sd.units[i] !== null && sd.units[i] !== "" && !isNaN(sd.units[i])) {
                         let base = parseFloat(sd.units[i]);
-                        let ext = (sd.extraEnabled && sd.extras && sd.extras[i]) ? parseFloat(sd.extras[i]) : 0;
+                        let ext = (sd.extraEnabled && sd.extras && sd.extras[i] && !isNaN(sd.extras[i])) ? parseFloat(sd.extras[i]) : 0;
                         let final = base + ext;
                         if(final > 10.0) final = 10.0;
                         classSums[i] += final;
@@ -2405,13 +2488,14 @@
             });
 
             const classAvgs = classSums.map((sum, i) => classCounts[i] > 0 ? parseFloat((sum / classCounts[i]).toFixed(1)) : null);
+            const classAvgFreq = classFreqCount > 0 ? (classTotalFreq / classFreqCount).toFixed(1) : 0;
 
             // Dados Gráfico do Aluno (Nota + Extra)
             const labels = ['U1', 'U2', 'U3', 'U4', 'U5', 'U6'];
             const studentData = units.map((u, i) => {
-                if(u !== null && u !== "") {
+                if(u !== null && u !== "" && !isNaN(u)) {
                     let base = parseFloat(u);
-                    let ext = (d.extraEnabled && d.extras && d.extras[i]) ? parseFloat(d.extras[i]) : 0;
+                    let ext = (d.extraEnabled && d.extras && d.extras[i] && !isNaN(d.extras[i])) ? parseFloat(d.extras[i]) : 0;
                     let final = base + ext;
                     return final > 10.0 ? 10.0 : final;
                 }
@@ -2437,6 +2521,7 @@
 
             const c = calculateStatus(d, subj);
             const currAvg = parseFloat(c.average);
+            const studentFreq = c.freq !== '-' ? parseFloat(c.freq) : 0;
 
             // Alerta Risco Reprovação (Menor que 6)
             if(c.average !== '-' && currAvg < 6.0) {
@@ -2465,62 +2550,67 @@
             const alertsContainer = document.getElementById('analytics-alerts');
             if(alertsContainer) alertsContainer.innerHTML = alertsHtml;
 
-            // Renderiza o Chart.js
-            const canvas = document.getElementById('analyticsChart');
-            if(!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            if(analyticsChart) analyticsChart.destroy();
+            // 1. Gráfico de Evolução de Notas
+            const canvasGrades = document.getElementById('analyticsChart');
+            if(canvasGrades) {
+                const ctx = canvasGrades.getContext('2d');
+                if(analyticsChart) analyticsChart.destroy();
 
-            const datasets = [
-                {
+                const datasets = [{
                     label: 'Nota do Aluno',
                     data: studentData,
                     borderColor: '#10B981', // Verde School
                     backgroundColor: 'rgba(16, 185, 129, 0.2)',
-                    borderWidth: 3,
-                    tension: 0.3,
-                    fill: true,
-                    pointBackgroundColor: '#047857',
-                    pointRadius: 5,
-                    pointHoverRadius: 7
-                }
-            ];
+                    borderWidth: 3, tension: 0.3, fill: true,
+                    pointBackgroundColor: '#047857', pointRadius: 5, pointHoverRadius: 7
+                }];
 
-            // Adiciona a linha de média da turma SÓ para professores/direção
-            if(isStaff) {
-                datasets.push({
-                    label: 'Média da Turma',
-                    data: classAvgs,
-                    borderColor: '#9CA3AF', 
-                    borderDash: [5, 5],
-                    borderWidth: 2,
-                    tension: 0.3,
-                    fill: false,
-                    pointBackgroundColor: '#4B5563',
-                    pointRadius: 3
+                if(isStaff) {
+                    datasets.push({
+                        label: 'Média da Turma',
+                        data: classAvgs,
+                        borderColor: '#9CA3AF', borderDash: [5, 5], borderWidth: 2,
+                        tension: 0.3, fill: false, pointBackgroundColor: '#4B5563', pointRadius: 3
+                    });
+                }
+
+                analyticsChart = new Chart(ctx, {
+                    type: 'line', data: { labels: labels, datasets: datasets },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, max: 10, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
+                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }
+                    }
                 });
             }
 
-            analyticsChart = new Chart(ctx, {
-                type: 'line',
-                data: { labels: labels, datasets: datasets },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { 
-                        y: { 
-                            beginAtZero: true, 
-                            max: 10,
-                            grid: { color: '#F3F4F6' }
-                        },
-                        x: { grid: { display: false } }
+            // 2. Gráfico Novo: Frequência
+            const canvasAtt = document.getElementById('attendanceChart');
+            if(canvasAtt) {
+                const ctxAtt = canvasAtt.getContext('2d');
+                if(window.attendanceChartInstance) window.attendanceChartInstance.destroy();
+                
+                window.attendanceChartInstance = new Chart(ctxAtt, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Frequência do Aluno', 'Frequência da Turma'],
+                        datasets: [{
+                            label: '% de Presença',
+                            data: [studentFreq, classAvgFreq],
+                            backgroundColor: [
+                                studentFreq >= 75 ? '#3B82F6' : '#EF4444', 
+                                '#9CA3AF'
+                            ],
+                            borderRadius: 6
+                        }]
                     },
-                    plugins: { 
-                        legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } 
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: { y: { beginAtZero: true, max: 100, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
+                        plugins: { legend: { display: false } }
                     }
-                }
-            });
+                });
+            }
 
             const modalAnalytics = document.getElementById('modal-analytics');
             if(modalAnalytics) modalAnalytics.classList.remove('hidden');
@@ -3833,4 +3923,3 @@
     </script>
 </body>
 </html>
-
