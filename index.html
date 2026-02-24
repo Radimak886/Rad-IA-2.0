@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - CONCENAL</title>
+    <title>DIÁRIO ESCOLAR - CONCENA</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -184,8 +184,14 @@
             <!-- Tabela de Notas -->
             <div id="view-grades" class="bg-white rounded-xl shadow-xl overflow-hidden fade-in border border-gray-200">
                 <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Acompanhamento de Notas</h2>
+                    <div class="flex items-center gap-2">
+                        <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Acompanhamento de Notas</h2>
+                        <span id="diary-status-badge" class="px-2 py-1 text-[9px] font-bold uppercase rounded hidden"></span>
+                    </div>
                     <div id="read-only-msg" class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded hidden">APENAS CONSULTA</div>
+                    <div id="diary-actions-container" class="hidden">
+                        <!-- Botão de Fechar/Abrir Diário via JS -->
+                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-center">
@@ -344,7 +350,7 @@
 
     <!-- MODAIS GERAIS -->
 
-    <!-- MODAL: ANÁLISE DE DESEMPENHO (GRÁFICO) -->
+    <!-- MODAL: ANÁLISE DE DESEMPENHO DE NOTAS (GRÁFICO) -->
     <div id="modal-analytics" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
             <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
@@ -352,7 +358,7 @@
                     <div class="bg-purple-100 text-purple-600 w-10 h-10 flex items-center justify-center rounded-lg shadow-sm"><i class="fas fa-chart-line text-lg"></i></div>
                     <div>
                         <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm leading-tight" id="analytics-student-name">--</h3>
-                        <p class="text-[10px] text-gray-500 uppercase font-bold">Análise de Desempenho • <span id="analytics-subject" class="text-purple-600">--</span></p>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold">Análise de Desempenho de Notas • <span id="analytics-subject" class="text-purple-600">--</span></p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-analytics')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
@@ -364,7 +370,7 @@
                 </div>
                 
                 <h4 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-3 border-b pb-1">Evolução de Notas</h4>
-                <div class="relative h-64 w-full">
+                <div class="relative h-64 w-full" style="padding-top: 20px;">
                     <canvas id="analyticsChart"></canvas>
                 </div>
             </div>
@@ -374,7 +380,43 @@
         </div>
     </div>
 
-    <!-- MODAL: RELATÓRIOS PDF (NOVO) -->
+    <!-- MODAL: ANÁLISE DE FREQUÊNCIA (GRÁFICO) -->
+    <div id="modal-attendance-analytics" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
+            <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-100 text-blue-600 w-10 h-10 flex items-center justify-center rounded-lg shadow-sm"><i class="fas fa-user-check text-lg"></i></div>
+                    <div>
+                        <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm leading-tight" id="att-analytics-student-name">--</h3>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold">Análise de Frequência • <span id="att-analytics-subject" class="text-blue-600">--</span></p>
+                    </div>
+                </div>
+                <button onclick="closeModal('modal-attendance-analytics')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div class="p-6 bg-white overflow-y-auto flex-1">
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <div class="bg-red-50 p-4 rounded-xl border border-red-100 text-center">
+                        <p class="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Total de Faltas</p>
+                        <h3 class="text-3xl font-bold text-red-700" id="att-analytics-faults">--</h3>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-xl border border-green-100 text-center">
+                        <p class="text-[10px] font-bold text-green-500 uppercase tracking-widest mb-1">Presença</p>
+                        <h3 class="text-3xl font-bold text-green-700" id="att-analytics-freq">--</h3>
+                    </div>
+                </div>
+                
+                <h4 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-3 border-b pb-1">Comparativo de Frequência (%)</h4>
+                <div class="relative h-64 w-full" style="padding-top: 20px;">
+                    <canvas id="attAnalyticsChart"></canvas>
+                </div>
+            </div>
+            <div class="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-2">
+                <button onclick="closeModal('modal-attendance-analytics')" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold uppercase hover:bg-gray-300 transition shadow-sm">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: RELATÓRIOS PDF -->
     <div id="modal-reports" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
             <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
@@ -808,7 +850,8 @@
         
         // --- ESTADO GLOBAL ---
         let db, auth, currentUser = null;
-        let analyticsChart = null; // Instância do gráfico
+        let analyticsChart = null; 
+        let attAnalyticsChart = null; 
         let appData = {
             students: [],
             activities: [],
@@ -820,6 +863,7 @@
             allSubjects: [],
             allClasses: [],
             curriculum: {}, 
+            diaryStatus: {}, // Mapeamento para controle de fechamento do diário: Turma_Materia -> boolean
             isProcessing: false
         };
         
@@ -919,6 +963,7 @@
                         appData.allSubjects = data.subjects || DEFAULT_SUBJECTS;
                         appData.allClasses = data.classes || DEFAULT_CLASSES;
                         appData.curriculum = data.curriculum || {};
+                        appData.diaryStatus = data.diaryStatus || {};
                         
                         if (!data.schedule || Object.keys(data.schedule).length === 0) {
                             appData.schedule = DEFAULT_SCHEDULE;
@@ -941,7 +986,8 @@
                         appData.curriculum = {};
                         appData.schedule = DEFAULT_SCHEDULE;
                         appData.calendar = DEFAULT_CALENDAR;
-                        dataToSave = { subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES, curriculum: {}, schedule: DEFAULT_SCHEDULE, calendar: DEFAULT_CALENDAR };
+                        appData.diaryStatus = {};
+                        dataToSave = { subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES, curriculum: {}, schedule: DEFAULT_SCHEDULE, calendar: DEFAULT_CALENDAR, diaryStatus: {} };
                         needsUpdate = true;
                     }
 
@@ -961,9 +1007,10 @@
                        renderAssignmentsUI();
                     }
                     
-                    // Rerenderiza se estiver nas abas novas
+                    // Rerenderiza se estiver nas abas novas ou principais
                     if(appData.currentMode === 'schedule') renderScheduleView();
                     if(appData.currentMode === 'calendar') renderCalendarView();
+                    if(appData.currentMode === 'grades') renderGradesTable();
                 });
 
                 auth.onAuthStateChanged(user => {
@@ -1723,7 +1770,7 @@
         }
 
         // --- LOGIC V29 ---
-        function calculateStatus(d, subjName) {
+        function calculateStatus(d, subjName, isClosed = false) {
             let sum = 0, filled = 0;
             if(d.units && Array.isArray(d.units)) {
                 d.units.forEach(u => { if (u !== null && u !== "") { sum += parseFloat(u); filled++; } });
@@ -1735,9 +1782,10 @@
             const totalDays = SUBJECT_DAYS[subjName] || SUBJECT_DAYS['default'];
             const freqPercent = ((totalDays - totalFaults) / totalDays) * 100;
             
-            let st = "Cursando", cl = "status-badge bg-blue-100 text-blue-800";
+            let st = isClosed ? "Reprovado" : "Cursando";
+            let cl = isClosed ? "status-badge bg-red-100 text-red-800" : "status-badge bg-blue-100 text-blue-800";
             
-            if(filled >= 3) {
+            if(filled >= 3 || isClosed) {
                 const numAvg = parseFloat(avg);
                 const rVal = (d.recovery !== null && d.recovery !== undefined && d.recovery !== "") ? parseFloat(d.recovery) : null;
                 
@@ -1746,7 +1794,10 @@
                         let f = (numAvg + rVal) / 2;
                         if(f >= 6.0) { st = "Aprovado (Rec)"; cl = "status-badge bg-green-100 text-green-800"; }
                         else { st = "Reprovado"; cl = "status-badge bg-red-100 text-red-800"; }
-                    } else { st = "Recuperação"; cl = "status-badge bg-orange-100 text-orange-800"; } 
+                    } else { 
+                        st = isClosed ? "Reprovado" : "Recuperação"; 
+                        cl = isClosed ? "status-badge bg-red-100 text-red-800" : "status-badge bg-orange-100 text-orange-800"; 
+                    } 
                 } else { 
                     st = "Aprovado"; cl = "status-badge bg-green-100 text-green-800"; 
                 }
@@ -2228,7 +2279,6 @@
             }
         }
 
-
         function updateUI() {
             if (!currentUser) return; 
 
@@ -2294,9 +2344,31 @@
             }
             return student.subjects[subject];
         }
+        
+        function isDiaryClosed() {
+            const key = `${appData.currentClass}_${appData.currentSubject}`;
+            return appData.diaryStatus[key] === true;
+        }
+
+        async function toggleDiaryStatus() {
+            const key = `${appData.currentClass}_${appData.currentSubject}`;
+            const currentlyClosed = isDiaryClosed();
+            const actionStr = currentlyClosed ? "REABRIR" : "ENCERRAR";
+            
+            if(confirm(`Deseja realmente ${actionStr} o diário de ${appData.currentSubject} para a turma ${appData.currentClass}?`)) {
+                try {
+                    appData.diaryStatus[key] = !currentlyClosed;
+                    await getCollection('concenal_config').doc('general').set({ diaryStatus: appData.diaryStatus }, { merge: true });
+                    logAction('Sistema', `${actionStr} o diário de classe.`);
+                    alert(`Diário ${currentlyClosed ? 'reaberto' : 'encerrado'} com sucesso!`);
+                    // A re-renderização ocorrerá pelo onSnapshot do general config
+                } catch(e) {
+                    alert("Erro ao alterar status do diário: " + e.message);
+                }
+            }
+        }
 
         // --- MÓDULO: ANÁLISE DE DESEMPENHO (CHART.JS) ---
-        // Aqui está a definição correta e global da função.
         window.openAnalytics = function(studentId) {
             const student = appData.students.find(s => s.id === studentId);
             if(!student) return;
@@ -2350,11 +2422,11 @@
                 }
             }
 
-            const c = calculateStatus(d, subj);
+            const c = calculateStatus(d, subj, isDiaryClosed());
             const currAvg = parseFloat(c.average);
 
-            // Alerta Risco Reprovação (Menor que 6)
-            if(c.average !== '-' && currAvg < 6.0) {
+            // Alerta Risco Reprovação (Menor que 6). SOME se o diário estiver fechado.
+            if(!isDiaryClosed() && c.average !== '-' && currAvg < 6.0) {
                 alertsHtml += `<div class="bg-orange-50 text-orange-700 p-3 rounded-lg border border-orange-200 text-xs font-bold shadow-sm animate-pulse"><i class="fas fa-exclamation-triangle mr-2 text-lg"></i> Alerta de Risco: Média atual de ${currAvg} (abaixo de 6.0). O aluno corre risco de recuperação/reprovação na disciplina. Intervenção sugerida.</div>`;
             }
 
@@ -2423,6 +2495,9 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    layout: {
+                        padding: { top: 20 } // Padding para a bolinha do 10 não cortar
+                    },
                     scales: { 
                         y: { 
                             beginAtZero: true, 
@@ -2433,7 +2508,11 @@
                     },
                     plugins: { 
                         legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } 
-                    }
+                    },
+                    elements: {
+                        line: { tension: 0.4 }
+                    },
+                    clip: false // Permite desenhar fora da área do chart se necessário
                 }
             });
 
@@ -2441,10 +2520,90 @@
             if(modalAnalytics) modalAnalytics.classList.remove('hidden');
         };
 
+        window.openAttendanceAnalytics = function(studentId) {
+            const student = appData.students.find(s => s.id === studentId);
+            if(!student) return;
+            const subj = appData.currentSubject;
+            if(!subj) return alert("Selecione uma disciplina primeiro.");
+
+            const nameEl = document.getElementById('att-analytics-student-name');
+            if(nameEl) nameEl.innerText = student.name;
+            
+            const subjEl = document.getElementById('att-analytics-subject');
+            if(subjEl) subjEl.innerText = subj;
+
+            const d = ensureSubjectData(student, subj);
+            const c = calculateStatus(d, subj, isDiaryClosed());
+            
+            const fCountEl = document.getElementById('att-analytics-faults');
+            if(fCountEl) fCountEl.innerText = c.faults;
+            
+            const freqEl = document.getElementById('att-analytics-freq');
+            if(freqEl) freqEl.innerText = c.freq + '%';
+
+            // Médias da Turma para Comparativo de Frequência
+            let totalClassFreq = 0;
+            let classCounts = 0;
+            const classStudents = getStudentsByClass(); 
+
+            classStudents.forEach(s => {
+                const sd = ensureSubjectData(s, subj);
+                const sc = calculateStatus(sd, subj, isDiaryClosed());
+                if(sc.freq !== '-' && !isNaN(sc.freq)) {
+                    totalClassFreq += parseFloat(sc.freq);
+                    classCounts++;
+                }
+            });
+
+            const classAvgFreq = classCounts > 0 ? (totalClassFreq / classCounts).toFixed(1) : 0;
+
+            // Renderiza o Chart.js (Barra Horizontal)
+            const canvas = document.getElementById('attAnalyticsChart');
+            if(!canvas) return;
+            
+            const ctx = canvas.getContext('2d');
+            if(attAnalyticsChart) attAnalyticsChart.destroy();
+
+            attAnalyticsChart = new Chart(ctx, {
+                type: 'bar',
+                data: { 
+                    labels: ['O Aluno', 'Média da Turma'], 
+                    datasets: [{
+                        label: 'Frequência (%)',
+                        data: [c.freq, classAvgFreq],
+                        backgroundColor: [
+                            parseFloat(c.freq) < 75 ? '#ef4444' : '#3b82f6', 
+                            '#9ca3af'
+                        ],
+                        borderRadius: 6
+                    }] 
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: { 
+                        x: { 
+                            beginAtZero: true, 
+                            max: 100,
+                            grid: { color: '#F3F4F6' }
+                        },
+                        y: { grid: { display: false } }
+                    },
+                    plugins: { 
+                        legend: { display: false } 
+                    }
+                }
+            });
+
+            const modal = document.getElementById('modal-attendance-analytics');
+            if(modal) modal.classList.remove('hidden');
+        };
+
         // --- RENDER VIEWS ---
         function renderGradesTable() {
-            // Professor SÓ edita se a turma X for atribuída à matéria Y dele. Admin edita tudo.
-            const canEdit = currentUser && (
+            const isClosed = isDiaryClosed();
+            const canEdit = currentUser && !isClosed && (
                 currentUser.role === 'admin' || 
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
@@ -2452,12 +2611,42 @@
                  currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
             ); 
             
-            const readOnlyMsg = document.getElementById('read-only-msg');
-            if (readOnlyMsg) readOnlyMsg.classList.toggle('hidden', canEdit || (currentUser && currentUser.role === 'parent'));
+            const isParent = currentUser && currentUser.role === 'parent';
             
+            const readOnlyMsg = document.getElementById('read-only-msg');
+            if (readOnlyMsg) readOnlyMsg.classList.toggle('hidden', canEdit || isParent);
+            
+            // Controle de Fechamento de Diário
+            const diaryBadge = document.getElementById('diary-status-badge');
+            const actionsContainer = document.getElementById('diary-actions-container');
+            
+            if(diaryBadge) {
+                if(isClosed) {
+                    diaryBadge.innerText = 'Fechado';
+                    diaryBadge.className = 'px-2 py-1 text-[9px] font-bold uppercase rounded bg-red-100 text-red-800 border border-red-200';
+                } else {
+                    diaryBadge.innerText = 'Aberto';
+                    diaryBadge.className = 'px-2 py-1 text-[9px] font-bold uppercase rounded bg-green-100 text-green-800 border border-green-200';
+                }
+                diaryBadge.classList.remove('hidden');
+            }
+            
+            if(actionsContainer) {
+                if(currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || currentUser.role === 'teacher')) {
+                    if(isClosed) {
+                        actionsContainer.innerHTML = `<button onclick="toggleDiaryStatus()" class="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-gray-200 transition"><i class="fas fa-lock-open mr-1"></i> Reabrir Diário</button>`;
+                    } else {
+                        actionsContainer.innerHTML = `<button onclick="toggleDiaryStatus()" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-red-700 transition"><i class="fas fa-lock mr-1"></i> Encerrar Diário</button>`;
+                    }
+                    actionsContainer.classList.remove('hidden');
+                } else {
+                    actionsContainer.classList.add('hidden');
+                }
+            }
+
             const btnContainer = document.getElementById('action-buttons');
             if (btnContainer) {
-                btnContainer.innerHTML = canEdit ? `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm">Novo Aluno</button><button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm">Importar Massa</button>` : '';
+                btnContainer.innerHTML = (canEdit && !isClosed) ? `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm">Novo Aluno</button><button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm">Importar Massa</button>` : '';
             }
 
             const tbody = document.getElementById('grades-body'); 
@@ -2476,10 +2665,11 @@
             if (emptySt2) emptySt2.classList.add('hidden');
 
             list.forEach(s => {
-                const d = ensureSubjectData(s, appData.currentSubject); const c = calculateStatus(d, appData.currentSubject);
+                const d = ensureSubjectData(s, appData.currentSubject); 
+                const c = calculateStatus(d, appData.currentSubject, isClosed);
                 
-                // Ícone de alerta ao lado do nome se o aluno tiver média abaixo de 6
-                let warningIcon = (c.average !== '-' && parseFloat(c.average) < 6.0) ? `<i class="fas fa-exclamation-triangle text-orange-500 ml-2" title="Risco de Reprovação"></i>` : '';
+                // Ícone de alerta ao lado do nome se o aluno tiver média abaixo de 6 E o diário não estiver fechado
+                let warningIcon = (!isClosed && c.average !== '-' && parseFloat(c.average) < 6.0) ? `<i class="fas fa-exclamation-triangle text-orange-500 ml-2" title="Risco de Reprovação"></i>` : '';
 
                 let row = `<tr class="hover:bg-gray-50 transition border-b border-gray-100"><td class="px-4 py-4 border-r flex justify-between items-center sticky left-0 bg-white print-border"><div><span class="font-bold text-gray-700">${s.name}${warningIcon}</span><br><span class="text-[9px] text-gray-300 font-mono text-left block w-20 truncate no-print">${s.id}</span></div><div class="flex gap-2"><button onclick="openAnalytics('${s.id}')" class="text-purple-500 hover:scale-110 transition no-print" title="Análise de Desempenho"><i class="fas fa-chart-line"></i></button><button onclick="openReportModal('${s.id}')" class="text-blue-500 hover:scale-110 transition no-print"><i class="fas fa-file-alt"></i></button>${canEdit?`<button onclick="deleteStudent('${s.id}')" class="text-red-300 hover:text-red-500 transition no-print"><i class="fas fa-trash"></i></button>`:''}</div></td>`;
                 for(let i=0; i<6; i++) { 
@@ -2495,8 +2685,9 @@
             const dateInput = document.getElementById('attendance-date');
             if(!dateInput) return;
             const date = dateInput.value; 
+            const isClosed = isDiaryClosed();
             const isParent = currentUser && currentUser.role === 'parent';
-            const canE = currentUser && (
+            const canE = currentUser && !isClosed && (
                 currentUser.role === 'admin' || 
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
@@ -2507,7 +2698,6 @@
             
             const actionsContainer = document.getElementById('attendance-actions');
             if (actionsContainer) {
-                // SÓ mostra o PDF se não for o responsável. O botão salvar mostra só para quem edita.
                 actionsContainer.innerHTML = `
                     ${!isParent ? `<button onclick="openReportsModal('attendance')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>` : ''}
                     ${canE ? `<button onclick="saveDailyAttendance()" class="bg-school-green text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-green-700 transition flex items-center gap-2"><i class="fas fa-save"></i> Salvar Chamada</button>` : ''}
@@ -2564,8 +2754,14 @@
                     ((j && doc) ? `<button onclick="viewDoc('${doc}')" class="ml-2 text-blue-500 hover:scale-110 transition"><i class="fas fa-paperclip"></i></button>` : '');
                 
                 let infoHtml = tName ? `<div class="text-[8px] text-gray-400 font-normal uppercase tracking-tighter mt-1">${tName}</div>` : '';
+                
+                // Count faults for display
+                const c = calculateStatus(sub, appData.currentSubject, isClosed);
+                let faultDisplay = `<span class="text-[9px] text-red-500 font-bold ml-2 bg-red-50 px-1 rounded" title="Total de Faltas">${c.faults}F</span>`;
 
-                tbody.innerHTML += `<tr class="border-b border-gray-50"><td class="px-6 py-4 font-bold text-gray-700 flex justify-between items-center">${s.name} ${act}</td><td class="px-6 py-4 text-center"><button id="btn-att-${s.id}" onclick="toggleAtt('${s.id}')" ${!canE?'disabled':''} class="w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition flex flex-col items-center justify-center ${btnCls} mx-auto"><span>${btnTxt}</span></button>${infoHtml}</td></tr>`;
+                let analyticsBtn = !isParent ? `<button onclick="openAttendanceAnalytics('${s.id}')" class="text-blue-400 hover:text-blue-600 ml-2" title="Gráfico de Frequência"><i class="fas fa-chart-bar"></i></button>` : '';
+
+                tbody.innerHTML += `<tr class="border-b border-gray-50"><td class="px-6 py-4 font-bold text-gray-700 flex justify-between items-center"><div>${s.name} ${faultDisplay}</div><div>${analyticsBtn} ${act}</div></td><td class="px-6 py-4 text-center"><button id="btn-att-${s.id}" onclick="toggleAtt('${s.id}')" ${!canE?'disabled':''} class="w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition flex flex-col items-center justify-center ${btnCls} mx-auto"><span>${btnTxt}</span></button>${infoHtml}</td></tr>`;
             });
         }
         
@@ -2615,6 +2811,7 @@
         }
 
         function toggleAllHw() {
+            if(isDiaryClosed()) return alert("Diário encerrado. Reabra para editar.");
             const students = getStudentsByClass();
             if(students.length === 0) return;
             
@@ -2635,8 +2832,9 @@
             if(!tbody || !thead) return;
             tbody.innerHTML = '';
             
+            const isClosed = isDiaryClosed();
             const isParent = currentUser && currentUser.role === 'parent';
-            const canE = currentUser && (
+            const canE = currentUser && !isClosed && (
                 currentUser.role === 'admin' || 
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
@@ -2644,7 +2842,7 @@
                  currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
             ); 
 
-            // Renderiza o cabeçalho baseando-se no papel (oculta Anotação para pais, e adiciona botão Marcar Todos para profs)
+            // Renderiza o cabeçalho baseando-se no papel
             thead.innerHTML = `
                 <tr>
                     <th class="px-4 py-4 text-left">Estudante</th>
@@ -3080,7 +3278,12 @@
 
             subjectsToDisplay.sort().forEach(subjName => {
                 const d = student.subjects?.[subjName] || { units: [], attendance: {}, recovery: null };
-                const c = calculateStatus(d, subjName);
+                
+                // Passa o status real do diário daquela matéria para o cálculo
+                const key = `${student.class}_${subjName}`;
+                const isSubjClosed = appData.diaryStatus[key] === true;
+                
+                const c = calculateStatus(d, subjName, isSubjClosed);
 
                 totalFaultsGlobal += c.faults;
                 totalDaysGlobal += SUBJECT_DAYS[subjName] || SUBJECT_DAYS['default'];
@@ -3154,7 +3357,7 @@
             const isP = currentUser && currentUser.role === 'parent'; 
             
             const repTools = document.getElementById('report-tools');
-            if(repTools) repTools.classList.toggle('hidden', isP || !appData.currentSubject); 
+            if(repTools) repTools.classList.toggle('hidden', isP || !appData.currentSubject || isDiaryClosed()); 
             
             const obsSubjLabel = document.getElementById('obs-subject-label');
             if(obsSubjLabel) obsSubjLabel.innerText = appData.currentSubject || '';
