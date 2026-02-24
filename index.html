@@ -413,10 +413,10 @@
             </div>
             
             <!-- Main Chat (Janela de Conversa) -->
-            <div id="chat-main-window" class="w-full md:w-[65%] flex flex-col h-full bg-white hidden md:flex absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
+            <div id="chat-main-window" class="w-full md:w-[65%] flex-col h-full bg-white hidden md:flex absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
                 <div class="p-4 border-b bg-white flex justify-between items-center shadow-sm z-10" id="mobile-chat-header">
                     <div class="flex items-center gap-3">
-                        <button onclick="document.getElementById('chat-main-window').classList.add('hidden'); document.getElementById('chat-sidebar').classList.remove('hidden');" class="md:hidden text-gray-500 hover:text-school-green p-2"><i class="fas fa-arrow-left"></i></button>
+                        <button onclick="document.getElementById('chat-main-window').classList.add('hidden'); document.getElementById('chat-main-window').classList.remove('flex'); document.getElementById('chat-sidebar').classList.remove('hidden');" class="md:hidden text-gray-500 hover:text-school-green p-2"><i class="fas fa-arrow-left"></i></button>
                         <div>
                             <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2" id="chat-recipient-info">Avisos Gerais <i class="fas fa-check-circle text-blue-500 text-[10px]" title="Oficial"></i></h3>
                             <p class="text-[10px] text-school-green uppercase font-bold tracking-widest" id="chat-recipient-role">Mural da Escola</p>
@@ -1230,10 +1230,23 @@
                 if(chatSidebar) chatSidebar.classList.add('hidden');
                 
                 const mobileChatHeader = document.getElementById('mobile-chat-header');
-                if(mobileChatHeader) mobileChatHeader.querySelector('button').classList.add('hidden'); // hide back button
+                if(mobileChatHeader) {
+                    const btnBack = mobileChatHeader.querySelector('button');
+                    if (btnBack) btnBack.classList.add('hidden'); // hide back button for parents
+                }
+                
+                const chatMainWindow = document.getElementById('chat-main-window');
+                if(chatMainWindow) {
+                    chatMainWindow.classList.remove('hidden');
+                    chatMainWindow.classList.add('flex'); // Force show on mobile for parents
+                }
                 
                 // Encontrar o Admin para redirecionar (Direção)
-                setChatRecipient('direcao', 'Direção (Atendimento ao Pai/Responsável)', 'Atendimento Oficial');
+                getCollection('concenal_users').where('role', 'in', ['admin', 'coord']).get().then(snap => {
+                    const adminDoc = snap.docs.find(d => d.data().role === 'admin') || snap.docs[0];
+                    const adminId = adminDoc ? adminDoc.id : 'admin_master';
+                    setChatRecipient(adminId, 'Direção (Atendimento ao Pai/Responsável)', 'Atendimento Oficial');
+                });
             } else {
                 const chatSidebar = document.getElementById('chat-sidebar');
                 if(chatSidebar) chatSidebar.classList.remove('hidden');
@@ -1271,7 +1284,10 @@
                 if(chatSidebar) chatSidebar.classList.add('hidden');
                 
                 const chatMainWindow = document.getElementById('chat-main-window');
-                if(chatMainWindow) chatMainWindow.classList.remove('hidden');
+                if(chatMainWindow) {
+                    chatMainWindow.classList.remove('hidden');
+                    chatMainWindow.classList.add('flex');
+                }
             }
 
             renderChatMessages(allChatMessagesMaster);
@@ -1384,8 +1400,6 @@
                 await getCollection('concenal_chat').add(msgData);
                 input.value = '';
                 clearChatAttachment();
-                const div = document.getElementById('chat-messages');
-                if(div) setTimeout(() => div.scrollTop = div.scrollHeight, 100);
             } catch(e) {
                 console.error(e);
                 alert("Erro ao enviar: " + e.message);
@@ -1946,18 +1960,17 @@
 
                 try {
                     let foundUser = null;
+                    const snap = await getCollection('concenal_users').get();
+                    const foundDoc = snap.docs.find(doc => {
+                        const d = doc.data();
+                        return d.username === u && d.password === p;
+                    });
                     
-                    if (u === "admin" && (p === "123" || p === "1234")) {
-                         foundUser = { id: 'admin_master', name: "Admin Geral", displayName: "Direção Geral", role: "admin", subjects: appData.allSubjects, classes: appData.allClasses };
-                    } else {
-                        const snap = await getCollection('concenal_users').get();
-                        const foundDoc = snap.docs.find(doc => {
-                            const d = doc.data();
-                            return d.username === u && d.password === p;
-                        });
-                        if (foundDoc) {
-                            foundUser = { id: foundDoc.id, ...foundDoc.data() };
-                        }
+                    if (foundDoc) {
+                        foundUser = { id: foundDoc.id, ...foundDoc.data() };
+                    } else if (u === "admin" && (p === "123" || p === "1234")) {
+                        // Fallback EXTREMO se o banco foi completamente limpo e `ensureAdminUser` falhou
+                        foundUser = { id: 'admin_master', name: "Admin Geral", displayName: "Direção Geral", role: "admin", subjects: appData.allSubjects, classes: appData.allClasses };
                     }
 
                     if (foundUser) {
@@ -2005,7 +2018,7 @@
             if (btnNotif) btnNotif.classList.toggle('hidden', !isAdmin && !isCoord);
 
             const btnChat = document.getElementById('btn-chat');
-            if (btnChat) btnChat.classList.toggle('hidden', isParent); // Chat button shown differently ou hidden temporariamente dependendo do caso. Modificamos na aba abaixo
+            if (btnChat) btnChat.classList.toggle('hidden', isParent);
 
             // Abas Novas: Apenas Prof/Coord/Admin
             const navSchedule = document.getElementById('nav-schedule');
@@ -2168,7 +2181,7 @@
                         // É para mim se:
                         // 1. Eu sou o destinatário direto
                         // 2. Foi pro Global e eu não sou pai
-                        // 3. Foi pra "direcao" e eu sou admin/coord
+                        // 3. Foi pra "direcao" e eu sou admin/coord (caso de fallback)
                         const isForMe = (m.to === currentUser?.id) || 
                                         (m.to === 'global' && !iAmParent) || 
                                         (m.to === 'direcao' && iAmAdmin);
@@ -2179,8 +2192,6 @@
                             newMessagesArrived = true;
                             let senderId = m.from;
                             if (m.to === 'global') senderId = 'global';
-                            // Se veio para 'direcao', o senderId é mantido como m.from (o pai),
-                            // o que é perfeito para a bolinha de notificação aparecer no nome do pai!
                             
                             const modalChat = document.getElementById('modal-chat');
                             const isChatModalOpen = modalChat ? !modalChat.classList.contains('hidden') : false;
@@ -2219,26 +2230,20 @@
                 const iAmParent = currentUser?.role === 'parent';
                 const iAmStaff = currentUser?.role === 'admin' || currentUser?.role === 'coord';
                 
-                // Se eu sou o pai conversando com a direção
                 if (iAmParent) {
-                    // Vejo mensagens que EU mandei (pra direcao ou qualquer admin) 
                     const sentByMe = m.from === currentUser?.id;
-                    // Vejo mensagens que a direção mandou PARA MIM
                     const sentToMe = m.to === currentUser?.id;
                     return sentByMe || sentToMe;
                 }
 
-                // Se eu sou Admin/Coord conversando com um pai
                 const isRecipientParent = currentRecipientRole === 'Responsável';
                 if (iAmStaff && isRecipientParent) {
-                   // Vejo o que o pai mandou (pra direcao ou qualquer admin)
                    const sentByParent = m.from === chatRecipient;
-                   // Vejo o que EU ou OUTROS admins mandamos para o pai
                    const sentToParent = m.to === chatRecipient;
                    return sentByParent || sentToParent;
                 }
 
-                // Caso Padrão (Prof <-> Prof, Prof <-> Admin, etc): Exatamente 1 pra 1
+                // Caso Padrão 1 pra 1
                 const fromMeToThem = m.from === currentUser?.id && m.to === chatRecipient;
                 const fromThemToMe = m.from === chatRecipient && m.to === currentUser?.id;
 
@@ -3155,6 +3160,7 @@
                 // SÓ mostra o botão PDF se não for responsável
                 actionsContainer.innerHTML = `
                     ${!isParent ? `<button onclick="openReportsModal('daily')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>` : ''}
+                    ${canE ? `<button onclick="toggleAllHw()" class="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-yellow-600 transition flex items-center gap-2"><i class="fas fa-check-double"></i> Atividade p/ Todos</button>` : ''}
                     ${canE ? `<button onclick="saveDailyLog()" class="bg-blue-600 text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-blue-700 transition flex items-center gap-2"><i class="fas fa-book"></i> Gravar Diário</button>` : ''}
                 `;
             }
