@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - CONCENAL</title>
+    <title>DIÁRIO ESCOLAR - 2026</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -100,7 +100,7 @@
                     <input type="password" id="password" class="block w-full border border-gray-200 rounded-lg p-3 focus:ring-2 focus:ring-school-green outline-none bg-gray-50 transition" placeholder="Digite sua senha" required>
                 </div>
                 <div id="login-error" class="text-red-600 text-xs hidden bg-red-50 p-3 rounded-lg border border-red-100 text-center font-bold">
-                    <i class="fas fa-exclamation-circle mr-1"></i> Credenciais inválidas.
+                    <i class="fas fa-exclamation-circle mr-1"></i> <span id="error-msg-text">Credenciais inválidas.</span>
                 </div>
                 <button type="submit" id="btn-login" class="w-full py-3 bg-school-green text-white rounded-lg hover:bg-green-700 font-bold transition shadow-lg flex justify-center items-center gap-2">
                     <span>Entrar no Sistema</span>
@@ -163,7 +163,7 @@
                     </div>
                     <div id="class-tabs" class="ml-2"></div>
                 </div>
-                <div id="action-buttons" class="flex gap-2"></div>
+                <div id="action-buttons" class="flex gap-2 flex-wrap"></div>
             </div>
             <!-- Abas (Tabs) -->
             <div class="max-w-7xl mx-auto px-4 flex gap-6 overflow-x-auto hide-scroll-x mt-1">
@@ -171,8 +171,6 @@
                 <button onclick="switchMode('attendance')" id="nav-attendance" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Frequência</button>
                 <button onclick="switchMode('daily')" id="nav-daily" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Diário de Bordo</button>
                 <button onclick="switchMode('activities')" id="nav-activities" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap">Atividades e Materiais</button>
-                
-                <!-- Novas Abas -->
                 <button onclick="switchMode('schedule')" id="nav-schedule" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap hidden"><i class="fas fa-clock mr-1"></i> Horários</button>
                 <button onclick="switchMode('calendar')" id="nav-calendar" class="pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap hidden"><i class="fas fa-calendar-alt mr-1"></i> Calendário</button>
             </div>
@@ -184,14 +182,8 @@
             <!-- Tabela de Notas -->
             <div id="view-grades" class="bg-white rounded-xl shadow-xl overflow-hidden fade-in border border-gray-200">
                 <div class="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
-                    <div class="flex items-center gap-2">
-                        <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Acompanhamento de Notas</h2>
-                        <span id="diary-status-badge" class="px-2 py-1 text-[9px] font-bold uppercase rounded hidden"></span>
-                    </div>
+                    <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest">Acompanhamento de Notas</h2>
                     <div id="read-only-msg" class="text-[10px] font-bold bg-orange-100 text-orange-700 px-2 py-1 rounded hidden">APENAS CONSULTA</div>
-                    <div id="diary-actions-container" class="hidden">
-                        <!-- Botão de Fechar/Abrir Diário via JS -->
-                    </div>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="min-w-full divide-y divide-gray-200 text-center">
@@ -199,10 +191,11 @@
                             <tr>
                                 <th class="px-4 py-4 text-left w-56 sticky left-0 bg-gray-50 shadow-sm border-r z-10">Aluno</th>
                                 <th class="w-14">U1</th><th class="w-14">U2</th><th class="w-14">U3</th><th class="w-14">U4</th><th class="w-14">U5</th><th class="w-14">U6</th>
+                                <th class="w-16 text-yellow-600 bg-yellow-50/50 border-l" title="Pontos Extras (Soma na Média)"><i class="fas fa-star mr-1"></i> Extra</th>
                                 <th class="w-24 bg-blue-50 text-blue-700 border-l">Faltas</th>
                                 <th class="w-16 bg-gray-100 text-gray-600 border-l">Média</th>
                                 <th class="w-20 text-red-600 border-l">Rec</th>
-                                <th class="w-24 border-l">Status</th>
+                                <th class="w-32 border-l">Status</th>
                             </tr>
                         </thead>
                         <tbody id="grades-body" class="bg-white divide-y divide-gray-100 text-sm"></tbody>
@@ -350,7 +343,89 @@
 
     <!-- MODAIS GERAIS -->
 
-    <!-- MODAL: ANÁLISE DE DESEMPENHO DE NOTAS (GRÁFICO) -->
+    <!-- MODAL: GESTÃO DA TURMA (AVANÇADO) -->
+    <div id="modal-manage-class" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[95] flex items-center justify-center p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
+            <div class="p-4 border-b bg-gray-50 flex justify-between items-center">
+                <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm">Gerenciar Turma <span id="mng-class-name" class="text-school-green"></span></h3>
+                <button onclick="closeModal('modal-manage-class')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
+            </div>
+            <div class="p-6 space-y-6">
+                <!-- Transferência em Massa -->
+                <div class="bg-blue-50 border border-blue-100 rounded-xl p-4">
+                    <h4 class="font-bold text-blue-800 text-xs uppercase mb-2"><i class="fas fa-exchange-alt mr-1"></i> Transferir Todos os Alunos</h4>
+                    <p class="text-[10px] text-blue-600 mb-3">Move todos os alunos atuais para outra turma do sistema.</p>
+                    <div class="flex gap-2">
+                        <select id="mng-transfer-target" class="flex-1 border p-2 rounded-lg text-sm outline-none bg-white font-bold text-gray-700"></select>
+                        <button onclick="transferAllStudents()" class="bg-blue-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase shadow hover:bg-blue-700 transition">Mover</button>
+                    </div>
+                </div>
+                
+                <!-- Zerar Notas -->
+                <div class="bg-orange-50 border border-orange-100 rounded-xl p-4">
+                    <h4 class="font-bold text-orange-800 text-xs uppercase mb-2"><i class="fas fa-eraser mr-1"></i> Zerar Notas da Turma</h4>
+                    <p class="text-[10px] text-orange-600 mb-3">Limpa todas as notas de todos os alunos APENAS na disciplina atual (<span id="mng-subj-name" class="font-bold"></span>).</p>
+                    <button onclick="clearAllGrades()" class="w-full bg-orange-500 text-white px-4 py-2.5 rounded-lg text-xs font-bold uppercase shadow hover:bg-orange-600 transition">Zerar Notas Disciplina</button>
+                </div>
+
+                <!-- Apagar Todos -->
+                <div class="bg-red-50 border border-red-100 rounded-xl p-4">
+                    <h4 class="font-bold text-red-800 text-xs uppercase mb-2"><i class="fas fa-trash-alt mr-1"></i> Apagar Turma Inteira</h4>
+                    <p class="text-[10px] text-red-600 mb-3">Atenção! Esta ação deleta permanentemente todos os alunos desta turma e todos os seus históricos em todas as matérias.</p>
+                    <button onclick="deleteAllStudents()" class="w-full bg-red-600 text-white px-4 py-2.5 rounded-lg text-xs font-bold uppercase shadow hover:bg-red-700 transition">Excluir Todos os Alunos</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: CHAT RESTAURADO (COMUNICADOR) -->
+    <div id="modal-chat" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[120] flex items-center justify-center p-2 md:p-4 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl h-[90vh] flex flex-col md:flex-row overflow-hidden relative">
+            <!-- Sidebar -->
+            <div id="chat-sidebar" class="w-full md:w-1/3 bg-gray-50 border-r border-gray-200 flex flex-col h-full">
+                <div class="p-4 border-b bg-school-green text-white flex justify-between items-center">
+                    <h3 class="font-bold uppercase tracking-widest text-xs"><i class="fas fa-comments mr-2"></i> Mensagens</h3>
+                    <button onclick="closeModal('modal-chat')" class="text-green-200 hover:text-white transition md:hidden"><i class="fas fa-times fa-lg"></i></button>
+                </div>
+                <div class="p-2 overflow-y-auto flex-1 hide-scroll-x" id="chat-user-list">
+                    <!-- Lista de usuários carregada via JS -->
+                </div>
+            </div>
+            <!-- Main Chat -->
+            <div id="chat-main-window" class="w-full md:w-2/3 flex flex-col h-full bg-white hidden md:flex absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
+                <div class="p-4 border-b bg-white flex justify-between items-center shadow-sm z-10" id="mobile-chat-header">
+                    <div class="flex items-center gap-3">
+                        <button onclick="document.getElementById('chat-main-window').classList.add('hidden'); document.getElementById('chat-sidebar').classList.remove('hidden');" class="md:hidden text-gray-500"><i class="fas fa-arrow-left"></i></button>
+                        <div>
+                            <h3 class="font-bold text-gray-800 text-sm" id="chat-recipient-info">Avisos Gerais</h3>
+                            <p class="text-[10px] text-school-green uppercase font-bold tracking-widest">Chat Seguro</p>
+                        </div>
+                    </div>
+                    <div class="flex gap-3">
+                        <button id="btn-clear-chat" onclick="clearConversation()" class="text-red-400 hover:text-red-600 transition" title="Limpar Conversa"><i class="fas fa-trash"></i></button>
+                        <button onclick="closeModal('modal-chat')" class="text-gray-400 hover:text-red-500 transition hidden md:block"><i class="fas fa-times fa-lg"></i></button>
+                    </div>
+                </div>
+                <div id="chat-messages" class="flex-1 p-4 overflow-y-auto bg-[#F3F4F6] flex flex-col gap-2">
+                    <!-- Mensagens -->
+                </div>
+                <div id="chat-attachment-preview" class="hidden bg-gray-100 p-2 text-xs text-gray-600 border-t flex justify-between items-center">
+                    <span><i class="fas fa-paperclip mr-1"></i> <span id="attachment-name"></span></span>
+                    <button onclick="clearChatAttachment()" class="text-red-500 hover:text-red-700"><i class="fas fa-times"></i></button>
+                </div>
+                <div class="p-3 bg-white border-t flex items-center gap-2">
+                    <label class="cursor-pointer text-gray-400 hover:text-school-green transition p-2">
+                        <input type="file" id="chat-file" class="hidden" onchange="handleChatFile(this)">
+                        <i class="fas fa-paperclip fa-lg"></i>
+                    </label>
+                    <input type="text" id="chat-input" class="flex-1 border border-gray-200 rounded-full px-4 py-2 text-sm focus:outline-none focus:border-school-green focus:ring-1 focus:ring-school-green transition" placeholder="Digite sua mensagem..." onkeypress="if(event.key === 'Enter') sendChatMessage()">
+                    <button onclick="sendChatMessage()" class="bg-school-green text-white w-10 h-10 rounded-full flex items-center justify-center hover:bg-green-700 transition shadow-md"><i class="fas fa-paper-plane"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: ANÁLISE DE DESEMPENHO (GRÁFICO) -->
     <div id="modal-analytics" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
             <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
@@ -358,21 +433,17 @@
                     <div class="bg-purple-100 text-purple-600 w-10 h-10 flex items-center justify-center rounded-lg shadow-sm"><i class="fas fa-chart-line text-lg"></i></div>
                     <div>
                         <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm leading-tight" id="analytics-student-name">--</h3>
-                        <p class="text-[10px] text-gray-500 uppercase font-bold">Análise de Desempenho de Notas • <span id="analytics-subject" class="text-purple-600">--</span></p>
+                        <p class="text-[10px] text-gray-500 uppercase font-bold">Análise de Desempenho • <span id="analytics-subject" class="text-purple-600">--</span></p>
                     </div>
                 </div>
                 <button onclick="closeModal('modal-analytics')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
             </div>
             <div class="p-6 bg-white overflow-y-auto flex-1">
                 <h4 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-3 border-b pb-1">Alertas e Diagnóstico</h4>
-                <div id="analytics-alerts" class="mb-6 grid gap-2">
-                    <!-- Preenchido via JS -->
-                </div>
+                <div id="analytics-alerts" class="mb-6 grid gap-2"></div>
                 
                 <h4 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-3 border-b pb-1">Evolução de Notas</h4>
-                <div class="relative h-64 w-full" style="padding-top: 20px;">
-                    <canvas id="analyticsChart"></canvas>
-                </div>
+                <div class="relative h-64 w-full"><canvas id="analyticsChart"></canvas></div>
             </div>
             <div class="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-2">
                 <button onclick="closeModal('modal-analytics')" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold uppercase hover:bg-gray-300 transition shadow-sm">Fechar</button>
@@ -380,43 +451,7 @@
         </div>
     </div>
 
-    <!-- MODAL: ANÁLISE DE FREQUÊNCIA (GRÁFICO) -->
-    <div id="modal-attendance-analytics" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[110] flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-2xl w-full max-w-3xl shadow-2xl flex flex-col overflow-hidden max-h-[90vh]">
-            <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
-                <div class="flex items-center gap-3">
-                    <div class="bg-blue-100 text-blue-600 w-10 h-10 flex items-center justify-center rounded-lg shadow-sm"><i class="fas fa-user-check text-lg"></i></div>
-                    <div>
-                        <h3 class="font-bold text-gray-800 uppercase tracking-widest text-sm leading-tight" id="att-analytics-student-name">--</h3>
-                        <p class="text-[10px] text-gray-500 uppercase font-bold">Análise de Frequência • <span id="att-analytics-subject" class="text-blue-600">--</span></p>
-                    </div>
-                </div>
-                <button onclick="closeModal('modal-attendance-analytics')" class="text-gray-400 hover:text-red-500 transition"><i class="fas fa-times fa-lg"></i></button>
-            </div>
-            <div class="p-6 bg-white overflow-y-auto flex-1">
-                <div class="grid grid-cols-2 gap-4 mb-6">
-                    <div class="bg-red-50 p-4 rounded-xl border border-red-100 text-center">
-                        <p class="text-[10px] font-bold text-red-500 uppercase tracking-widest mb-1">Total de Faltas</p>
-                        <h3 class="text-3xl font-bold text-red-700" id="att-analytics-faults">--</h3>
-                    </div>
-                    <div class="bg-green-50 p-4 rounded-xl border border-green-100 text-center">
-                        <p class="text-[10px] font-bold text-green-500 uppercase tracking-widest mb-1">Presença</p>
-                        <h3 class="text-3xl font-bold text-green-700" id="att-analytics-freq">--</h3>
-                    </div>
-                </div>
-                
-                <h4 class="text-xs font-bold uppercase text-gray-400 tracking-widest mb-3 border-b pb-1">Comparativo de Frequência (%)</h4>
-                <div class="relative h-64 w-full" style="padding-top: 20px;">
-                    <canvas id="attAnalyticsChart"></canvas>
-                </div>
-            </div>
-            <div class="p-4 border-t bg-gray-50 rounded-b-2xl flex justify-end gap-2">
-                <button onclick="closeModal('modal-attendance-analytics')" class="px-5 py-2.5 bg-gray-200 text-gray-700 rounded-lg text-xs font-bold uppercase hover:bg-gray-300 transition shadow-sm">Fechar</button>
-            </div>
-        </div>
-    </div>
-
-    <!-- MODAL: RELATÓRIOS PDF -->
+    <!-- MODAL: RELATÓRIOS PDF (NOVO) -->
     <div id="modal-reports" class="fixed inset-0 bg-black bg-opacity-80 hidden z-[100] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-2xl w-full max-w-md shadow-2xl flex flex-col overflow-hidden">
             <div class="p-4 border-b bg-gray-50 rounded-t-2xl flex justify-between items-center">
@@ -782,76 +817,18 @@
                 "Quarta-7h": "Ciências", "Quarta-8h": "História", "Quarta-9h": "Geografia", "Quarta-10h": "Matemática", "Quarta-10h50": "Português",
                 "Quinta-7h": "Arte", "Quinta-8h": "Educação Física", "Quinta-9h": "Matemática", "Quinta-10h": "Ética e Cidadania", "Quinta-10h50": "Inglês",
                 "Sexta-7h": "Ciências", "Sexta-8h": "História", "Sexta-9h": "Geografia", "Sexta-10h": "Matemática", "Sexta-10h50": "Português"
-            },
-            "8A": {
-                "Segunda-7h": "Geografia", "Segunda-8h": "Português", "Segunda-9h": "História", "Segunda-10h": "Ciências", "Segunda-10h50": "Matemática",
-                "Terça-7h": "Redação", "Terça-8h": "Arte", "Terça-9h": "Inglês", "Terça-10h": "Português", "Terça-10h50": "Educação Física",
-                "Quarta-7h": "Geografia", "Quarta-8h": "Português", "Quarta-9h": "História", "Quarta-10h": "Ciências", "Quarta-10h50": "Matemática",
-                "Quinta-7h": "Ética e Cidadania", "Quinta-8h": "Matemática", "Quinta-9h": "Inglês", "Quinta-10h": "Filosofia", "Quinta-10h50": "Educação Física",
-                "Sexta-7h": "Geografia", "Sexta-8h": "Português", "Sexta-9h": "História", "Sexta-10h": "Ciências", "Sexta-10h50": "Matemática"
-            },
-            "9A": {
-                "Segunda-7h": "História", "Segunda-8h": "Matemática", "Segunda-9h": "Ciências", "Segunda-10h": "Português", "Segunda-10h50": "Geografia",
-                "Terça-7h": "Inglês", "Terça-8h": "Redação", "Terça-9h": "Português", "Terça-10h": "Educação Física", "Terça-10h50": "Arte",
-                "Quarta-7h": "História", "Quarta-8h": "Matemática", "Quarta-9h": "Ciências", "Quarta-10h": "Português", "Quarta-10h50": "Geografia",
-                "Quinta-7h": "Inglês", "Quinta-8h": "Ética e Cidadania", "Quinta-9h": "Filosofia", "Quinta-10h": "Educação Física", "Quinta-10h50": "Matemática",
-                "Sexta-7h": "História", "Sexta-8h": "Matemática", "Sexta-9h": "Ciências", "Sexta-10h": "Português", "Sexta-10h50": "Geografia"
-            },
-            "9B": {
-                "Segunda-7h": "Português", "Segunda-8h": "Geografia", "Segunda-9h": "Matemática", "Segunda-10h": "História", "Segunda-10h50": "Ciências",
-                "Terça-7h": "Educação Física", "Terça-8h": "Inglês", "Terça-9h": "Redação", "Terça-10h": "Filosofia", "Terça-10h50": "Português",
-                "Quarta-7h": "Português", "Quarta-8h": "Geografia", "Quarta-9h": "Matemática", "Quarta-10h": "História", "Quarta-10h50": "Ciências",
-                "Quinta-7h": "Educação Física", "Quinta-8h": "Inglês", "Quinta-9h": "Ética e Cidadania", "Quinta-10h": "Matemática", "Quinta-10h50": "Arte",
-                "Sexta-7h": "Português", "Sexta-8h": "Geografia", "Sexta-9h": "Matemática", "Sexta-10h": "História", "Sexta-10h50": "Ciências"
-            },
-            "1º EM A": {
-                "Segunda-7h": "Geografia", "Segunda-7:50": "Geografia", "Segunda-8:50": "Português", "Segunda-9:40": "Português", "Segunda-10:40": "Matemática", "Segunda-11:30 às 12:10": "Matemática",
-                "Terça-7h": "Física", "Terça-7:50": "Física", "Terça-8:50": "Biologia", "Terça-9:40": "Biologia", "Terça-10:40": "Ciências Humanas", "Terça-11:30 às 12:10": "Ciências Humanas",
-                "Quarta-7h": "Português", "Quarta-7:50": "Português", "Quarta-8:50": "Química", "Quarta-9:40": "Química", "Quarta-10:40": "Matemática", "Quarta-11:30 às 12:10": "Matemática",
-                "Quinta-7h": "Projeto de Vida", "Quinta-7:50": "Espanhol", "Quinta-8:50": "Educação Física", "Quinta-9:40": "Educação Física (Prática)", "Quinta-10:40": "Biologia", "Quinta-11:30 às 12:10": "Biologia",
-                "Sexta-7h": "Português", "Sexta-7:50": "Português", "Sexta-8:50": "História", "Sexta-9:40": "História", "Sexta-10:40": "Inglês", "Sexta-11:30 às 12:10": "Inglês"
-            },
-            "2º EM A": {
-                "Segunda-7h": "Matemática", "Segunda-7:50": "Matemática", "Segunda-8:50": "Geografia", "Segunda-9:40": "Geografia", "Segunda-10:40": "Português", "Segunda-11:30 às 12:10": "Português",
-                "Terça-7h": "Projeto de Vida", "Terça-7:50": "Ciências Humanas", "Terça-8:50": "Física", "Terça-9:40": "Física", "Terça-10:40": "Biologia", "Terça-11:30 às 12:10": "Biologia",
-                "Quarta-7h": "Matemática", "Quarta-7:50": "Matemática", "Quarta-8:50": "Português", "Quarta-9:40": "Português", "Quarta-10:40": "Química", "Quarta-11:30 às 12:10": "Química",
-                "Quinta-7h": "Biologia", "Quinta-7:50": "Biologia", "Quinta-8:50": "Espanhol", "Quinta-9:40": "Espanhol", "Quinta-10:40": "Projeto de Vida", "Quinta-11:30 às 12:10": "Física (Prática)",
-                "Sexta-7h": "História", "Sexta-7:50": "História", "Sexta-8:50": "Inglês", "Sexta-9:40": "Inglês", "Sexta-10:40": "Português", "Sexta-11:30 às 12:10": "Português"
             }
         };
 
         const DEFAULT_CALENDAR = [
-            { date: '2026-01-12', type: 'Reunião', desc: 'Reunião Administrativa' },
-            { date: '2026-01-13', type: 'Reunião', desc: 'Reunião Pedagógica' },
             { date: '2026-01-26', type: 'Evento', desc: 'Início do ano letivo' },
-            { date: '2026-02-02', type: 'Feriado', desc: 'Nossa Sra. do Perpétuo Socorro' },
-            { date: '2026-02-07', type: 'Evento', desc: 'Sábado Letivo' },
             { date: '2026-02-14', type: 'Reunião', desc: 'Reunião Pais e Mestres' },
-            { date: '2026-02-16', type: 'Feriado', desc: 'Carnaval' },
-            { date: '2026-02-17', type: 'Feriado', desc: 'Carnaval' },
-            { date: '2026-02-18', type: 'Feriado', desc: 'Cinzas' },
-            { date: '2026-03-07', type: 'Evento', desc: 'Sábado Letivo' },
-            { date: '2026-03-28', type: 'Reunião', desc: 'Reunião' },
-            { date: '2026-04-02', type: 'Feriado', desc: 'Semana Santa' },
-            { date: '2026-04-03', type: 'Feriado', desc: 'Semana Santa' },
-            { date: '2026-04-11', type: 'Evento', desc: 'Sábado Letivo' },
-            { date: '2026-04-21', type: 'Feriado', desc: 'Dia de Tiradentes' },
-            { date: '2026-04-25', type: 'Reunião', desc: 'Reunião' },
-            { date: '2026-05-01', type: 'Feriado', desc: 'Dia do Trabalhador' },
-            { date: '2026-05-04', type: 'Avaliação', desc: 'Início do Período Avaliativo' },
-            { date: '2026-05-09', type: 'Evento', desc: 'Sábado Letivo' },
-            { date: '2026-05-28', type: 'Evento', desc: 'Dia Nacional do Brincar' },
-            { date: '2026-05-30', type: 'Reunião', desc: 'Reunião' },
-            { date: '2026-06-04', type: 'Feriado', desc: 'Corpus Christi' },
-            { date: '2026-06-13', type: 'Reunião', desc: 'Reunião' },
-            { date: '2026-06-15', type: 'Avaliação', desc: 'Início do Período Avaliativo' },
             { date: '2026-06-19', type: 'Evento', desc: 'Término do 1º semestre letivo' }
         ];
         
         // --- ESTADO GLOBAL ---
         let db, auth, currentUser = null;
-        let analyticsChart = null; 
-        let attAnalyticsChart = null; 
+        let analyticsChart = null; // Instância do gráfico
         let appData = {
             students: [],
             activities: [],
@@ -863,7 +840,6 @@
             allSubjects: [],
             allClasses: [],
             curriculum: {}, 
-            diaryStatus: {}, // Mapeamento para controle de fechamento do diário: Turma_Materia -> boolean
             isProcessing: false
         };
         
@@ -963,7 +939,6 @@
                         appData.allSubjects = data.subjects || DEFAULT_SUBJECTS;
                         appData.allClasses = data.classes || DEFAULT_CLASSES;
                         appData.curriculum = data.curriculum || {};
-                        appData.diaryStatus = data.diaryStatus || {};
                         
                         if (!data.schedule || Object.keys(data.schedule).length === 0) {
                             appData.schedule = DEFAULT_SCHEDULE;
@@ -986,8 +961,7 @@
                         appData.curriculum = {};
                         appData.schedule = DEFAULT_SCHEDULE;
                         appData.calendar = DEFAULT_CALENDAR;
-                        appData.diaryStatus = {};
-                        dataToSave = { subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES, curriculum: {}, schedule: DEFAULT_SCHEDULE, calendar: DEFAULT_CALENDAR, diaryStatus: {} };
+                        dataToSave = { subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES, curriculum: {}, schedule: DEFAULT_SCHEDULE, calendar: DEFAULT_CALENDAR };
                         needsUpdate = true;
                     }
 
@@ -1007,17 +981,15 @@
                        renderAssignmentsUI();
                     }
                     
-                    // Rerenderiza se estiver nas abas novas ou principais
+                    // Rerenderiza se estiver nas abas novas
                     if(appData.currentMode === 'schedule') renderScheduleView();
                     if(appData.currentMode === 'calendar') renderCalendarView();
-                    if(appData.currentMode === 'grades') renderGradesTable();
                 });
 
                 auth.onAuthStateChanged(user => {
                     if (user) checkLocalSession();
                 });
 
-                // Check if element exists before setting value to avoid null reference error
                 const dateInputs = ['attendance-date', 'daily-date', 'new-observation-date'];
                 dateInputs.forEach(id => {
                     const el = document.getElementById(id);
@@ -1090,14 +1062,19 @@
             switchUserTab('teacher'); 
         }
 
+        // --- MANIPULAÇÃO SEGURA DE SESSÃO ---
+        function saveSession(userObj) { try { localStorage.setItem('concenal_v29_session', JSON.stringify(userObj)); } catch(e) {} }
+        function getSession() { try { return localStorage.getItem('concenal_v29_session'); } catch(e) { return null; } }
+        function clearSession() { try { localStorage.removeItem('concenal_v29_session'); } catch(e) {} }
+
         function checkLocalSession() {
-            const s = localStorage.getItem('concenal_v29_session');
+            const s = getSession();
             if(s) { 
                 try {
                     currentUser = JSON.parse(s); 
                     showApp(); 
                 } catch(e) {
-                    localStorage.removeItem('concenal_v29_session');
+                    clearSession();
                     const loginScreen = document.getElementById('login-screen');
                     if(loginScreen) loginScreen.classList.remove('hidden'); 
                 }
@@ -1251,6 +1228,20 @@
             const snap = await getCollection('concenal_users').get();
             list.innerHTML = '';
             
+            // Botão do grupo/mural global sempre no topo para quem não é pai
+            list.innerHTML += `
+                <button onclick="setChatRecipient('global', 'Avisos Gerais')" id="chat-btn-global" class="w-full text-left p-3 rounded-xl border-2 border-transparent transition hover:border-green-200 bg-white shadow-sm flex items-center justify-between group mb-2 border-green-300 bg-green-50">
+                    <div class="flex items-center gap-2 overflow-hidden">
+                        <div class="w-8 h-8 flex-shrink-0 bg-school-green text-white rounded-full flex items-center justify-center text-xs font-bold"><i class="fas fa-bullhorn"></i></div>
+                        <div class="leading-none overflow-hidden text-left">
+                            <div class="text-xs font-bold text-gray-700 truncate">Avisos Gerais</div>
+                            <div class="text-[8px] text-gray-400 mt-1 uppercase truncate">Mural da Escola</div>
+                        </div>
+                    </div>
+                    <span id="unread-global" class="bg-red-500 text-white text-[9px] w-4 h-4 rounded-full flex items-center justify-center hidden font-bold shadow-sm">0</span>
+                </button>
+            `;
+
             snap.forEach(doc => {
                 const u = doc.data();
                 if(doc.id === currentUser.id) return;
@@ -1490,6 +1481,20 @@
                     allowedClasses = currentUser.classes;
                 } else {
                     allowedClasses = [];
+                }
+            } else if (currentUser.role === 'admin' || currentUser.role === 'coord') {
+                // FILTRO DE CURRÍCULO: Apenas turmas que possuem a matéria selecionada
+                if (appData.currentSubject && Object.keys(appData.curriculum).length > 0) {
+                    const filtered = appData.allClasses.filter(c => {
+                        return appData.curriculum[c] && appData.curriculum[c].includes(appData.currentSubject);
+                    });
+                    // Se houver filtro válido, usa. Senão, se for fallback total, mostra todas.
+                    if (filtered.length > 0) {
+                        allowedClasses = filtered;
+                    } else {
+                        // Se a matéria não foi designada a ninguém no currículo ainda, liberamos todas por precaução
+                        allowedClasses = [...appData.allClasses];
+                    }
                 }
             }
             
@@ -1770,22 +1775,30 @@
         }
 
         // --- LOGIC V29 ---
-        function calculateStatus(d, subjName, isClosed = false) {
+        function calculateStatus(d, subjName) {
             let sum = 0, filled = 0;
             if(d.units && Array.isArray(d.units)) {
                 d.units.forEach(u => { if (u !== null && u !== "") { sum += parseFloat(u); filled++; } });
             }
-            let avg = filled > 0 ? (sum / filled).toFixed(1) : '-';
-            if (filled === 6) avg = (sum / 6).toFixed(1);
+            
+            // Pontos Extras Logic
+            let ext = (d.extraEnabled && d.extra) ? parseFloat(d.extra) : 0;
+            
+            let avgNum = filled > 0 ? (sum / filled) : 0;
+            if (filled === 6) avgNum = (sum / 6);
+            
+            avgNum += ext; // Soma extra
+            if (avgNum > 10) avgNum = 10.0; // Teto de nota
+            
+            let avg = filled > 0 ? avgNum.toFixed(1) : '-';
 
             const totalFaults = countFaults(d);
             const totalDays = SUBJECT_DAYS[subjName] || SUBJECT_DAYS['default'];
             const freqPercent = ((totalDays - totalFaults) / totalDays) * 100;
             
-            let st = isClosed ? "Reprovado" : "Cursando";
-            let cl = isClosed ? "status-badge bg-red-100 text-red-800" : "status-badge bg-blue-100 text-blue-800";
+            let st = "Cursando", cl = "status-badge bg-blue-100 text-blue-800";
             
-            if(filled >= 3 || isClosed) {
+            if(filled >= 3) {
                 const numAvg = parseFloat(avg);
                 const rVal = (d.recovery !== null && d.recovery !== undefined && d.recovery !== "") ? parseFloat(d.recovery) : null;
                 
@@ -1794,10 +1807,7 @@
                         let f = (numAvg + rVal) / 2;
                         if(f >= 6.0) { st = "Aprovado (Rec)"; cl = "status-badge bg-green-100 text-green-800"; }
                         else { st = "Reprovado"; cl = "status-badge bg-red-100 text-red-800"; }
-                    } else { 
-                        st = isClosed ? "Reprovado" : "Recuperação"; 
-                        cl = isClosed ? "status-badge bg-red-100 text-red-800" : "status-badge bg-orange-100 text-orange-800"; 
-                    } 
+                    } else { st = "Recuperação"; cl = "status-badge bg-orange-100 text-orange-800"; } 
                 } else { 
                     st = "Aprovado"; cl = "status-badge bg-green-100 text-green-800"; 
                 }
@@ -1824,6 +1834,7 @@
                 const uInput = document.getElementById('username');
                 const pInput = document.getElementById('password');
                 const errEl = document.getElementById('login-error');
+                const errMsgText = document.getElementById('error-msg-text');
                 
                 if(!uInput || !pInput || !errEl) return;
                 
@@ -1833,7 +1844,8 @@
 
                 try {
                     let foundUser = null;
-                    if (u === "admin" && p === "1234") {
+                    
+                    if (u === "admin" && (p === "123" || p === "1234")) {
                          foundUser = { id: 'admin_master', name: "Admin Geral", displayName: "Direção Geral", role: "admin", subjects: appData.allSubjects, classes: appData.allClasses };
                     } else {
                         const snap = await getCollection('concenal_users').get();
@@ -1848,19 +1860,20 @@
 
                     if (foundUser) {
                         currentUser = foundUser;
-                        localStorage.setItem('concenal_v29_session', JSON.stringify(currentUser));
+                        saveSession(currentUser);
                         showApp();
                     } else {
-                        throw new Error("Invalid credentials");
+                        throw new Error("Usuário ou senha incorretos.");
                     }
                 } catch (error) {
                     console.error(error);
+                    if(errMsgText) errMsgText.innerText = error.message;
                     errEl.classList.remove('hidden');
                 }
             });
         }
 
-        function logout() { localStorage.removeItem('concenal_v29_session'); location.reload(); }
+        function logout() { clearSession(); location.reload(); }
 
         function showApp() {
             const loginScreen = document.getElementById('login-screen');
@@ -1919,7 +1932,7 @@
                  userProfileUnsubscribe = getCollection('concenal_users').doc(currentUser.id).onSnapshot(doc => {
                      if (doc.exists) {
                          currentUser = { id: doc.id, ...doc.data() };
-                         localStorage.setItem('concenal_v29_session', JSON.stringify(currentUser));
+                         saveSession(currentUser);
                          
                          loadParentSubjectsAndPopulate();
                      } else {
@@ -2279,6 +2292,7 @@
             }
         }
 
+
         function updateUI() {
             if (!currentUser) return; 
 
@@ -2334,7 +2348,7 @@
         function ensureSubjectData(student, subject) {
             if (!student.subjects) student.subjects = {};
             if (!student.subjects[subject]) {
-                student.subjects[subject] = { units: [null,null,null,null,null,null], attendance: {}, dailyLogs: {}, recovery: null, observations: [] };
+                student.subjects[subject] = { units: [null,null,null,null,null,null], attendance: {}, dailyLogs: {}, recovery: null, observations: [], extra: null, extraEnabled: false };
             } else {
                 const d = student.subjects[subject];
                 if (!d.units || !Array.isArray(d.units)) d.units = [null,null,null,null,null,null];
@@ -2344,31 +2358,9 @@
             }
             return student.subjects[subject];
         }
-        
-        function isDiaryClosed() {
-            const key = `${appData.currentClass}_${appData.currentSubject}`;
-            return appData.diaryStatus[key] === true;
-        }
-
-        async function toggleDiaryStatus() {
-            const key = `${appData.currentClass}_${appData.currentSubject}`;
-            const currentlyClosed = isDiaryClosed();
-            const actionStr = currentlyClosed ? "REABRIR" : "ENCERRAR";
-            
-            if(confirm(`Deseja realmente ${actionStr} o diário de ${appData.currentSubject} para a turma ${appData.currentClass}?`)) {
-                try {
-                    appData.diaryStatus[key] = !currentlyClosed;
-                    await getCollection('concenal_config').doc('general').set({ diaryStatus: appData.diaryStatus }, { merge: true });
-                    logAction('Sistema', `${actionStr} o diário de classe.`);
-                    alert(`Diário ${currentlyClosed ? 'reaberto' : 'encerrado'} com sucesso!`);
-                    // A re-renderização ocorrerá pelo onSnapshot do general config
-                } catch(e) {
-                    alert("Erro ao alterar status do diário: " + e.message);
-                }
-            }
-        }
 
         // --- MÓDULO: ANÁLISE DE DESEMPENHO (CHART.JS) ---
+        // Aqui está a definição correta e global da função.
         window.openAnalytics = function(studentId) {
             const student = appData.students.find(s => s.id === studentId);
             if(!student) return;
@@ -2422,11 +2414,11 @@
                 }
             }
 
-            const c = calculateStatus(d, subj, isDiaryClosed());
+            const c = calculateStatus(d, subj);
             const currAvg = parseFloat(c.average);
 
-            // Alerta Risco Reprovação (Menor que 6). SOME se o diário estiver fechado.
-            if(!isDiaryClosed() && c.average !== '-' && currAvg < 6.0) {
+            // Alerta Risco Reprovação (Menor que 6)
+            if(c.average !== '-' && currAvg < 6.0) {
                 alertsHtml += `<div class="bg-orange-50 text-orange-700 p-3 rounded-lg border border-orange-200 text-xs font-bold shadow-sm animate-pulse"><i class="fas fa-exclamation-triangle mr-2 text-lg"></i> Alerta de Risco: Média atual de ${currAvg} (abaixo de 6.0). O aluno corre risco de recuperação/reprovação na disciplina. Intervenção sugerida.</div>`;
             }
 
@@ -2495,9 +2487,6 @@
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
-                    layout: {
-                        padding: { top: 20 } // Padding para a bolinha do 10 não cortar
-                    },
                     scales: { 
                         y: { 
                             beginAtZero: true, 
@@ -2508,11 +2497,7 @@
                     },
                     plugins: { 
                         legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } 
-                    },
-                    elements: {
-                        line: { tension: 0.4 }
-                    },
-                    clip: false // Permite desenhar fora da área do chart se necessário
+                    }
                 }
             });
 
@@ -2520,133 +2505,98 @@
             if(modalAnalytics) modalAnalytics.classList.remove('hidden');
         };
 
-        window.openAttendanceAnalytics = function(studentId) {
-            const student = appData.students.find(s => s.id === studentId);
-            if(!student) return;
-            const subj = appData.currentSubject;
-            if(!subj) return alert("Selecione uma disciplina primeiro.");
-
-            const nameEl = document.getElementById('att-analytics-student-name');
-            if(nameEl) nameEl.innerText = student.name;
+        // --- RENDER VIEWS E GESTÃO ---
+        function openManageClassModal() {
+            const m = document.getElementById('modal-manage-class');
+            const cName = document.getElementById('mng-class-name');
+            const subjName = document.getElementById('mng-subj-name');
+            const selTarget = document.getElementById('mng-transfer-target');
             
-            const subjEl = document.getElementById('att-analytics-subject');
-            if(subjEl) subjEl.innerText = subj;
+            if(cName) cName.innerText = appData.currentClass;
+            if(subjName) subjName.innerText = appData.currentSubject;
+            if(selTarget) {
+                selTarget.innerHTML = appData.allClasses.filter(c => c !== appData.currentClass).map(c => `<option value="${c}">${c}</option>`).join('');
+            }
+            if(m) m.classList.remove('hidden');
+        }
 
-            const d = ensureSubjectData(student, subj);
-            const c = calculateStatus(d, subj, isDiaryClosed());
+        async function deleteAllStudents() {
+            if(confirm(`ATENÇÃO CRÍTICA!\n\nVocê está prestes a apagar TODOS os alunos da turma ${appData.currentClass} e todo o histórico deles!\n\nEsta ação é IRREVERSÍVEL. Deseja continuar?`)) {
+                const students = getStudentsByClass();
+                const batch = db.batch();
+                students.forEach(s => {
+                    batch.delete(getCollection('concenal_students').doc(s.id));
+                });
+                await batch.commit();
+                alert('Todos os alunos da turma foram removidos.');
+                closeModal('modal-manage-class');
+            }
+        }
+
+        async function transferAllStudents() {
+            const sel = document.getElementById('mng-transfer-target');
+            if(!sel) return;
+            const targetClass = sel.value;
             
-            const fCountEl = document.getElementById('att-analytics-faults');
-            if(fCountEl) fCountEl.innerText = c.faults;
-            
-            const freqEl = document.getElementById('att-analytics-freq');
-            if(freqEl) freqEl.innerText = c.freq + '%';
+            if(confirm(`Tem certeza que deseja transferir TODOS os alunos da turma ${appData.currentClass} para a turma ${targetClass}?`)) {
+                const students = getStudentsByClass();
+                const batch = db.batch();
+                students.forEach(s => {
+                    batch.update(getCollection('concenal_students').doc(s.id), { class: targetClass });
+                });
+                await batch.commit();
+                alert(`Todos os alunos transferidos para ${targetClass} com sucesso.`);
+                closeModal('modal-manage-class');
+                appData.currentClass = targetClass;
+                updateUI();
+            }
+        }
 
-            // Médias da Turma para Comparativo de Frequência
-            let totalClassFreq = 0;
-            let classCounts = 0;
-            const classStudents = getStudentsByClass(); 
+        async function clearAllGrades() {
+            if(confirm(`Tem certeza que deseja ZERAR as notas de todos os alunos da turma ${appData.currentClass} para a matéria ${appData.currentSubject}?`)) {
+                const students = getStudentsByClass();
+                const batch = db.batch();
+                students.forEach(s => {
+                    const sd = ensureSubjectData(s, appData.currentSubject);
+                    sd.units = [null,null,null,null,null,null];
+                    sd.recovery = null;
+                    sd.extra = null;
+                    sd.extraEnabled = false;
+                    batch.update(getCollection('concenal_students').doc(s.id), { [`subjects.${appData.currentSubject}`]: sd });
+                });
+                await batch.commit();
+                alert('Todas as notas foram apagadas com sucesso.');
+                closeModal('modal-manage-class');
+                renderGradesTable();
+            }
+        }
 
-            classStudents.forEach(s => {
-                const sd = ensureSubjectData(s, subj);
-                const sc = calculateStatus(sd, subj, isDiaryClosed());
-                if(sc.freq !== '-' && !isNaN(sc.freq)) {
-                    totalClassFreq += parseFloat(sc.freq);
-                    classCounts++;
-                }
-            });
-
-            const classAvgFreq = classCounts > 0 ? (totalClassFreq / classCounts).toFixed(1) : 0;
-
-            // Renderiza o Chart.js (Barra Horizontal)
-            const canvas = document.getElementById('attAnalyticsChart');
-            if(!canvas) return;
-            
-            const ctx = canvas.getContext('2d');
-            if(attAnalyticsChart) attAnalyticsChart.destroy();
-
-            attAnalyticsChart = new Chart(ctx, {
-                type: 'bar',
-                data: { 
-                    labels: ['O Aluno', 'Média da Turma'], 
-                    datasets: [{
-                        label: 'Frequência (%)',
-                        data: [c.freq, classAvgFreq],
-                        backgroundColor: [
-                            parseFloat(c.freq) < 75 ? '#ef4444' : '#3b82f6', 
-                            '#9ca3af'
-                        ],
-                        borderRadius: 6
-                    }] 
-                },
-                options: {
-                    indexAxis: 'y',
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    scales: { 
-                        x: { 
-                            beginAtZero: true, 
-                            max: 100,
-                            grid: { color: '#F3F4F6' }
-                        },
-                        y: { grid: { display: false } }
-                    },
-                    plugins: { 
-                        legend: { display: false } 
-                    }
-                }
-            });
-
-            const modal = document.getElementById('modal-attendance-analytics');
-            if(modal) modal.classList.remove('hidden');
-        };
-
-        // --- RENDER VIEWS ---
         function renderGradesTable() {
-            const isClosed = isDiaryClosed();
-            const canEdit = currentUser && !isClosed && (
-                currentUser.role === 'admin' || 
+            const canEdit = currentUser && (
+                currentUser.role === 'admin' || currentUser.role === 'coord' ||
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
                  currentUser.assignments[appData.currentSubject] && 
                  currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
             ); 
             
-            const isParent = currentUser && currentUser.role === 'parent';
+            const isManager = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || currentUser.role === 'teacher');
             
             const readOnlyMsg = document.getElementById('read-only-msg');
-            if (readOnlyMsg) readOnlyMsg.classList.toggle('hidden', canEdit || isParent);
+            if (readOnlyMsg) readOnlyMsg.classList.toggle('hidden', canEdit || (currentUser && currentUser.role === 'parent'));
             
-            // Controle de Fechamento de Diário
-            const diaryBadge = document.getElementById('diary-status-badge');
-            const actionsContainer = document.getElementById('diary-actions-container');
-            
-            if(diaryBadge) {
-                if(isClosed) {
-                    diaryBadge.innerText = 'Fechado';
-                    diaryBadge.className = 'px-2 py-1 text-[9px] font-bold uppercase rounded bg-red-100 text-red-800 border border-red-200';
-                } else {
-                    diaryBadge.innerText = 'Aberto';
-                    diaryBadge.className = 'px-2 py-1 text-[9px] font-bold uppercase rounded bg-green-100 text-green-800 border border-green-200';
-                }
-                diaryBadge.classList.remove('hidden');
-            }
-            
-            if(actionsContainer) {
-                if(currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || currentUser.role === 'teacher')) {
-                    if(isClosed) {
-                        actionsContainer.innerHTML = `<button onclick="toggleDiaryStatus()" class="bg-gray-100 border border-gray-300 text-gray-700 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-gray-200 transition"><i class="fas fa-lock-open mr-1"></i> Reabrir Diário</button>`;
-                    } else {
-                        actionsContainer.innerHTML = `<button onclick="toggleDiaryStatus()" class="bg-red-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-red-700 transition"><i class="fas fa-lock mr-1"></i> Encerrar Diário</button>`;
-                    }
-                    actionsContainer.classList.remove('hidden');
-                } else {
-                    actionsContainer.classList.add('hidden');
-                }
-            }
-
             const btnContainer = document.getElementById('action-buttons');
             if (btnContainer) {
-                btnContainer.innerHTML = (canEdit && !isClosed) ? `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm">Novo Aluno</button><button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm">Importar Massa</button>` : '';
+                let html = '';
+                if(canEdit) {
+                    html += `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm mr-2 mb-2">Novo Aluno</button>`;
+                    html += `<button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm mr-2 mb-2">Importar Massa</button>`;
+                    html += `<button onclick="toggleAllExtra()" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm mr-2 mb-2"><i class="fas fa-star mr-1"></i> Extra Turma</button>`;
+                }
+                if(isManager) {
+                    html += `<button onclick="openManageClassModal()" class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm mr-2 mb-2 hover:bg-black transition"><i class="fas fa-cogs mr-1"></i> Gerenciar Turma</button>`;
+                }
+                btnContainer.innerHTML = html;
             }
 
             const tbody = document.getElementById('grades-body'); 
@@ -2665,30 +2615,124 @@
             if (emptySt2) emptySt2.classList.add('hidden');
 
             list.forEach(s => {
-                const d = ensureSubjectData(s, appData.currentSubject); 
-                const c = calculateStatus(d, appData.currentSubject, isClosed);
+                const d = ensureSubjectData(s, appData.currentSubject); const c = calculateStatus(d, appData.currentSubject);
+                let ext = d.extra || '';
+                let extEnabled = d.extraEnabled || false;
                 
-                // Ícone de alerta ao lado do nome se o aluno tiver média abaixo de 6 E o diário não estiver fechado
-                let warningIcon = (!isClosed && c.average !== '-' && parseFloat(c.average) < 6.0) ? `<i class="fas fa-exclamation-triangle text-orange-500 ml-2" title="Risco de Reprovação"></i>` : '';
+                let warningIcon = (c.average !== '-' && parseFloat(c.average) < 6.0) ? `<i class="fas fa-exclamation-triangle text-orange-500 ml-2" title="Risco de Reprovação"></i>` : '';
 
-                let row = `<tr class="hover:bg-gray-50 transition border-b border-gray-100"><td class="px-4 py-4 border-r flex justify-between items-center sticky left-0 bg-white print-border"><div><span class="font-bold text-gray-700">${s.name}${warningIcon}</span><br><span class="text-[9px] text-gray-300 font-mono text-left block w-20 truncate no-print">${s.id}</span></div><div class="flex gap-2"><button onclick="openAnalytics('${s.id}')" class="text-purple-500 hover:scale-110 transition no-print" title="Análise de Desempenho"><i class="fas fa-chart-line"></i></button><button onclick="openReportModal('${s.id}')" class="text-blue-500 hover:scale-110 transition no-print"><i class="fas fa-file-alt"></i></button>${canEdit?`<button onclick="deleteStudent('${s.id}')" class="text-red-300 hover:text-red-500 transition no-print"><i class="fas fa-trash"></i></button>`:''}</div></td>`;
+                // Ações Individuais (Borracha / Troca / Lixo)
+                let indvActions = '';
+                if(canEdit) {
+                    indvActions = `
+                        <button onclick="clearStudentGrades('${s.id}')" class="text-orange-400 hover:text-orange-600 transition no-print ml-2" title="Limpar notas deste aluno"><i class="fas fa-eraser"></i></button>
+                        <button onclick="transferStudent('${s.id}')" class="text-blue-400 hover:text-blue-600 transition no-print ml-2" title="Transferir aluno de turma"><i class="fas fa-exchange-alt"></i></button>
+                        <button onclick="deleteStudent('${s.id}')" class="text-red-300 hover:text-red-500 transition no-print ml-2" title="Apagar aluno do sistema"><i class="fas fa-trash"></i></button>
+                    `;
+                }
+
+                let row = `<tr class="hover:bg-gray-50 transition border-b border-gray-100">
+                    <td class="px-4 py-4 border-r flex justify-between items-center sticky left-0 bg-white print-border z-10">
+                        <div>
+                            <span class="font-bold text-gray-700">${s.name}${warningIcon}</span><br>
+                            <span class="text-[9px] text-gray-300 font-mono text-left block w-20 truncate no-print">${s.id}</span>
+                        </div>
+                        <div class="flex gap-1 items-center">
+                            <button onclick="openAnalytics('${s.id}')" class="text-purple-500 hover:scale-110 transition no-print" title="Análise de Desempenho"><i class="fas fa-chart-line"></i></button>
+                            <button onclick="openReportModal('${s.id}')" class="text-blue-500 hover:scale-110 transition no-print ml-1" title="Boletim/Relatório"><i class="fas fa-file-alt"></i></button>
+                            ${indvActions}
+                        </div>
+                    </td>`;
+                
                 for(let i=0; i<6; i++) { 
                     const v = d.units[i] ?? ''; 
                     row += `<td class="px-1 border-l print-border"><input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-transparent focus:outline-none ${v!==''&&v<6?'text-red-600 font-bold':'text-green-700'}" value="${v}" onchange="updateGrade('${s.id}',${i},this.value)"></td>`; 
                 }
-                row += `<td class="px-1 text-center font-bold border-l cursor-pointer print-border ${c.freq<75?'text-red-700 bg-red-50':'text-blue-800'}" onclick="openReportModal('${s.id}')">${c.faults} <span class="text-[8px] font-normal opacity-40">${c.freq}%</span></td><td class="px-2 text-center font-bold border-l text-gray-700 print-border">${c.average}</td><td class="px-1 border-l print-border"><input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-gray-50" value="${d.recovery||''}" onchange="updateRecovery('${s.id}',this.value)"></td><td class="px-2 text-center border-l print-border"><span class="${c.statusClass}">${c.status||'--'}</span></td></tr>`;
+
+                row += `
+                    <td class="px-1 border-l print-border bg-yellow-50/50 relative group">
+                        <div class="flex items-center justify-center gap-1">
+                            <button onclick="toggleExtra('${s.id}')" ${!canEdit?'disabled':''} class="${extEnabled ? 'text-yellow-500' : 'text-gray-300'} hover:scale-110 transition"><i class="fas fa-star"></i></button>
+                            ${extEnabled ? `<input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-10 p-1 rounded border border-yellow-200 text-center focus:outline-none text-yellow-700 font-bold text-xs shadow-sm bg-white" value="${ext}" onchange="updateExtra('${s.id}',this.value)" placeholder="0.0">` : ''}
+                        </div>
+                    </td>
+                    <td class="px-1 text-center font-bold border-l cursor-pointer print-border ${c.freq<75?'text-red-700 bg-red-50':'text-blue-800'}" onclick="openReportModal('${s.id}')">${c.faults} <span class="text-[8px] font-normal opacity-40">${c.freq}%</span></td>
+                    <td class="px-2 text-center font-bold border-l text-gray-700 print-border">${c.average}</td>
+                    <td class="px-1 border-l print-border"><input type="number" step="0.1" ${!canEdit?'disabled':''} class="w-full text-center bg-gray-50 rounded" value="${d.recovery||''}" onchange="updateRecovery('${s.id}',this.value)"></td>
+                    <td class="px-2 text-center border-l print-border"><span class="${c.statusClass}">${c.status||'--'}</span></td>
+                </tr>`;
+                
                 tbody.innerHTML += row;
             });
+        }
+
+        // --- MANEJO DE NOTAS E EXTRAS INDIVIDUAIS ---
+        function toggleExtra(id) {
+            const s = appData.students.find(x => x.id === id);
+            const sd = ensureSubjectData(s, appData.currentSubject);
+            sd.extraEnabled = !sd.extraEnabled;
+            if(!sd.extraEnabled) sd.extra = null; // Zera se desativado
+            getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{extraEnabled: sd.extraEnabled, extra: sd.extra}}},{merge:true});
+            renderGradesTable();
+        }
+
+        function toggleAllExtra() {
+            const students = getStudentsByClass();
+            if(students.length === 0) return;
+            const allMarked = students.every(s => ensureSubjectData(s, appData.currentSubject).extraEnabled);
+            const newState = !allMarked;
+            
+            const batch = db.batch();
+            students.forEach(s => {
+                const sd = ensureSubjectData(s, appData.currentSubject);
+                sd.extraEnabled = newState;
+                if(!newState) sd.extra = null;
+                batch.update(getCollection('concenal_students').doc(s.id), { [`subjects.${appData.currentSubject}.extraEnabled`]: newState, [`subjects.${appData.currentSubject}.extra`]: sd.extra });
+            });
+            batch.commit().then(() => renderGradesTable());
+        }
+
+        function updateExtra(id, v) {
+            const s = appData.students.find(x => x.id === id); 
+            const sd = ensureSubjectData(s, appData.currentSubject); 
+            sd.extra = v; 
+            getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{extra:sd.extra}}},{merge:true}); 
+        }
+
+        function clearStudentGrades(id) {
+            if(confirm("Zerar TODAS as notas e extras deste aluno nesta disciplina?")) {
+                const s = appData.students.find(x => x.id === id);
+                const sd = ensureSubjectData(s, appData.currentSubject);
+                sd.units = [null,null,null,null,null,null];
+                sd.recovery = null;
+                sd.extra = null;
+                sd.extraEnabled = false;
+                getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:sd}},{merge:true}).then(() => renderGradesTable());
+            }
+        }
+
+        function transferStudent(id) {
+            const s = appData.students.find(x => x.id === id);
+            const classesAvailable = appData.allClasses.filter(c => c !== appData.currentClass);
+            const newClassStr = prompt(`Transferir o aluno ${s.name} para qual turma?\n\nTurmas: ${classesAvailable.join(', ')}`);
+            
+            if(newClassStr) {
+                const newClass = newClassStr.trim().toUpperCase();
+                if(appData.allClasses.includes(newClass)) {
+                    getCollection('concenal_students').doc(id).update({ class: newClass });
+                } else {
+                    alert("A turma digitada não foi encontrada no sistema. Tente novamente copiando exatamente como escrito na lista.");
+                }
+            }
         }
 
         function renderAttendanceTable(){
             const dateInput = document.getElementById('attendance-date');
             if(!dateInput) return;
             const date = dateInput.value; 
-            const isClosed = isDiaryClosed();
             const isParent = currentUser && currentUser.role === 'parent';
-            const canE = currentUser && !isClosed && (
-                currentUser.role === 'admin' || 
+            const canE = currentUser && (
+                currentUser.role === 'admin' || currentUser.role === 'coord' ||
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
                  currentUser.assignments[appData.currentSubject] && 
@@ -2698,6 +2742,7 @@
             
             const actionsContainer = document.getElementById('attendance-actions');
             if (actionsContainer) {
+                // SÓ mostra o PDF se não for o responsável. O botão salvar mostra só para quem edita.
                 actionsContainer.innerHTML = `
                     ${!isParent ? `<button onclick="openReportsModal('attendance')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>` : ''}
                     ${canE ? `<button onclick="saveDailyAttendance()" class="bg-school-green text-white px-6 py-2 rounded-lg text-sm font-bold shadow hover:bg-green-700 transition flex items-center gap-2"><i class="fas fa-save"></i> Salvar Chamada</button>` : ''}
@@ -2754,14 +2799,8 @@
                     ((j && doc) ? `<button onclick="viewDoc('${doc}')" class="ml-2 text-blue-500 hover:scale-110 transition"><i class="fas fa-paperclip"></i></button>` : '');
                 
                 let infoHtml = tName ? `<div class="text-[8px] text-gray-400 font-normal uppercase tracking-tighter mt-1">${tName}</div>` : '';
-                
-                // Count faults for display
-                const c = calculateStatus(sub, appData.currentSubject, isClosed);
-                let faultDisplay = `<span class="text-[9px] text-red-500 font-bold ml-2 bg-red-50 px-1 rounded" title="Total de Faltas">${c.faults}F</span>`;
 
-                let analyticsBtn = !isParent ? `<button onclick="openAttendanceAnalytics('${s.id}')" class="text-blue-400 hover:text-blue-600 ml-2" title="Gráfico de Frequência"><i class="fas fa-chart-bar"></i></button>` : '';
-
-                tbody.innerHTML += `<tr class="border-b border-gray-50"><td class="px-6 py-4 font-bold text-gray-700 flex justify-between items-center"><div>${s.name} ${faultDisplay}</div><div>${analyticsBtn} ${act}</div></td><td class="px-6 py-4 text-center"><button id="btn-att-${s.id}" onclick="toggleAtt('${s.id}')" ${!canE?'disabled':''} class="w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition flex flex-col items-center justify-center ${btnCls} mx-auto"><span>${btnTxt}</span></button>${infoHtml}</td></tr>`;
+                tbody.innerHTML += `<tr class="border-b border-gray-50"><td class="px-6 py-4 font-bold text-gray-700 flex justify-between items-center">${s.name} ${act}</td><td class="px-6 py-4 text-center"><button id="btn-att-${s.id}" onclick="toggleAtt('${s.id}')" ${!canE?'disabled':''} class="w-32 py-2 rounded-lg shadow-sm text-[10px] font-bold border uppercase transition flex flex-col items-center justify-center ${btnCls} mx-auto"><span>${btnTxt}</span></button>${infoHtml}</td></tr>`;
             });
         }
         
@@ -2811,7 +2850,6 @@
         }
 
         function toggleAllHw() {
-            if(isDiaryClosed()) return alert("Diário encerrado. Reabra para editar.");
             const students = getStudentsByClass();
             if(students.length === 0) return;
             
@@ -2832,17 +2870,16 @@
             if(!tbody || !thead) return;
             tbody.innerHTML = '';
             
-            const isClosed = isDiaryClosed();
             const isParent = currentUser && currentUser.role === 'parent';
-            const canE = currentUser && !isClosed && (
-                currentUser.role === 'admin' || 
+            const canE = currentUser && (
+                currentUser.role === 'admin' || currentUser.role === 'coord' ||
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
                  currentUser.assignments[appData.currentSubject] && 
                  currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
             ); 
 
-            // Renderiza o cabeçalho baseando-se no papel
+            // Renderiza o cabeçalho baseando-se no papel (oculta Anotação para pais, e adiciona botão Marcar Todos para profs)
             thead.innerHTML = `
                 <tr>
                     <th class="px-4 py-4 text-left">Estudante</th>
@@ -2895,7 +2932,7 @@
 
         function renderActivitiesView() {
             const canEdit = currentUser && (
-                currentUser.role === 'admin' || 
+                currentUser.role === 'admin' || currentUser.role === 'coord' ||
                 (currentUser.role === 'teacher' && 
                  currentUser.assignments && 
                  currentUser.assignments[appData.currentSubject] && 
@@ -3093,7 +3130,7 @@
 
         function updateGrade(id,i,v){ const s=appData.students.find(x=>x.id===id); const sd=ensureSubjectData(s,appData.currentSubject); sd.units[i]=v; getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{units:sd.units}}},{merge:true}); }
         function updateRecovery(id,v){ const s=appData.students.find(x=>x.id===id); getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{recovery:v}}},{merge:true}); }
-        function deleteStudent(id){ if(confirm("Remover aluno?")) getCollection('concenal_students').doc(id).delete(); }
+        function deleteStudent(id){ if(confirm("Remover aluno permanentemente?")) getCollection('concenal_students').doc(id).delete(); }
         function addStudent(){ 
             const newNameInput = document.getElementById('new-name');
             if(!newNameInput) return;
@@ -3278,12 +3315,7 @@
 
             subjectsToDisplay.sort().forEach(subjName => {
                 const d = student.subjects?.[subjName] || { units: [], attendance: {}, recovery: null };
-                
-                // Passa o status real do diário daquela matéria para o cálculo
-                const key = `${student.class}_${subjName}`;
-                const isSubjClosed = appData.diaryStatus[key] === true;
-                
-                const c = calculateStatus(d, subjName, isSubjClosed);
+                const c = calculateStatus(d, subjName);
 
                 totalFaultsGlobal += c.faults;
                 totalDaysGlobal += SUBJECT_DAYS[subjName] || SUBJECT_DAYS['default'];
@@ -3357,7 +3389,7 @@
             const isP = currentUser && currentUser.role === 'parent'; 
             
             const repTools = document.getElementById('report-tools');
-            if(repTools) repTools.classList.toggle('hidden', isP || !appData.currentSubject || isDiaryClosed()); 
+            if(repTools) repTools.classList.toggle('hidden', isP || !appData.currentSubject); 
             
             const obsSubjLabel = document.getElementById('obs-subject-label');
             if(obsSubjLabel) obsSubjLabel.innerText = appData.currentSubject || '';
@@ -3745,4 +3777,3 @@
     </script>
 </body>
 </html>
-
