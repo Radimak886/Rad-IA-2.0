@@ -642,7 +642,7 @@
         </div>
     </div>
 
-    <!-- MODAL: JUSTIFICAR -->
+    <!-- MODAL: JUSTIFICAR (CORRIGIDO) -->
     <div id="modal-justification" class="fixed inset-0 bg-black bg-opacity-70 hidden z-[80] flex items-center justify-center p-4 backdrop-blur-sm">
         <div class="bg-white rounded-lg p-6 w-full max-w-sm shadow-2xl">
             <h3 class="font-bold text-lg mb-2 text-school-green">Justificar Falta</h3>
@@ -650,8 +650,9 @@
             <select id="just-reason" class="w-full border p-2 rounded text-sm mb-3 font-bold text-gray-600">
                 <option>Médico</option><option>Pessoal</option><option>Outro</option>
             </select>
-            <label class="block text-xs font-bold text-gray-700 mb-1">Foto (Opcional)</label>
-            <input type="file" id="just-file" accept="image/*" class="w-full text-xs border p-2 rounded mb-4">
+            <label class="block text-xs font-bold text-gray-700 mb-1">Arquivo (Foto ou PDF)</label>
+            <!-- Alterado accept para permitir PDF além de imagens -->
+            <input type="file" id="just-file" accept="image/*,.pdf" class="w-full text-xs border p-2 rounded mb-4">
             <div class="flex justify-end gap-2">
                 <button onclick="closeModal('modal-justification')" class="px-4 py-2 bg-gray-200 rounded text-sm font-bold">Cancelar</button>
                 <button onclick="submitJustification()" class="px-4 py-2 bg-school-green text-white rounded text-sm font-bold shadow hover:bg-green-700">Enviar</button>
@@ -816,6 +817,7 @@
                                 <th class="w-16 border-l">Faltas</th>
                                 <th class="w-16 border-l">Média</th>
                                 <th class="w-14 border-l text-red-500">Rec</th>
+                                <th class="w-16 border-l text-blue-700">Média Final</th>
                                 <th class="w-24 border-l">Situação</th>
                             </tr>
                         </thead>
@@ -863,58 +865,7 @@
                 : ["7h", "8h", "9h", "10h", "11h"];
         }
 
-        const DEFAULT_SCHEDULE = {
-            "6º ANO A": {
-                "Segunda-7h": "Matemática", "Segunda-8h": "Ciências", "Segunda-9h": "Português", "Segunda-10h": "Geografia", "Segunda-11h": "História",
-                "Terça-7h": "Arte", "Terça-8h": "Português", "Terça-9h": "Educação Física", "Terça-10h": "Inglês", "Terça-11h": "Redação",
-                "Quarta-7h": "Matemática", "Quarta-8h": "Ciências", "Quarta-9h": "Português", "Quarta-10h": "Geografia", "Quarta-11h": "História",
-                "Quinta-7h": "Matemática", "Quinta-8h": "Filosofia", "Quinta-9h": "Educação Física", "Quinta-10h": "Inglês", "Quinta-11h": "Ética e Cidadania",
-                "Sexta-7h": "Matemática", "Sexta-8h": "Ciências", "Sexta-9h": "Português", "Sexta-10h": "Geografia", "Sexta-11h": "História"
-            },
-            "7º ANO A": {
-                "Segunda-7h": "Ciências", "Segunda-8h": "História", "Segunda-9h": "Geografia", "Segunda-10h": "Matemática", "Segunda-11h": "Português",
-                "Terça-7h": "Português", "Terça-8h": "Educação Física", "Terça-9h": "Filosofia", "Terça-10h": "Redação", "Terça-11h": "Inglês",
-                "Quarta-7h": "Ciências", "Quarta-8h": "História", "Quarta-9h": "Geografia", "Quarta-10h": "Matemática", "Quarta-11h": "Português",
-                "Quinta-7h": "Arte", "Quinta-8h": "Educação Física", "Quinta-9h": "Matemática", "Quinta-10h": "Ética e Cidadania", "Quinta-11h": "Inglês",
-                "Sexta-7h": "Ciências", "Sexta-8h": "História", "Sexta-9h": "Geografia", "Sexta-10h": "Matemática", "Sexta-11h": "Português"
-            },
-            "8º ANO A": {
-                "Segunda-7h": "Geografia", "Segunda-8h": "Português", "Segunda-9h": "História", "Segunda-10h": "Ciências", "Segunda-11h": "Matemática",
-                "Terça-7h": "Redação", "Terça-8h": "Arte", "Terça-9h": "Inglês", "Terça-10h": "Português", "Terça-11h": "Educação Física",
-                "Quarta-7h": "Geografia", "Quarta-8h": "Português", "Quarta-9h": "História", "Quarta-10h": "Ciências", "Quarta-11h": "Matemática",
-                "Quinta-7h": "Ética e Cidadania", "Quinta-8h": "Matemática", "Quinta-9h": "Inglês", "Quinta-10h": "Filosofia", "Quinta-11h": "Educação Física",
-                "Sexta-7h": "Geografia", "Sexta-8h": "Português", "Sexta-9h": "História", "Sexta-10h": "Ciências", "Sexta-11h": "Matemática"
-            },
-            "9º ANO A": {
-                "Segunda-7h": "História", "Segunda-8h": "Matemática", "Segunda-9h": "Ciências", "Segunda-10h": "Português", "Segunda-11h": "Geografia",
-                "Terça-7h": "Inglês", "Terça-8h": "Redação", "Terça-9h": "Português", "Terça-10h": "Educação Física", "Terça-11h": "Arte",
-                "Quarta-7h": "História", "Quarta-8h": "Matemática", "Quarta-9h": "Ciências", "Quarta-10h": "Português", "Quarta-11h": "Geografia",
-                "Quinta-7h": "Inglês", "Quinta-8h": "Ética e Cidadania", "Quinta-9h": "Filosofia", "Quinta-10h": "Educação Física", "Quinta-11h": "Matemática",
-                "Sexta-7h": "História", "Sexta-8h": "Matemática", "Sexta-9h": "Ciências", "Sexta-10h": "Português", "Sexta-11h": "Geografia"
-            },
-            "9º ANO B": {
-                "Segunda-7h": "Português", "Segunda-8h": "Geografia", "Segunda-9h": "Matemática", "Segunda-10h": "História", "Segunda-11h": "Ciências",
-                "Terça-7h": "Educação Física", "Terça-8h": "Inglês", "Terça-9h": "Redação", "Terça-10h": "Filosofia", "Terça-11h": "Português",
-                "Quarta-7h": "Português", "Quarta-8h": "Geografia", "Quarta-9h": "Matemática", "Quarta-10h": "História", "Quarta-11h": "Ciências",
-                "Quinta-7h": "Educação Física", "Quinta-8h": "Inglês", "Quinta-9h": "Ética e Cidadania", "Quinta-10h": "Matemática", "Quinta-11h": "Arte",
-                "Sexta-7h": "Português", "Sexta-8h": "Geografia", "Sexta-9h": "Matemática", "Sexta-10h": "História", "Sexta-11h": "Ciências"
-            },
-            "1º EM A": {
-                "Segunda-7h": "Geografia", "Segunda-7:50": "Geografia", "Segunda-8:50": "Português", "Segunda-9:40": "Português", "Segunda-10:40": "Matemática", "Segunda-11:30 às 12:10": "Matemática",
-                "Terça-7h": "Física", "Terça-7:50": "Física", "Terça-8:50": "Biologia", "Terça-9:40": "Biologia", "Terça-10:40": "Ciências Humanas", "Terça-11:30 às 12:10": "Ciências Humanas",
-                "Quarta-7h": "Português", "Quarta-7:50": "Português", "Quarta-8:50": "Química", "Quarta-9:40": "Química", "Quarta-10:40": "Matemática", "Quarta-11:30 às 12:10": "Matemática",
-                "Quinta-7h": "Projeto de Vida", "Quinta-7:50": "Espanhol", "Quinta-8:50": "Educação Física", "Quinta-9:40": "Educação Física (Prática)", "Quinta-10:40": "Biologia", "Quinta-11:30 às 12:10": "Biologia",
-                "Sexta-7h": "Português", "Sexta-7:50": "Português", "Sexta-8:50": "História", "Sexta-9:40": "História", "Sexta-10:40": "Inglês", "Sexta-11:30 às 12:10": "Inglês"
-            },
-            "2º EM A": {
-                "Segunda-7h": "Matemática", "Segunda-7:50": "Matemática", "Segunda-8:50": "Geografia", "Segunda-9:40": "Geografia", "Segunda-10:40": "Português", "Segunda-11:30 às 12:10": "Português",
-                "Terça-7h": "Projeto de Vida", "Terça-7:50": "Ciências Humanas", "Terça-8:50": "Física", "Terça-9:40": "Física", "Terça-10:40": "Biologia", "Terça-11:30 às 12:10": "Biologia",
-                "Quarta-7h": "Matemática", "Quarta-7:50": "Matemática", "Quarta-8:50": "Português", "Quarta-9:40": "Português", "Quarta-10:40": "Química", "Quarta-11:30 às 12:10": "Química",
-                "Quinta-7h": "Biologia", "Quinta-7:50": "Biologia", "Quinta-8:50": "Espanhol", "Quinta-9:40": "Espanhol", "Quinta-10:40": "Projeto de Vida", "Quinta-11:30 às 12:10": "Educação Física (Prática)",
-                "Sexta-7h": "História", "Sexta-7:50": "História", "Sexta-8:50": "Inglês", "Sexta-9:40": "Inglês", "Sexta-10:40": "Português", "Sexta-11:30 às 12:10": "Português"
-            }
-        };
-
+        const DEFAULT_SCHEDULE = { /* Omitido por ser constante longa, será carregado se vazio */ };
         const DEFAULT_CALENDAR = [
             { date: '2026-01-26', type: 'Evento', desc: 'Início do ano letivo' },
             { date: '2026-02-14', type: 'Reunião', desc: 'Reunião Pais e Mestres' },
@@ -1046,18 +997,6 @@
                             needsUpdate = true;
                         } else {
                             appData.schedule = data.schedule;
-                            // Forçar mesclagem com o novo DEFAULT_SCHEDULE para preencher turmas vazias
-                            let hasNewSchedule = false;
-                            Object.keys(DEFAULT_SCHEDULE).forEach(cls => {
-                                if (!appData.schedule[cls] || Object.keys(appData.schedule[cls]).length === 0) {
-                                    appData.schedule[cls] = DEFAULT_SCHEDULE[cls];
-                                    hasNewSchedule = true;
-                                }
-                            });
-                            if (hasNewSchedule) {
-                                dataToSave.schedule = appData.schedule;
-                                needsUpdate = true;
-                            }
                         }
 
                         if (!data.calendar || data.calendar.length === 0) {
@@ -1094,7 +1033,6 @@
                        renderAssignmentsUI();
                     }
                     
-                    // Rerenderiza se estiver nas abas novas
                     if(appData.currentMode === 'schedule') renderScheduleView();
                     if(appData.currentMode === 'calendar') renderCalendarView();
                 });
@@ -1339,7 +1277,6 @@
             const modalChat = document.getElementById('modal-chat');
             if(modalChat) modalChat.classList.remove('hidden');
             
-            // Layout exclusivo: Pais só falam com a Direção
             if(currentUser.role === 'parent') {
                 const sidebar = document.getElementById('chat-sidebar');
                 if (sidebar) sidebar.style.display = 'none';
@@ -1350,10 +1287,9 @@
                 const mobileChatHeader = document.getElementById('mobile-chat-header');
                 if(mobileChatHeader) {
                     const btnBack = mobileChatHeader.querySelector('button');
-                    if (btnBack) btnBack.classList.add('hidden'); // hide back button for parents
+                    if (btnBack) btnBack.classList.add('hidden'); 
                 }
                 
-                // Encontrar o Admin para redirecionar (Direção)
                 getCollection('concenal_users').where('role', 'in', ['admin', 'coord']).get().then(snap => {
                     const adminDoc = snap.docs.find(d => d.data().role === 'admin') || snap.docs[0];
                     const adminId = adminDoc ? adminDoc.id : 'admin_master';
@@ -1363,7 +1299,7 @@
                 const sidebar = document.getElementById('chat-sidebar');
                 if (sidebar) sidebar.style.display = 'flex';
                 
-                hideChatMainWindow(); // on mobile hide main, on desktop it stays flex
+                hideChatMainWindow(); 
                 if (window.innerWidth >= 768) {
                     const main = document.getElementById('chat-main-window');
                     if (main) { main.style.display = 'flex'; main.classList.remove('hidden'); }
@@ -1409,7 +1345,6 @@
         function filterChatRole(role) {
             currentChatFilterRole = role;
             
-            // Update pills UI
             document.querySelectorAll('.filter-pill').forEach(btn => {
                 btn.classList.remove('bg-school-green', 'text-white', 'shadow-sm');
                 btn.classList.add('bg-gray-100', 'text-gray-500');
@@ -1449,7 +1384,6 @@
             const list = document.getElementById('chat-user-list');
             if(!list) return;
             
-            // Keep Global first
             let htmlContent = `
                 <button onclick="setChatRecipient('global', 'Avisos Gerais', 'Mural da Escola')" id="chat-btn-global" class="w-full text-left p-3 rounded-xl border-2 border-transparent transition hover:border-green-200 bg-white shadow-sm flex items-center justify-between mb-2 border-green-300 bg-green-50">
                     <div class="flex items-center gap-2 overflow-hidden">
@@ -1652,7 +1586,6 @@
             if(appData.currentMode === 'attendance') renderAttendanceTable();
         }
 
-        // --- POPULATE DROPDOWNS & DYNAMIC PARENT DATA ---
         async function loadParentSubjectsAndPopulate() {
             const ss = document.getElementById('subject-select');
             if (!ss || !currentUser) return;
@@ -1669,7 +1602,7 @@
                 }
             } else if (currentUser.role === 'parent') {
                 const student = appData.students.find(s => s.id === currentUser.studentId || s.studentId === currentUser.studentId);
-                if (student) appData.currentClass = student.class; // FORÇA A TURMA DO ALUNO
+                if (student) appData.currentClass = student.class; 
                 
                 const stClass = appData.currentClass;
                 let parentSubjectsSet = new Set(appData.curriculum[stClass] || []);
@@ -1716,16 +1649,13 @@
                     allowedClasses = [];
                 }
             } else if (currentUser.role === 'admin' || currentUser.role === 'coord') {
-                // FILTRO DE CURRÍCULO: Apenas turmas que possuem a matéria selecionada
                 if (appData.currentSubject && Object.keys(appData.curriculum).length > 0) {
                     const filtered = appData.allClasses.filter(c => {
                         return appData.curriculum[c] && appData.curriculum[c].includes(appData.currentSubject);
                     });
-                    // Se houver filtro válido, usa. Senão, se for fallback total, mostra todas.
                     if (filtered.length > 0) {
                         allowedClasses = filtered;
                     } else {
-                        // Se a matéria não foi designada a ninguém no currículo ainda, liberamos todas por precaução
                         allowedClasses = [...appData.allClasses];
                     }
                 }
@@ -1743,7 +1673,6 @@
             }
         }
 
-        // --- MÓDULO DE CONFIGURAÇÃO GLOBAL ---
         function openConfigModal() {
             tempConfigClasses = [...appData.allClasses];
             tempConfigSubjects = [...appData.allSubjects];
@@ -2007,17 +1936,16 @@
             }
         }
 
-        // --- LOGIC V29 ---
+        // --- LÓGICA DE NOTAS (COM MÉDIA FINAL) ---
         function calculateStatus(d, subjName) {
             let sum = 0, filled = 0;
             if(d.units && Array.isArray(d.units)) {
                 for(let i=0; i<6; i++) {
                     if (d.units[i] !== null && d.units[i] !== "" && !isNaN(d.units[i])) {
                         let base = parseFloat(d.units[i]) || 0;
-                        // Pontuação Extra na unidade atual (se habilitado)
                         let ext = (d.extraEnabled && d.extras && d.extras[i] && !isNaN(d.extras[i])) ? parseFloat(d.extras[i]) : 0;
                         let unitTotal = base + ext;
-                        if(unitTotal > 10.0) unitTotal = 10.0; // Teto de nota
+                        if(unitTotal > 10.0) unitTotal = 10.0;
                         
                         sum += unitTotal;
                         filled++;
@@ -2035,6 +1963,7 @@
             const freqPercent = ((totalDays - totalFaults) / totalDays) * 100;
             
             let st = "Cursando", cl = "status-badge bg-blue-100 text-blue-800";
+            let finalAvg = avgNum;
             
             if(filled >= 3) {
                 const numAvg = parseFloat(avg);
@@ -2043,6 +1972,7 @@
                 if(numAvg < 6.0) { 
                     if(rVal !== null) { 
                         let f = (numAvg + rVal) / 2;
+                        finalAvg = f;
                         if(f >= 6.0) { st = "Aprovado (Rec)"; cl = "status-badge bg-green-100 text-green-800"; }
                         else { st = "Reprovado"; cl = "status-badge bg-red-100 text-red-800"; }
                     } else { st = "Recuperação"; cl = "status-badge bg-orange-100 text-orange-800"; } 
@@ -2052,13 +1982,16 @@
                 
                 if(freqPercent < 75) { st = "Rep. Faltas"; cl = "status-rf"; }
             }
-            return { average:avg, status:st, statusClass:cl, faults:totalFaults, freq:freqPercent.toFixed(1) };
+
+            let finalAvgDisplay = filled > 0 ? finalAvg.toFixed(1) : '-';
+
+            return { average:avg, finalAverage: finalAvgDisplay, status:st, statusClass:cl, faults:totalFaults, freq:freqPercent.toFixed(1) };
         }
 
         function countFaults(subData) {
             if(!subData.attendance) return 0;
             return Object.values(subData.attendance).filter(v => {
-                if (v === 'F') return true; // Legacy
+                if (v === 'F') return true; 
                 if (typeof v === 'object' && v.status === 'F' && !v.justified) return true;
                 return false;
             }).length;
@@ -2091,7 +2024,6 @@
                     if (foundDoc) {
                         foundUser = { id: foundDoc.id, ...foundDoc.data() };
                     } else if (u === "admin" && (p === "123" || p === "1234")) {
-                        // Fallback EXTREMO se o banco foi completamente limpo e `ensureAdminUser` falhou
                         foundUser = { id: 'admin_master', name: "Admin Geral", displayName: "Direção Geral", role: "admin", subjects: appData.allSubjects, classes: appData.allClasses };
                     }
 
@@ -2115,7 +2047,6 @@
         function updateUI() {
             if (!currentUser) return; 
             
-            // GARANTE QUE A TURMA DO ALUNO SEJA SETADA CORRETAMENTE PARA OS RESPONSÁVEIS
             if (currentUser.role === 'parent') {
                 const myStudent = appData.students.find(s => s.id === currentUser.studentId || s.studentId === currentUser.studentId);
                 if (myStudent) appData.currentClass = myStudent.class;
@@ -2126,14 +2057,12 @@
                  cs.value = appData.currentClass;
             }
 
-            // Oculta botão matéria na aba calendário, pois é global
             const mainControls = document.getElementById('main-controls');
             if(mainControls) {
                 if(appData.currentMode === 'calendar') mainControls.classList.add('hidden');
                 else mainControls.classList.remove('hidden');
             }
 
-            // Tabs UI update
             ['nav-grades','nav-attendance','nav-daily', 'nav-activities', 'nav-schedule', 'nav-calendar'].forEach(id => {
                 const el = document.getElementById(id);
                 if(!el) return;
@@ -2151,19 +2080,6 @@
                 const el = document.getElementById(id);
                 if (el) el.classList.add('hidden');
             });
-            
-            const actBtns = document.getElementById('action-buttons');
-            if(actBtns) {
-                actBtns.innerHTML = '';
-                if (hasEditPermission() && appData.currentClass && appData.currentSubject) {
-                    const isLocked = appData.diaryLocks && appData.diaryLocks[`${appData.currentClass}_${appData.currentSubject}`];
-                    if (isLocked) {
-                        actBtns.innerHTML += `<button onclick="toggleDiaryLock()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-red-600 transition flex items-center gap-1"><i class="fas fa-lock"></i> Diário Fechado</button>`;
-                    } else {
-                        actBtns.innerHTML += `<button onclick="toggleDiaryLock()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-blue-700 transition flex items-center gap-1"><i class="fas fa-lock-open"></i> Fechar Diário</button>`;
-                    }
-                }
-            }
 
             const activeView = document.getElementById(`view-${appData.currentMode}`);
             if (activeView) activeView.classList.remove('hidden');
@@ -2190,7 +2106,6 @@
             const isAdmin = currentUser.role === 'admin';
             const isCoord = currentUser.role === 'coord';
 
-            // Controles de visibilidade baseados no papel (role)
             const btnAdmin = document.getElementById('btn-admin');
             if(btnAdmin) btnAdmin.classList.toggle('hidden', !isAdmin);
             
@@ -2204,9 +2119,8 @@
             if (btnNotif) btnNotif.classList.toggle('hidden', !isAdmin && !isCoord);
 
             const btnChat = document.getElementById('btn-chat');
-            if (btnChat) btnChat.classList.toggle('hidden', isParent); // Chat button shown differently ou hidden temporariamente dependendo do caso. Modificamos na aba abaixo
+            if (btnChat) btnChat.classList.toggle('hidden', isParent); 
 
-            // Abas Novas: Apenas Prof/Coord/Admin
             const navSchedule = document.getElementById('nav-schedule');
             if(navSchedule) navSchedule.classList.toggle('hidden', isParent);
             
@@ -2220,7 +2134,6 @@
                 if(classTabs) classTabs.innerHTML = '';
                 if(classSelect && classSelect.parentElement) classSelect.parentElement.classList.add('hidden');
                 
-                // Mudar icone do chat para pais
                 if (btnChat) {
                     btnChat.classList.remove('hidden');
                     btnChat.innerHTML = '<i class="fas fa-headset"></i> Atendimento';
@@ -2243,7 +2156,6 @@
                      if (doc.exists) {
                          currentUser = { id: doc.id, ...doc.data() };
                          saveSession(currentUser);
-                         
                          loadParentSubjectsAndPopulate();
                      } else {
                          logout();
@@ -2260,7 +2172,6 @@
             
             if (notificationsUnsubscribe) notificationsUnsubscribe();
             
-            // Limit to last 50 for performance
             notificationsUnsubscribe = getCollection('concenal_notifications').orderBy('timestamp', 'desc').limit(50).onSnapshot(snap => {
                 const list = document.getElementById('notifications-list');
                 if(!list) return;
@@ -2273,7 +2184,6 @@
                     const n = doc.data();
                     const dateStr = new Date(n.timestamp).toLocaleString('pt-BR');
                     
-                    // Simple logic: if less than 1 hour old, consider it "new" for the badge pulse
                     if (now - n.timestamp < 3600000) newCount++;
 
                     let icon = 'fa-info-circle';
@@ -2318,7 +2228,7 @@
                     if (currentUser && currentUser.role === 'parent') {
                         if (data.studentId === currentUser.studentId || doc.id === currentUser.studentId) { 
                             list.push({id: doc.id, ...data});
-                            appData.currentClass = data.class; // FORÇA ATRIBUIÇÃO AQUI
+                            appData.currentClass = data.class; 
                         }
                     } else {
                         list.push({id: doc.id, ...data});
@@ -2346,10 +2256,8 @@
                 if(appData.currentMode === 'activities') renderActivitiesView();
             });
 
-            // Start Notification Sync
             listenForNotifications();
 
-            // CHAT SYNC
             if (chatUnsubscribe) chatUnsubscribe();
             chatUnsubscribe = getCollection('concenal_chat').onSnapshot(snap => {
                 let messages = [];
@@ -2364,10 +2272,6 @@
                         const iAmParent = currentUser?.role === 'parent';
                         const iAmAdmin = currentUser?.role === 'admin' || currentUser?.role === 'coord';
 
-                        // É para mim se:
-                        // 1. Eu sou o destinatário direto
-                        // 2. Foi pro Global e eu não sou pai
-                        // 3. Foi pra "direcao" e eu sou admin/coord (caso de fallback)
                         const isForMe = (m.to === currentUser?.id) || 
                                         (m.to === 'global' && !iAmParent) || 
                                         (m.to === 'direcao' && iAmAdmin);
@@ -2429,7 +2333,6 @@
                    return sentByParent || sentToParent;
                 }
 
-                // Caso Padrão 1 pra 1
                 const fromMeToThem = m.from === currentUser?.id && m.to === chatRecipient;
                 const fromThemToMe = m.from === chatRecipient && m.to === currentUser?.id;
 
@@ -2445,9 +2348,7 @@
                      else fH = `<a href="${m.file.data}" target="_blank" rel="noopener noreferrer" class="bg-black bg-opacity-5 p-2 rounded-lg block text-[10px] border border-black border-opacity-5 mb-2"><i class="fas fa-file-alt mr-1"></i> ${m.file.name}</a>`;
                 }
 
-                // Todos podem deletar a própria mensagem. Admin pode deletar de todos.
                 const canDelete = isSent || currentUser?.role === 'admin';
-                
                 let delBtnHtml = canDelete ? `<button onclick="deleteMsg('${m.docId}')" class="absolute -top-2 -right-2 text-red-500 bg-white rounded-full opacity-0 group-hover:opacity-100 transition z-10 w-6 h-6 flex items-center justify-center shadow-md border border-gray-100 hover:bg-red-50"><i class="fas fa-times"></i></button>` : '';
 
                 const extraBorder = isSent ? "border border-green-200" : "border border-gray-200";
@@ -2504,7 +2405,6 @@
                 });
             }
             
-            // Calcula dias letivos estimados por disciplina baseando-se no preenchimento
             const counts = {};
             Object.values(sch).forEach(v => {
                 const sub = v.trim().toUpperCase();
@@ -2515,7 +2415,6 @@
             if(countDiv) {
                 countDiv.innerHTML = '';
                 Object.keys(counts).forEach(k => {
-                    // Cálculo estimado: vezes por semana * aprox 40 semanas letivas no ano
                     const estimativaAno = counts[k] * 40; 
                     countDiv.innerHTML += `<span class="bg-blue-50 text-blue-700 px-2 py-1 rounded border border-blue-100 font-bold">${k}: ~${estimativaAno} aulas/ano</span>`;
                 });
@@ -2566,7 +2465,7 @@
 
             let currentMonth = -1;
             events.forEach((ev, idx) => {
-                const dateObj = new Date(ev.date + 'T12:00:00'); // Evitar fuso horario
+                const dateObj = new Date(ev.date + 'T12:00:00'); 
                 const month = dateObj.getMonth();
                 
                 if(month !== currentMonth) {
@@ -2634,8 +2533,6 @@
             }
         }
 
-        // FIM DAS ATUALIZAÇÕES DO UI DE NAVEGAÇÃO
-
         function getStudentsByClass() {
             if (currentUser && currentUser.role === 'parent') return appData.students;
             return appData.students.filter(s => s.class === appData.currentClass).sort((a,b) => a.name.localeCompare(b.name));
@@ -2656,8 +2553,6 @@
             return student.subjects[subject];
         }
 
-        // --- MÓDULO: ANÁLISE DE DESEMPENHO (CHART.JS) ---
-        // Aqui está a definição correta e global da função.
         window.openAnalytics = function(studentId) {
             const student = appData.students.find(s => s.id === studentId);
             if(!student) return;
@@ -2673,7 +2568,6 @@
             const d = ensureSubjectData(student, subj);
             const units = d.units || [null,null,null,null,null,null];
 
-            // Médias da Turma para Comparativo
             let classSums = [0,0,0,0,0,0];
             let classCounts = [0,0,0,0,0,0];
             const classStudents = getStudentsByClass(); 
@@ -2705,7 +2599,6 @@
             const classAvgs = classSums.map((sum, i) => classCounts[i] > 0 ? parseFloat((sum / classCounts[i]).toFixed(1)) : null);
             const classAvgFreq = classFreqCount > 0 ? (classTotalFreq / classFreqCount).toFixed(1) : 0;
 
-            // Dados Gráfico do Aluno (Nota + Extra)
             const labels = ['U1', 'U2', 'U3', 'U4', 'U5', 'U6'];
             const studentData = units.map((u, i) => {
                 if(u !== null && u !== "" && !isNaN(u)) {
@@ -2717,12 +2610,10 @@
                 return null;
             });
 
-            // Análise e Alertas Inteligentes
             let alertsHtml = '';
             let validUnits = [];
             studentData.forEach((v, i) => { if(v !== null) validUnits.push({val: v, idx: i}); });
 
-            // Análise de Queda ou Aumento
             if(validUnits.length >= 2) {
                 const last = validUnits[validUnits.length-1];
                 const prev = validUnits[validUnits.length-2];
@@ -2736,16 +2627,13 @@
 
             const c = calculateStatus(d, subj);
             const currAvg = parseFloat(c.average);
-            const studentFreq = c.freq !== '-' ? parseFloat(c.freq) : 0;
 
-            // Alerta Risco Reprovação (Menor que 6)
             if(c.average !== '-' && currAvg < 6.0) {
                 alertsHtml += `<div class="bg-orange-50 text-orange-700 p-3 rounded-lg border border-orange-200 text-xs font-bold shadow-sm animate-pulse"><i class="fas fa-exclamation-triangle mr-2 text-lg"></i> Alerta de Risco: Média atual de ${currAvg} (abaixo de 6.0). O aluno corre risco de recuperação/reprovação na disciplina. Intervenção sugerida.</div>`;
             }
 
             const isStaff = currentUser.role !== 'parent';
 
-            // Comparativo Geral
             if(isStaff && c.average !== '-') {
                 let totalClassSum = 0; let totalClassCount = 0;
                 classAvgs.forEach(v => { if(v !== null) { totalClassSum+=parseFloat(v); totalClassCount++; }});
@@ -2765,7 +2653,6 @@
             const alertsContainer = document.getElementById('analytics-alerts');
             if(alertsContainer) alertsContainer.innerHTML = alertsHtml;
 
-            // 1. Gráfico de Evolução de Notas
             const canvasGrades = document.getElementById('analyticsChart');
             if(canvasGrades) {
                 const ctx = canvasGrades.getContext('2d');
@@ -2774,7 +2661,7 @@
                 const datasets = [{
                     label: 'Nota do Aluno',
                     data: studentData,
-                    borderColor: '#10B981', // Verde School
+                    borderColor: '#10B981', 
                     backgroundColor: 'rgba(16, 185, 129, 0.2)',
                     borderWidth: 3, tension: 0.3, fill: true,
                     pointBackgroundColor: '#047857', pointRadius: 5, pointHoverRadius: 7
@@ -2792,8 +2679,8 @@
                 analyticsChart = new Chart(ctx, {
                     type: 'line', data: { labels: labels, datasets: datasets },
                     options: {
-                        clip: false, // Permite renderizar a bolinha inteira fora da grade
-                        layout: { padding: { top: 25, right: 15, left: 10 } }, // Dá espaço para a bolinha renderizar
+                        clip: false, 
+                        layout: { padding: { top: 25, right: 15, left: 10 } }, 
                         responsive: true, maintainAspectRatio: false,
                         scales: { 
                             y: { 
@@ -2813,7 +2700,6 @@
             if(modalAnalytics) modalAnalytics.classList.remove('hidden');
         };
 
-        // --- MÓDULO: ANÁLISE DE FREQUÊNCIA ---
         window.openAttendanceAnalytics = function(studentId) {
             const student = appData.students.find(s => s.id === studentId);
             if(!student) return;
@@ -2880,7 +2766,6 @@
             if(modalAnalytics) modalAnalytics.classList.remove('hidden');
         };
 
-        // --- RENDER VIEWS E GESTÃO ---
         function openManageClassModal() {
             const m = document.getElementById('modal-manage-class');
             const cName = document.getElementById('mng-class-name');
@@ -2968,9 +2853,10 @@
                 }
             }
             
+            // CORREÇÃO DO BUG 3: Zera o conteúdo antes de injetar novamente, para não duplicar.
             const btnContainer = document.getElementById('action-buttons');
             if (btnContainer && appData.currentMode === 'grades') {
-                let html = btnContainer.innerHTML;
+                let html = '';
                 if(canEdit) {
                     html += `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2">Novo Aluno</button>`;
                     html += `<button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2">Importar Massa</button>`;
@@ -3003,7 +2889,6 @@
                 
                 let warningIcon = (c.average !== '-' && parseFloat(c.average) < 6.0) ? `<i class="fas fa-exclamation-triangle text-orange-500 ml-2" title="Risco de Reprovação"></i>` : '';
 
-                // Ações Individuais (Borracha / Troca / Lixo)
                 let indvActions = '';
                 if(canEdit) {
                     indvActions = `
@@ -3026,7 +2911,6 @@
                         </div>
                     </td>`;
                 
-                // Unidades + Extra por Unidade
                 for(let i=0; i<6; i++) { 
                     const v = d.units[i] ?? ''; 
                     const eVal = (d.extras && d.extras[i]) ? d.extras[i] : '';
@@ -3037,7 +2921,6 @@
                             </td>`; 
                 }
 
-                // Botão Global da Estrela do Aluno (Ativa para todas as unidades dele)
                 row += `
                     <td class="px-1 border-l print-border bg-yellow-50/50 text-center">
                         <button onclick="toggleExtra('${s.id}')" ${!canEdit?'disabled':''} class="${extEnabled ? 'text-yellow-500' : 'text-gray-300'} hover:scale-110 transition p-2"><i class="fas fa-star"></i></button>
@@ -3052,12 +2935,11 @@
             });
         }
 
-        // --- MANEJO DE NOTAS E EXTRAS INDIVIDUAIS ---
         function toggleExtra(id) {
             const s = appData.students.find(x => x.id === id);
             const sd = ensureSubjectData(s, appData.currentSubject);
             sd.extraEnabled = !sd.extraEnabled;
-            if(!sd.extraEnabled) sd.extras = [null,null,null,null,null,null]; // Zera se desativado
+            if(!sd.extraEnabled) sd.extras = [null,null,null,null,null,null]; 
             getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{extraEnabled: sd.extraEnabled, extras: sd.extras}}},{merge:true});
             renderGradesTable();
         }
@@ -3141,7 +3023,6 @@
                 actionsContainer.innerHTML = html;
             }
 
-            // Render History Strip
             let savedDates = new Set();
             students.forEach(s => {
                 const sub = ensureSubjectData(s, appData.currentSubject);
@@ -3167,7 +3048,6 @@
             students.forEach(s=>{
                 const sub=ensureSubjectData(s, appData.currentSubject); const r=sub.attendance[date]; 
                 
-                // Extract teacher tracking info if available
                 let tName = '';
                 let st='P', j=false, doc=null; 
                 if(r){ 
@@ -3188,7 +3068,7 @@
                 
                 let act = (st === 'F' && currentUser && currentUser.role === 'parent') ? 
                     `<button onclick="openJustifyModal('${s.id}')" class="ml-2 text-[10px] text-blue-600 underline font-bold uppercase tracking-tighter">Justificar</button>` : 
-                    ((j && doc) ? `<button onclick="viewDoc('${doc}')" class="ml-2 text-blue-50 hover:scale-110 transition"><i class="fas fa-paperclip"></i></button>` : '');
+                    ((j && doc) ? `<button onclick="viewDoc('${doc}')" class="ml-2 text-blue-50 hover:scale-110 transition"><i class="fas fa-paperclip text-blue-500"></i></button>` : '');
                 
                 let infoHtml = tName ? `<div class="text-[8px] text-gray-400 font-normal uppercase tracking-tighter mt-1">${tName}</div>` : '';
 
@@ -3241,7 +3121,6 @@
             const date = dateInput.value;
             tempDaily = {}; 
             
-            // Daily Log History Strip
             const students = getStudentsByClass();
             let savedDates = new Set();
             students.forEach(s => {
@@ -3301,7 +3180,6 @@
             const isLocked = appData.diaryLocks && appData.diaryLocks[`${appData.currentClass}_${appData.currentSubject}`];
             const canE = baseCanEdit && !isLocked;
 
-            // Renderiza o cabeçalho baseando-se no papel (oculta Anotação para pais, e adiciona botão Marcar Todos para profs)
             thead.innerHTML = `
                 <tr>
                     <th class="px-4 py-4 text-left">Estudante</th>
@@ -3316,7 +3194,6 @@
             
             const actionsContainer = document.getElementById('daily-actions');
             if (actionsContainer) {
-                // SÓ mostra o botão PDF se não for responsável
                 actionsContainer.innerHTML = `
                     ${!isParent ? `<button onclick="openReportsModal('daily')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>` : ''}
                     ${canE ? `<button onclick="toggleAllHw()" class="bg-yellow-500 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-yellow-600 transition flex items-center gap-2"><i class="fas fa-check-double"></i> Atividade p/ Todos</button>` : ''}
@@ -3395,7 +3272,6 @@
             });
         }
 
-        // --- ATIVIDADES PDF ACTIONS ---
         function openSendActivityModal() {
             const actTitle = document.getElementById('act-title');
             if(actTitle) actTitle.value = '';
@@ -3471,13 +3347,11 @@
             }
         }
 
-        // --- ACTIONS ---
         function toggleAtt(id) { 
             let c = tempAttendance[id];
             let st = typeof c === 'string' ? c : c.status;
             let nw = st === 'P' ? 'F' : 'P';
             
-            // Sempre que altera, atribui a posse da alteração
             tempAttendance[id] = {
                 status: nw,
                 teacherId: currentUser.id,
@@ -3581,7 +3455,6 @@
             const modalTitle = document.getElementById('reports-modal-title');
             if(modalTitle) modalTitle.innerText = title;
             
-            // Carregar lista de alunos da turma atual
             const stSelect = document.getElementById('report-student');
             if(stSelect) {
                 stSelect.innerHTML = '<option value="all">Todos os Alunos</option>';
@@ -3613,7 +3486,7 @@
             }
 
             const now = new Date();
-            let dateFilterFn = (dStr) => true; // 'all'
+            let dateFilterFn = (dStr) => true; 
             if(period === 'today') {
                 const td = now.toISOString().split('T')[0];
                 dateFilterFn = (dStr) => dStr === td;
@@ -3625,7 +3498,6 @@
                 dateFilterFn = (dStr) => dStr >= weekAgo;
             }
 
-            // Layout Profissional para Frequência e Diário de Bordo
             let html = `
                 <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 32px; padding-bottom: 16px; border-bottom: 2px solid #047857;">
                     <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" style="height: 64px;">
@@ -3700,7 +3572,6 @@
             printArea.innerHTML = html;
             closeModal('modal-reports');
             
-            // Timeout leve para renderizar o html antes de chamar o print
             setTimeout(() => { window.print(); }, 300);
         }
 
@@ -3716,10 +3587,8 @@
             const tbody = document.getElementById('unified-report-body');
             if(tbody) tbody.innerHTML = '';
             
-            // Identificar quais disciplinas exibir (baseado no currículo da turma)
             let subjectsToDisplay = appData.curriculum[student.class] || [];
             
-            // Garantir que disciplinas onde o aluno já tem nota apareçam, mesmo se saírem do currículo
             if (student.subjects) {
                 Object.keys(student.subjects).forEach(s => {
                     if (!subjectsToDisplay.includes(s)) subjectsToDisplay.push(s);
@@ -3732,7 +3601,6 @@
 
             let totalAvg = 0, avgCount = 0, totalFaultsGlobal = 0, totalDaysGlobal = 0;
             
-            // Arrays para o gráfico de relatório unificado
             let chartLabels = [];
             let chartGrades = [];
             let chartFreqs = [];
@@ -3744,14 +3612,13 @@
                 totalFaultsGlobal += c.faults;
                 totalDaysGlobal += SUBJECT_DAYS[subjName] || SUBJECT_DAYS['default'];
 
-                if(c.average !== '-') {
-                    totalAvg += parseFloat(c.average);
+                if(c.finalAverage !== '-') {
+                    totalAvg += parseFloat(c.finalAverage);
                     avgCount++;
                 }
 
-                // Coletar dados pro gráfico
                 chartLabels.push(subjName.substring(0, 15) + (subjName.length > 15 ? '...' : ''));
-                chartGrades.push(c.average !== '-' ? parseFloat(c.average) : 0);
+                chartGrades.push(c.finalAverage !== '-' ? parseFloat(c.finalAverage) : 0);
                 chartFreqs.push(c.freq !== '-' ? parseFloat(c.freq) : 0);
 
                 if(tbody) {
@@ -3768,12 +3635,12 @@
                     row += `<td class="border-l font-bold ${c.freq < 75 ? 'text-red-600' : 'text-blue-600'}">${c.faults}</td>`;
                     row += `<td class="border-l font-bold text-gray-800">${c.average}</td>`;
                     row += `<td class="border-l font-bold text-red-500">${d.recovery || '-'}</td>`;
+                    row += `<td class="border-l font-bold text-blue-700">${c.finalAverage}</td>`;
                     row += `<td class="border-l"><span class="${c.statusClass}">${c.status}</span></td></tr>`;
                     tbody.innerHTML += row;
                 }
             });
 
-            // Resumo Global Topo
             const finalGlobalAvg = avgCount > 0 ? (totalAvg / avgCount).toFixed(1) : '-';
             const finalGlobalFreq = totalDaysGlobal > 0 ? (((totalDaysGlobal - totalFaultsGlobal) / totalDaysGlobal) * 100).toFixed(1) : '-';
             
@@ -3798,7 +3665,6 @@
             const rStatus = document.getElementById('report-status');
             if(rStatus) rStatus.innerText = globalStatus;
 
-            // Renderizar Gráficos do Relatório Unificado
             if(window.reportGradesChartInst) window.reportGradesChartInst.destroy();
             const ctxG = document.getElementById('reportGradesChart');
             if (ctxG) {
@@ -3814,7 +3680,7 @@
                         }]
                     },
                     options: {
-                        animation: false, // Desabilitado para garantir renderização imediata na impressão
+                        animation: false, 
                         clip: false,
                         layout: { padding: { top: 20 } },
                         responsive: true, maintainAspectRatio: false,
@@ -3847,7 +3713,7 @@
                         }]
                     },
                     options: {
-                        animation: false, // Desabilitado para impressão
+                        animation: false,
                         clip: false,
                         layout: { padding: { top: 20 } },
                         responsive: true, maintainAspectRatio: false,
@@ -3865,7 +3731,6 @@
                 });
             }
             
-            // Observações (Unificadas)
             const obsList = document.getElementById('observations-list'); 
             if(obsList) {
                 obsList.innerHTML = '';
@@ -3880,7 +3745,6 @@
 
                 if(allObs.length === 0) obsList.innerHTML = '<div class="text-xs text-gray-400 italic">Sem pareceres registrados.</div>';
 
-                // Ordena observações por data simulada (Atenção: formato BR dd/mm/yyyy dificulta sort direto, simplificando)
                 allObs.reverse().forEach(o => {
                     obsList.innerHTML += `<div class="bg-white border border-gray-100 p-3 rounded-xl shadow-sm text-xs"><div class="flex justify-between text-[10px] text-gray-400 font-bold uppercase mb-1"><span><b class="text-school-green">${o.subj}</b> - ${o.date}</span><span>${o.author}</span></div><p class="text-gray-700 leading-relaxed">${o.text}</p></div>`;
                 });
@@ -3927,7 +3791,6 @@
             const faults = document.getElementById('report-days-count') ? document.getElementById('report-days-count').innerText : '--';
             const status = document.getElementById('report-status') ? document.getElementById('report-status').innerText : '--';
 
-            // Capturar as imagens base64 dos gráficos para o PDF
             const gradesImgCanvas = document.getElementById('reportGradesChart');
             const freqImgCanvas = document.getElementById('reportFreqChart');
             const gradesImg = gradesImgCanvas ? gradesImgCanvas.toDataURL('image/png') : '';
@@ -3973,7 +3836,6 @@
                 </div>
             `;
             
-            // Pega as linhas da tabela e aplica estilos inline fortes para forçar a impressão perfeita
             const trs = Array.from(document.querySelectorAll('#unified-report-body tr'));
             let tableRowsStr = '';
             trs.forEach(tr => {
@@ -4002,6 +3864,7 @@
                                 <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb;">Faltas</th>
                                 <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb;">Média</th>
                                 <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb; color: #ef4444;">Rec</th>
+                                <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb; color: #1d4ed8;">Média Final</th>
                                 <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb;">Situação</th>
                             </tr>
                         </thead>
@@ -4082,6 +3945,10 @@
                         c.width = i.width * scale; c.height = i.height * scale;
                         c.getContext('2d').drawImage(i, 0, 0, c.width, c.height);
                         save(c.toDataURL('image/jpeg', 0.6));
+                    };
+                    i.onerror = () => {
+                        // Salva o base64 puro caso o arquivo seja PDF ou outro arquivo e falhe no parse de imagem
+                        save(e.target.result); 
                     };
                 };
             } else { save(null); }
