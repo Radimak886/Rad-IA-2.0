@@ -860,23 +860,58 @@
             if (!className) return [];
             return className.includes('EM') 
                 ? ["7h", "7:50", "8:50", "9:40", "10:40", "11:30 às 12:10"] 
-                : ["7h", "8h", "9h", "10h", "10h50"];
+                : ["7h", "8h", "9h", "10h", "11h"];
         }
 
         const DEFAULT_SCHEDULE = {
             "6A": {
-                "Segunda-7h": "Matemática", "Segunda-8h": "Ciências", "Segunda-9h": "Português", "Segunda-10h": "Geografia", "Segunda-10h50": "História",
-                "Terça-7h": "Arte", "Terça-8h": "Português", "Terça-9h": "Educação Física", "Terça-10h": "Inglês", "Terça-10h50": "Redação",
-                "Quarta-7h": "Matemática", "Quarta-8h": "Ciências", "Quarta-9h": "Português", "Quarta-10h": "Geografia", "Quarta-10h50": "História",
-                "Quinta-7h": "Matemática", "Quinta-8h": "Filosofia", "Quinta-9h": "Educação Física", "Quinta-10h": "Inglês", "Quinta-10h50": "Ética e Cidadania",
-                "Sexta-7h": "Matemática", "Sexta-8h": "Ciências", "Sexta-9h": "Português", "Sexta-10h": "Geografia", "Sexta-10h50": "História"
+                "Segunda-7h": "Matemática", "Segunda-8h": "Ciências", "Segunda-9h": "Português", "Segunda-10h": "Geografia", "Segunda-11h": "História",
+                "Terça-7h": "Arte", "Terça-8h": "Português", "Terça-9h": "Educação Física", "Terça-10h": "Inglês", "Terça-11h": "Redação",
+                "Quarta-7h": "Matemática", "Quarta-8h": "Ciências", "Quarta-9h": "Português", "Quarta-10h": "Geografia", "Quarta-11h": "História",
+                "Quinta-7h": "Matemática", "Quinta-8h": "Filosofia", "Quinta-9h": "Educação Física", "Quinta-10h": "Inglês", "Quinta-11h": "Ética e Cidadania",
+                "Sexta-7h": "Matemática", "Sexta-8h": "Ciências", "Sexta-9h": "Português", "Sexta-10h": "Geografia", "Sexta-11h": "História"
             },
             "7A": {
-                "Segunda-7h": "Ciências", "Segunda-8h": "História", "Segunda-9h": "Geografia", "Segunda-10h": "Matemática", "Segunda-10h50": "Português",
-                "Terça-7h": "Português", "Terça-8h": "Educação Física", "Terça-9h": "Filosofia", "Terça-10h": "Redação", "Terça-10h50": "Inglês",
-                "Quarta-7h": "Ciências", "Quarta-8h": "História", "Quarta-9h": "Geografia", "Quarta-10h": "Matemática", "Quarta-10h50": "Português",
-                "Quinta-7h": "Arte", "Quinta-8h": "Educação Física", "Quinta-9h": "Matemática", "Quinta-10h": "Ética e Cidadania", "Quinta-10h50": "Inglês",
-                "Sexta-7h": "Ciências", "Sexta-8h": "História", "Sexta-9h": "Geografia", "Sexta-10h": "Matemática", "Sexta-10h50": "Português"
+                "Segunda-7h": "Ciências", "Segunda-8h": "História", "Segunda-9h": "Geografia", "Segunda-10h": "Matemática", "Segunda-11h": "Português",
+                "Terça-7h": "Português", "Terça-8h": "Educação Física", "Terça-9h": "Filosofia", "Terça-10h": "Redação", "Terça-11h": "Inglês",
+                "Quarta-7h": "Ciências", "Quarta-8h": "História", "Quarta-9h": "Geografia", "Quarta-10h": "Matemática", "Quarta-11h": "Português",
+                "Quinta-7h": "Arte", "Quinta-8h": "Educação Física", "Quinta-9h": "Matemática", "Quinta-10h": "Ética e Cidadania", "Quinta-11h": "Inglês",
+                "Sexta-7h": "Ciências", "Sexta-8h": "História", "Sexta-9h": "Geografia", "Sexta-10h": "Matemática", "Sexta-11h": "Português"
+            },
+            "8A": {
+                "Segunda-7h": "Geografia", "Segunda-8h": "Português", "Segunda-9h": "História", "Segunda-10h": "Ciências", "Segunda-11h": "Matemática",
+                "Terça-7h": "Redação", "Terça-8h": "Arte", "Terça-9h": "Inglês", "Terça-10h": "Português", "Terça-11h": "Educação Física",
+                "Quarta-7h": "Geografia", "Quarta-8h": "Português", "Quarta-9h": "História", "Quarta-10h": "Ciências", "Quarta-11h": "Matemática",
+                "Quinta-7h": "Ética e Cidadania", "Quinta-8h": "Matemática", "Quinta-9h": "Inglês", "Quinta-10h": "Filosofia", "Quinta-11h": "Educação Física",
+                "Sexta-7h": "Geografia", "Sexta-8h": "Português", "Sexta-9h": "História", "Sexta-10h": "Ciências", "Sexta-11h": "Matemática"
+            },
+            "9A": {
+                "Segunda-7h": "História", "Segunda-8h": "Matemática", "Segunda-9h": "Ciências", "Segunda-10h": "Português", "Segunda-11h": "Geografia",
+                "Terça-7h": "Inglês", "Terça-8h": "Redação", "Terça-9h": "Português", "Terça-10h": "Educação Física", "Terça-11h": "Arte",
+                "Quarta-7h": "História", "Quarta-8h": "Matemática", "Quarta-9h": "Ciências", "Quarta-10h": "Português", "Quarta-11h": "Geografia",
+                "Quinta-7h": "Inglês", "Quinta-8h": "Ética e Cidadania", "Quinta-9h": "Filosofia", "Quinta-10h": "Educação Física", "Quinta-11h": "Matemática",
+                "Sexta-7h": "História", "Sexta-8h": "Matemática", "Sexta-9h": "Ciências", "Sexta-10h": "Português", "Sexta-11h": "Geografia"
+            },
+            "9B": {
+                "Segunda-7h": "Português", "Segunda-8h": "Geografia", "Segunda-9h": "Matemática", "Segunda-10h": "História", "Segunda-11h": "Ciências",
+                "Terça-7h": "Educação Física", "Terça-8h": "Inglês", "Terça-9h": "Redação", "Terça-10h": "Filosofia", "Terça-11h": "Português",
+                "Quarta-7h": "Português", "Quarta-8h": "Geografia", "Quarta-9h": "Matemática", "Quarta-10h": "História", "Quarta-11h": "Ciências",
+                "Quinta-7h": "Educação Física", "Quinta-8h": "Inglês", "Quinta-9h": "Ética e Cidadania", "Quinta-10h": "Matemática", "Quinta-11h": "Arte",
+                "Sexta-7h": "Português", "Sexta-8h": "Geografia", "Sexta-9h": "Matemática", "Sexta-10h": "História", "Sexta-11h": "Ciências"
+            },
+            "1º EM A": {
+                "Segunda-7h": "Geografia", "Segunda-7:50": "Geografia", "Segunda-8:50": "Português", "Segunda-9:40": "Português", "Segunda-10:40": "Matemática", "Segunda-11:30 às 12:10": "Matemática",
+                "Terça-7h": "Física", "Terça-7:50": "Física", "Terça-8:50": "Biologia", "Terça-9:40": "Biologia", "Terça-10:40": "Ciências Humanas", "Terça-11:30 às 12:10": "Ciências Humanas",
+                "Quarta-7h": "Português", "Quarta-7:50": "Português", "Quarta-8:50": "Química", "Quarta-9:40": "Química", "Quarta-10:40": "Matemática", "Quarta-11:30 às 12:10": "Matemática",
+                "Quinta-7h": "Projeto de Vida", "Quinta-7:50": "Espanhol", "Quinta-8:50": "Educação Física", "Quinta-9:40": "Educação Física (Prática)", "Quinta-10:40": "Biologia", "Quinta-11:30 às 12:10": "Biologia",
+                "Sexta-7h": "Português", "Sexta-7:50": "Português", "Sexta-8:50": "História", "Sexta-9:40": "História", "Sexta-10:40": "Inglês", "Sexta-11:30 às 12:10": "Inglês"
+            },
+            "2º EM A": {
+                "Segunda-7h": "Matemática", "Segunda-7:50": "Matemática", "Segunda-8:50": "Geografia", "Segunda-9:40": "Geografia", "Segunda-10:40": "Português", "Segunda-11:30 às 12:10": "Português",
+                "Terça-7h": "Projeto de Vida", "Terça-7:50": "Ciências Humanas", "Terça-8:50": "Física", "Terça-9:40": "Física", "Terça-10:40": "Biologia", "Terça-11:30 às 12:10": "Biologia",
+                "Quarta-7h": "Matemática", "Quarta-7:50": "Matemática", "Quarta-8:50": "Português", "Quarta-9:40": "Português", "Quarta-10:40": "Química", "Quarta-11:30 às 12:10": "Química",
+                "Quinta-7h": "Biologia", "Quinta-7:50": "Biologia", "Quinta-8:50": "Espanhol", "Quinta-9:40": "Espanhol", "Quinta-10:40": "Projeto de Vida", "Quinta-11:30 às 12:10": "Educação Física (Prática)",
+                "Sexta-7h": "História", "Sexta-7:50": "História", "Sexta-8:50": "Inglês", "Sexta-9:40": "Inglês", "Sexta-10:40": "Português", "Sexta-11:30 às 12:10": "Português"
             }
         };
 
@@ -1011,6 +1046,18 @@
                             needsUpdate = true;
                         } else {
                             appData.schedule = data.schedule;
+                            // Forçar mesclagem com o novo DEFAULT_SCHEDULE para preencher turmas vazias
+                            let hasNewSchedule = false;
+                            Object.keys(DEFAULT_SCHEDULE).forEach(cls => {
+                                if (!appData.schedule[cls] || Object.keys(appData.schedule[cls]).length === 0) {
+                                    appData.schedule[cls] = DEFAULT_SCHEDULE[cls];
+                                    hasNewSchedule = true;
+                                }
+                            });
+                            if (hasNewSchedule) {
+                                dataToSave.schedule = appData.schedule;
+                                needsUpdate = true;
+                            }
                         }
 
                         if (!data.calendar || data.calendar.length === 0) {
