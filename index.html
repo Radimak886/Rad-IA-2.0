@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - 2026</title>
+    <title>DIÁRIO ESCOLAR - CONCENAL</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -415,10 +415,10 @@
             </div>
             
             <!-- Main Chat (Janela de Conversa) -->
-            <div id="chat-main-window" class="w-full md:w-[65%] flex-col h-full bg-white hidden md:flex absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
+            <div id="chat-main-window" class="w-full md:w-[65%] flex-col h-full bg-white hidden absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
                 <div class="p-4 border-b bg-white flex justify-between items-center shadow-sm z-10" id="mobile-chat-header">
                     <div class="flex items-center gap-3">
-                        <button onclick="document.getElementById('chat-main-window').classList.add('hidden'); document.getElementById('chat-main-window').classList.remove('flex'); document.getElementById('chat-sidebar').classList.remove('hidden');" class="md:hidden text-gray-500 hover:text-school-green p-2"><i class="fas fa-arrow-left"></i></button>
+                        <button onclick="document.getElementById('chat-main-window').style.display = ''; document.getElementById('chat-main-window').classList.add('hidden'); document.getElementById('chat-sidebar').classList.remove('hidden');" class="md:hidden text-gray-500 hover:text-school-green p-2"><i class="fas fa-arrow-left"></i></button>
                         <div>
                             <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2" id="chat-recipient-info">Avisos Gerais <i class="fas fa-check-circle text-blue-500 text-[10px]" title="Oficial"></i></h3>
                             <p class="text-[10px] text-school-green uppercase font-bold tracking-widest" id="chat-recipient-role">Mural da Escola</p>
@@ -905,6 +905,7 @@
             allSubjects: [],
             allClasses: [],
             curriculum: {}, 
+            diaryLocks: {},
             isProcessing: false
         };
         
@@ -1007,6 +1008,7 @@
                         appData.allSubjects = data.subjects || DEFAULT_SUBJECTS;
                         appData.allClasses = data.classes || DEFAULT_CLASSES;
                         appData.curriculum = data.curriculum || {};
+                        appData.diaryLocks = data.diaryLocks || {};
                         
                         if (!data.schedule || Object.keys(data.schedule).length === 0) {
                             appData.schedule = DEFAULT_SCHEDULE;
@@ -1027,9 +1029,10 @@
                         appData.allSubjects = DEFAULT_SUBJECTS;
                         appData.allClasses = DEFAULT_CLASSES;
                         appData.curriculum = {};
+                        appData.diaryLocks = {};
                         appData.schedule = DEFAULT_SCHEDULE;
                         appData.calendar = DEFAULT_CALENDAR;
-                        dataToSave = { subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES, curriculum: {}, schedule: DEFAULT_SCHEDULE, calendar: DEFAULT_CALENDAR };
+                        dataToSave = { subjects: DEFAULT_SUBJECTS, classes: DEFAULT_CLASSES, curriculum: {}, schedule: DEFAULT_SCHEDULE, calendar: DEFAULT_CALENDAR, diaryLocks: {} };
                         needsUpdate = true;
                     }
 
@@ -1165,6 +1168,39 @@
             }
         }
 
+        function hasEditPermission() {
+            if (!currentUser) return false;
+            if (currentUser.role === 'admin' || currentUser.role === 'coord') return true;
+            if (currentUser.role === 'teacher' && 
+                currentUser.assignments && 
+                currentUser.assignments[appData.currentSubject] && 
+                currentUser.assignments[appData.currentSubject].includes(appData.currentClass)) {
+                return true;
+            }
+            return false;
+        }
+
+        async function toggleDiaryLock() {
+            if(!hasEditPermission()) return;
+            const key = `${appData.currentClass}_${appData.currentSubject}`;
+            const isLocked = appData.diaryLocks && appData.diaryLocks[key];
+            
+            const msg = isLocked 
+                ? `Deseja REABRIR o diário de ${appData.currentSubject} da turma ${appData.currentClass}?\n\nIsso permitirá novas edições de notas e faltas.` 
+                : `Deseja FECHAR o diário de ${appData.currentSubject} da turma ${appData.currentClass}?\n\nIsso bloqueará edições para evitar alterações acidentais. Você poderá reabrir depois se precisar corrigir algo.`;
+                
+            if(confirm(msg)) {
+                if(!appData.diaryLocks) appData.diaryLocks = {};
+                appData.diaryLocks[key] = !isLocked;
+                try {
+                    await getCollection('concenal_config').doc('general').set({ diaryLocks: appData.diaryLocks }, { merge: true });
+                    logAction('Diário', `${isLocked ? 'Reabriu' : 'Fechou'} o diário de classe da turma ${appData.currentClass} (${appData.currentSubject}).`);
+                } catch(e) {
+                    alert("Erro ao alterar status do diário.");
+                }
+            }
+        }
+
         // --- MÓDULO DE NOTIFICAÇÕES GERAIS ---
         async function logAction(type, description) {
             if(!currentUser || currentUser.role === 'parent') return;
@@ -1254,7 +1290,7 @@
                 const chatMainWindow = document.getElementById('chat-main-window');
                 if(chatMainWindow) {
                     chatMainWindow.classList.remove('hidden');
-                    chatMainWindow.classList.add('flex'); // Force show on mobile for parents
+                    chatMainWindow.style.display = 'flex'; // Force show on mobile for parents
                 }
                 
                 // Encontrar o Admin para redirecionar (Direção)
@@ -1270,8 +1306,10 @@
                 if (chatRecipient === 'global') setChatRecipient('global', 'Avisos Gerais', 'Mural da Escola');
             }
             
-            const div = document.getElementById('chat-messages');
-            if (div) div.scrollTop = div.scrollHeight;
+            setTimeout(() => {
+                const div = document.getElementById('chat-messages');
+                if (div) div.scrollTop = div.scrollHeight;
+            }, 100);
         }
 
         function setChatRecipient(id, name, roleDesc = '') {
@@ -1302,7 +1340,7 @@
                 const chatMainWindow = document.getElementById('chat-main-window');
                 if(chatMainWindow) {
                     chatMainWindow.classList.remove('hidden');
-                    chatMainWindow.classList.add('flex');
+                    chatMainWindow.style.display = 'flex';
                 }
             }
 
@@ -2507,6 +2545,19 @@
                 if (el) el.classList.add('hidden');
             });
             
+            const actBtns = document.getElementById('action-buttons');
+            if(actBtns) {
+                actBtns.innerHTML = '';
+                if (hasEditPermission() && appData.currentClass && appData.currentSubject) {
+                    const isLocked = appData.diaryLocks && appData.diaryLocks[`${appData.currentClass}_${appData.currentSubject}`];
+                    if (isLocked) {
+                        actBtns.innerHTML += `<button onclick="toggleDiaryLock()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-red-600 transition flex items-center gap-1"><i class="fas fa-lock"></i> Diário Fechado</button>`;
+                    } else {
+                        actBtns.innerHTML += `<button onclick="toggleDiaryLock()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-blue-700 transition flex items-center gap-1"><i class="fas fa-lock-open"></i> Fechar Diário</button>`;
+                    }
+                }
+            }
+
             const activeView = document.getElementById(`view-${appData.currentMode}`);
             if (activeView) activeView.classList.remove('hidden');
 
@@ -2676,14 +2727,14 @@
                 analyticsChart = new Chart(ctx, {
                     type: 'line', data: { labels: labels, datasets: datasets },
                     options: {
-                        clip: false, // <-- Evita que o Chart.js corte os dados no limite da grade
-                        layout: { padding: { top: 20, right: 10, left: 10 } }, // <-- Dá espaço para a bolinha renderizar
+                        clip: false, // Permite renderizar a bolinha inteira fora da grade
+                        layout: { padding: { top: 25, right: 15, left: 10 } }, // Dá espaço para a bolinha renderizar
                         responsive: true, maintainAspectRatio: false,
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 10.5, 
-                                ticks: { stepSize: 2, callback: function(value) { return value > 10 ? '' : value; } },
+                                max: 10, // Mantido no 10 para exibir o texto "10" na lateral corretamente
+                                ticks: { stepSize: 2 },
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
@@ -2744,13 +2795,13 @@
                     },
                     options: {
                         clip: false,
-                        layout: { padding: { top: 20 } },
+                        layout: { padding: { top: 25 } },
                         responsive: true, maintainAspectRatio: false,
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 105, 
-                                ticks: { stepSize: 20, callback: function(value) { return value > 100 ? '' : value; } },
+                                max: 100, 
+                                ticks: { stepSize: 20 },
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
@@ -2831,29 +2882,37 @@
         }
 
         function renderGradesTable() {
-            const canEdit = currentUser && (
-                currentUser.role === 'admin' || currentUser.role === 'coord' ||
-                (currentUser.role === 'teacher' && 
-                 currentUser.assignments && 
-                 currentUser.assignments[appData.currentSubject] && 
-                 currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
-            ); 
+            const baseCanEdit = hasEditPermission();
+            const isLocked = appData.diaryLocks && appData.diaryLocks[`${appData.currentClass}_${appData.currentSubject}`];
+            const canEdit = baseCanEdit && !isLocked;
             
             const isManager = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord' || currentUser.role === 'teacher');
             
             const readOnlyMsg = document.getElementById('read-only-msg');
-            if (readOnlyMsg) readOnlyMsg.classList.toggle('hidden', canEdit || (currentUser && currentUser.role === 'parent'));
+            if (readOnlyMsg) {
+                if (isLocked) {
+                    readOnlyMsg.innerHTML = '<i class="fas fa-lock mr-1"></i> DIÁRIO FECHADO';
+                    readOnlyMsg.classList.remove('hidden', 'bg-orange-100', 'text-orange-700');
+                    readOnlyMsg.classList.add('bg-red-100', 'text-red-700');
+                } else if (!canEdit && currentUser && currentUser.role !== 'parent') {
+                    readOnlyMsg.innerHTML = '<i class="fas fa-eye mr-1"></i> APENAS CONSULTA';
+                    readOnlyMsg.classList.remove('hidden', 'bg-red-100', 'text-red-700');
+                    readOnlyMsg.classList.add('bg-orange-100', 'text-orange-700');
+                } else {
+                    readOnlyMsg.classList.add('hidden');
+                }
+            }
             
             const btnContainer = document.getElementById('action-buttons');
-            if (btnContainer) {
-                let html = '';
+            if (btnContainer && appData.currentMode === 'grades') {
+                let html = btnContainer.innerHTML;
                 if(canEdit) {
-                    html += `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm mr-2 mb-2">Novo Aluno</button>`;
-                    html += `<button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm mr-2 mb-2">Importar Massa</button>`;
-                    html += `<button onclick="toggleAllExtra()" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm mr-2 mb-2"><i class="fas fa-star mr-1"></i> Extra Turma</button>`;
+                    html += `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2">Novo Aluno</button>`;
+                    html += `<button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2">Importar Massa</button>`;
+                    html += `<button onclick="toggleAllExtra()" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2"><i class="fas fa-star mr-1"></i> Extra Turma</button>`;
                 }
-                if(isManager) {
-                    html += `<button onclick="openManageClassModal()" class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm mr-2 mb-2 hover:bg-black transition"><i class="fas fa-cogs mr-1"></i> Gerenciar Turma</button>`;
+                if(isManager && !isLocked) {
+                    html += `<button onclick="openManageClassModal()" class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2 hover:bg-black transition"><i class="fas fa-cogs mr-1"></i> Gerenciar Turma</button>`;
                 }
                 btnContainer.innerHTML = html;
             }
@@ -2994,13 +3053,11 @@
             if(!dateInput) return;
             const date = dateInput.value; 
             const isParent = currentUser && currentUser.role === 'parent';
-            const canE = currentUser && (
-                currentUser.role === 'admin' || currentUser.role === 'coord' ||
-                (currentUser.role === 'teacher' && 
-                 currentUser.assignments && 
-                 currentUser.assignments[appData.currentSubject] && 
-                 currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
-            ); 
+            
+            const baseCanEdit = hasEditPermission();
+            const isLocked = appData.diaryLocks && appData.diaryLocks[`${appData.currentClass}_${appData.currentSubject}`];
+            const canE = baseCanEdit && !isLocked;
+            
             const isAdminOrCoord = currentUser && (currentUser.role === 'admin' || currentUser.role === 'coord');
             const students = getStudentsByClass();
             
@@ -3010,7 +3067,7 @@
                 if(!isParent) {
                     html += `<button onclick="openReportsModal('attendance')" class="bg-white border border-gray-300 text-gray-700 px-4 py-2 rounded-lg text-sm font-bold shadow-sm hover:bg-gray-100 transition flex items-center gap-2"><i class="fas fa-print"></i> Relatório PDF</button>`;
                 }
-                if(isAdminOrCoord) {
+                if(isAdminOrCoord && !isLocked) {
                     html += `<button onclick="deleteAttendanceDay('${date}')" class="bg-red-600 text-white px-4 py-2 rounded-lg text-sm font-bold shadow hover:bg-red-700 transition flex items-center gap-2"><i class="fas fa-trash"></i> Apagar Dia</button>`;
                 }
                 if(canE) {
@@ -3174,13 +3231,10 @@
             tbody.innerHTML = '';
             
             const isParent = currentUser && currentUser.role === 'parent';
-            const canE = currentUser && (
-                currentUser.role === 'admin' || currentUser.role === 'coord' ||
-                (currentUser.role === 'teacher' && 
-                 currentUser.assignments && 
-                 currentUser.assignments[appData.currentSubject] && 
-                 currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
-            ); 
+            
+            const baseCanEdit = hasEditPermission();
+            const isLocked = appData.diaryLocks && appData.diaryLocks[`${appData.currentClass}_${appData.currentSubject}`];
+            const canE = baseCanEdit && !isLocked;
 
             // Renderiza o cabeçalho baseando-se no papel (oculta Anotação para pais, e adiciona botão Marcar Todos para profs)
             thead.innerHTML = `
@@ -3235,13 +3289,9 @@
         }
 
         function renderActivitiesView() {
-            const canEdit = currentUser && (
-                currentUser.role === 'admin' || currentUser.role === 'coord' ||
-                (currentUser.role === 'teacher' && 
-                 currentUser.assignments && 
-                 currentUser.assignments[appData.currentSubject] && 
-                 currentUser.assignments[appData.currentSubject].includes(appData.currentClass))
-            ); 
+            const baseCanEdit = hasEditPermission();
+            const isLocked = appData.diaryLocks && appData.diaryLocks[`${appData.currentClass}_${appData.currentSubject}`];
+            const canEdit = baseCanEdit && !isLocked;
 
             const btnNewAct = document.getElementById('btn-new-activity');
             if (btnNewAct) btnNewAct.classList.toggle('hidden', !canEdit);
@@ -3307,9 +3357,9 @@
             const file = input.files[0];
             if (!file) return;
             if (file.type !== 'application/pdf') return alert("Apenas arquivos PDF são permitidos.");
-            if (file.size > 800 * 1024) {
+            if (file.size > 10 * 1024 * 1024) {
                 input.value = '';
-                return alert("O arquivo excede o limite de 800KB. Compacte o PDF antes de enviar.");
+                return alert("O arquivo excede o limite de 10MB. Compacte o PDF antes de enviar.");
             }
             
             const actFileName = document.getElementById('act-file-name');
@@ -3701,13 +3751,13 @@
                     options: {
                         animation: false, // Desabilitado para garantir renderização imediata na impressão
                         clip: false,
-                        layout: { padding: { top: 20 } },
+                        layout: { padding: { top: 25 } },
                         responsive: true, maintainAspectRatio: false,
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 10.5, 
-                                ticks: { stepSize: 1, callback: function(value) { return value > 10 ? '' : value; } }, 
+                                max: 10, 
+                                ticks: { stepSize: 2 }, 
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
@@ -3734,13 +3784,13 @@
                     options: {
                         animation: false, // Desabilitado para impressão
                         clip: false,
-                        layout: { padding: { top: 20 } },
+                        layout: { padding: { top: 25 } },
                         responsive: true, maintainAspectRatio: false,
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 105, 
-                                ticks: { stepSize: 20, callback: function(value) { return value > 100 ? '' : value; } }, 
+                                max: 100, 
+                                ticks: { stepSize: 20 }, 
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
@@ -4179,4 +4229,3 @@
     </script>
 </body>
 </html>
-
