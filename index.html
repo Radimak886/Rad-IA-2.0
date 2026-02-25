@@ -848,7 +848,7 @@
     <!-- Script de Funcionalidade -->
     <script>
         // --- CONSTANTES V29 ---
-        const DEFAULT_CLASSES = ["6A", "6B", "7A", "7B", "8A", "8B", "9A", "9B", "1º EM A", "2º EM A", "3º EM A"];
+        const DEFAULT_CLASSES = ["6º ANO A", "6º ANO B", "7º ANO A", "7º ANO B", "8º ANO A", "8º ANO B", "9º ANO A", "9º ANO B", "1º EM A", "2º EM A", "3º EM A"];
         const DEFAULT_SUBJECTS = ["Matemática", "Português", "Geografia", "História", "Arte", "Educação Física", "Inglês", "Ciências", "Física", "Química", "Biologia", "Projeto de Vida", "Ciências Humanas", "Espanhol", "Redação", "Filosofia", "Ética e Cidadania"];
         const SUBJECT_DAYS = { "Matemática": 200, "Português": 200, "default": 80 };
         const WEEKDAYS = ["Segunda", "Terça", "Quarta", "Quinta", "Sexta"];
@@ -864,35 +864,35 @@
         }
 
         const DEFAULT_SCHEDULE = {
-            "6A": {
+            "6º ANO A": {
                 "Segunda-7h": "Matemática", "Segunda-8h": "Ciências", "Segunda-9h": "Português", "Segunda-10h": "Geografia", "Segunda-11h": "História",
                 "Terça-7h": "Arte", "Terça-8h": "Português", "Terça-9h": "Educação Física", "Terça-10h": "Inglês", "Terça-11h": "Redação",
                 "Quarta-7h": "Matemática", "Quarta-8h": "Ciências", "Quarta-9h": "Português", "Quarta-10h": "Geografia", "Quarta-11h": "História",
                 "Quinta-7h": "Matemática", "Quinta-8h": "Filosofia", "Quinta-9h": "Educação Física", "Quinta-10h": "Inglês", "Quinta-11h": "Ética e Cidadania",
                 "Sexta-7h": "Matemática", "Sexta-8h": "Ciências", "Sexta-9h": "Português", "Sexta-10h": "Geografia", "Sexta-11h": "História"
             },
-            "7A": {
+            "7º ANO A": {
                 "Segunda-7h": "Ciências", "Segunda-8h": "História", "Segunda-9h": "Geografia", "Segunda-10h": "Matemática", "Segunda-11h": "Português",
                 "Terça-7h": "Português", "Terça-8h": "Educação Física", "Terça-9h": "Filosofia", "Terça-10h": "Redação", "Terça-11h": "Inglês",
                 "Quarta-7h": "Ciências", "Quarta-8h": "História", "Quarta-9h": "Geografia", "Quarta-10h": "Matemática", "Quarta-11h": "Português",
                 "Quinta-7h": "Arte", "Quinta-8h": "Educação Física", "Quinta-9h": "Matemática", "Quinta-10h": "Ética e Cidadania", "Quinta-11h": "Inglês",
                 "Sexta-7h": "Ciências", "Sexta-8h": "História", "Sexta-9h": "Geografia", "Sexta-10h": "Matemática", "Sexta-11h": "Português"
             },
-            "8A": {
+            "8º ANO A": {
                 "Segunda-7h": "Geografia", "Segunda-8h": "Português", "Segunda-9h": "História", "Segunda-10h": "Ciências", "Segunda-11h": "Matemática",
                 "Terça-7h": "Redação", "Terça-8h": "Arte", "Terça-9h": "Inglês", "Terça-10h": "Português", "Terça-11h": "Educação Física",
                 "Quarta-7h": "Geografia", "Quarta-8h": "Português", "Quarta-9h": "História", "Quarta-10h": "Ciências", "Quarta-11h": "Matemática",
                 "Quinta-7h": "Ética e Cidadania", "Quinta-8h": "Matemática", "Quinta-9h": "Inglês", "Quinta-10h": "Filosofia", "Quinta-11h": "Educação Física",
                 "Sexta-7h": "Geografia", "Sexta-8h": "Português", "Sexta-9h": "História", "Sexta-10h": "Ciências", "Sexta-11h": "Matemática"
             },
-            "9A": {
+            "9º ANO A": {
                 "Segunda-7h": "História", "Segunda-8h": "Matemática", "Segunda-9h": "Ciências", "Segunda-10h": "Português", "Segunda-11h": "Geografia",
                 "Terça-7h": "Inglês", "Terça-8h": "Redação", "Terça-9h": "Português", "Terça-10h": "Educação Física", "Terça-11h": "Arte",
                 "Quarta-7h": "História", "Quarta-8h": "Matemática", "Quarta-9h": "Ciências", "Quarta-10h": "Português", "Quarta-11h": "Geografia",
                 "Quinta-7h": "Inglês", "Quinta-8h": "Ética e Cidadania", "Quinta-9h": "Filosofia", "Quinta-10h": "Educação Física", "Quinta-11h": "Matemática",
                 "Sexta-7h": "História", "Sexta-8h": "Matemática", "Sexta-9h": "Ciências", "Sexta-10h": "Português", "Sexta-11h": "Geografia"
             },
-            "9B": {
+            "9º ANO B": {
                 "Segunda-7h": "Português", "Segunda-8h": "Geografia", "Segunda-9h": "Matemática", "Segunda-10h": "História", "Segunda-11h": "Ciências",
                 "Terça-7h": "Educação Física", "Terça-8h": "Inglês", "Terça-9h": "Redação", "Terça-10h": "Filosofia", "Terça-11h": "Português",
                 "Quarta-7h": "Português", "Quarta-8h": "Geografia", "Quarta-9h": "Matemática", "Quarta-10h": "História", "Quarta-11h": "Ciências",
@@ -2793,13 +2793,13 @@
                     type: 'line', data: { labels: labels, datasets: datasets },
                     options: {
                         clip: false, // Permite renderizar a bolinha inteira fora da grade
-                        layout: { padding: { top: 12, right: 15, left: 10 } }, // Dá espaço para a bolinha renderizar
+                        layout: { padding: { top: 25, right: 15, left: 10 } }, // Dá espaço para a bolinha renderizar
                         responsive: true, maintainAspectRatio: false,
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 10, 
-                                ticks: { stepSize: 2 },
+                                max: 10.5, 
+                                ticks: { stepSize: 1, callback: function(value) { return value > 10 ? null : value; } },
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
@@ -4294,4 +4294,3 @@
     </script>
 </body>
 </html>
-
