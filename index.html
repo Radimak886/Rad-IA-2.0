@@ -424,7 +424,7 @@
                     </div>
                     <div class="flex items-center gap-3">
                         <button id="btn-clear-chat" onclick="clearConversation()" class="bg-red-50 text-red-500 hover:bg-red-100 w-8 h-8 rounded-full flex items-center justify-center transition" title="Limpar Conversa"><i class="fas fa-eraser"></i></button>
-                        <button onclick="closeModal('modal-chat')" class="bg-gray-100 text-gray-500 hover:bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center transition hidden md:flex"><i class="fas fa-times"></i></button>
+                        <button onclick="closeModal('modal-chat')" class="bg-gray-100 text-gray-500 hover:bg-gray-200 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fas fa-times"></i></button>
                     </div>
                 </div>
                 
@@ -2655,8 +2655,16 @@
                         clip: false, // <-- Evita que o Chart.js corte os dados no limite da grade
                         layout: { padding: { top: 20, right: 10, left: 10 } }, // <-- Dá espaço para a bolinha renderizar
                         responsive: true, maintainAspectRatio: false,
-                        scales: { y: { beginAtZero: true, max: 10, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
-                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }
+                        scales: { 
+                            y: { 
+                                beginAtZero: true, 
+                                max: 10.5, 
+                                ticks: { stepSize: 2, callback: function(value) { return value > 10 ? '' : value; } },
+                                grid: { color: '#F3F4F6' } 
+                            }, 
+                            x: { grid: { display: false } } 
+                        },
+                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } } }
                     }
                 });
             }
@@ -2714,7 +2722,15 @@
                         clip: false,
                         layout: { padding: { top: 20 } },
                         responsive: true, maintainAspectRatio: false,
-                        scales: { y: { beginAtZero: true, max: 100, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
+                        scales: { 
+                            y: { 
+                                beginAtZero: true, 
+                                max: 105, 
+                                ticks: { stepSize: 20, callback: function(value) { return value > 100 ? '' : value; } },
+                                grid: { color: '#F3F4F6' } 
+                            }, 
+                            x: { grid: { display: false } } 
+                        },
                         plugins: { legend: { display: false } }
                     }
                 });
@@ -3663,7 +3679,15 @@
                         clip: false,
                         layout: { padding: { top: 20 } },
                         responsive: true, maintainAspectRatio: false,
-                        scales: { y: { beginAtZero: true, max: 10, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
+                        scales: { 
+                            y: { 
+                                beginAtZero: true, 
+                                max: 10.5, 
+                                ticks: { stepSize: 2, callback: function(value) { return value > 10 ? '' : value; } },
+                                grid: { color: '#F3F4F6' } 
+                            }, 
+                            x: { grid: { display: false } } 
+                        },
                         plugins: { legend: { display: false } }
                     }
                 });
@@ -3688,7 +3712,15 @@
                         clip: false,
                         layout: { padding: { top: 20 } },
                         responsive: true, maintainAspectRatio: false,
-                        scales: { y: { beginAtZero: true, max: 100, grid: { color: '#F3F4F6' } }, x: { grid: { display: false } } },
+                        scales: { 
+                            y: { 
+                                beginAtZero: true, 
+                                max: 105, 
+                                ticks: { stepSize: 20, callback: function(value) { return value > 100 ? '' : value; } },
+                                grid: { color: '#F3F4F6' } 
+                            }, 
+                            x: { grid: { display: false } } 
+                        },
                         plugins: { legend: { display: false } }
                     }
                 });
