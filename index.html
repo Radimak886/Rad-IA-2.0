@@ -3068,7 +3068,7 @@
                 
                 let act = (st === 'F' && currentUser && currentUser.role === 'parent') ? 
                     `<button onclick="openJustifyModal('${s.id}')" class="ml-2 text-[10px] text-blue-600 underline font-bold uppercase tracking-tighter">Justificar</button>` : 
-                    ((j && doc) ? `<button onclick="viewDoc('${doc}')" class="ml-2 text-blue-50 hover:scale-110 transition"><i class="fas fa-paperclip text-blue-500"></i></button>` : '');
+                    (doc ? `<button onclick="window.open('${doc}', '_blank')" class="ml-2 text-blue-50 hover:scale-110 transition" title="Ver Justificativa"><i class="fas fa-paperclip text-blue-500"></i></button>` : '');
                 
                 let infoHtml = tName ? `<div class="text-[8px] text-gray-400 font-normal uppercase tracking-tighter mt-1">${tName}</div>` : '';
 
@@ -3919,7 +3919,7 @@
             const f = fInput.files[0];
             const reason = reasonInput.value;
             
-            const save = (b64) => {
+            const saveToFirestore = (fileUrl) => {
                 const s = appData.students.find(x => x.id === currentJustificationStudentId);
                 const d = ensureSubjectData(s, appData.currentSubject);
                 d.attendance[currentJustificationDate] = { 
@@ -3927,31 +3927,36 @@
                     justified: false, 
                     pendingReview: true, 
                     reason: reason, 
-                    doc: b64 
+                    doc: fileUrl 
                 };
-                getCollection('concenal_students').doc(s.id).set({subjects:{[appData.currentSubject]:{attendance:d.attendance}}},{merge:true});
-                closeModal('modal-justification');
-                alert("Justificativa enviada para coordenação.");
-                renderAttendanceTable();
+                getCollection('concenal_students').doc(s.id).set({subjects:{[appData.currentSubject]:{attendance:d.attendance}}},{merge:true})
+                    .then(() => {
+                        closeModal('modal-justification');
+                        alert("Justificativa enviada para coordenação.");
+                        renderAttendanceTable();
+                    })
+                    .catch(e => alert("Erro ao salvar justificativa: " + e.message));
             };
 
             if (f) {
-                const r = new FileReader(); r.readAsDataURL(f);
-                r.onload = e => {
-                    const i = new Image(); i.src = e.target.result;
-                    i.onload = () => {
-                        const c = document.createElement('canvas'); 
-                        const scale = 500 / Math.max(i.width, i.height);
-                        c.width = i.width * scale; c.height = i.height * scale;
-                        c.getContext('2d').drawImage(i, 0, 0, c.width, c.height);
-                        save(c.toDataURL('image/jpeg', 0.6));
-                    };
-                    i.onerror = () => {
-                        // Salva o base64 puro caso o arquivo seja PDF ou outro arquivo e falhe no parse de imagem
-                        save(e.target.result); 
-                    };
+                const loadingOverlay = document.getElementById('loading-overlay');
+                if(loadingOverlay) loadingOverlay.classList.remove('hidden');
+
+                const r = new FileReader();
+                r.readAsDataURL(f);
+                r.onload = async (e) => {
+                    try {
+                        const fileUrl = await uploadFileToStorage(e.target.result, f.name, `artifacts/${window.APP_ID}/justifications`);
+                        saveToFirestore(fileUrl);
+                    } catch (err) {
+                        alert("Erro ao fazer upload do arquivo: " + err.message);
+                    } finally {
+                        if(loadingOverlay) loadingOverlay.classList.add('hidden');
+                    }
                 };
-            } else { save(null); }
+            } else { 
+                saveToFirestore(null); 
+            }
         }
 
         // --- GESTÃO USUÁRIOS E ASSIGNMENTS ---
