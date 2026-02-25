@@ -380,12 +380,11 @@
         </div>
     </div>
 
-    <!-- MODAL: CHAT RESTAURADO (COMUNICADOR REDESENHADO E CORRIGIDO) -->
-    <div id="modal-chat" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[120] flex items-center justify-center p-2 md:p-6 backdrop-blur-md">
-        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col md:flex-row overflow-hidden relative border border-gray-200">
-            <!-- Sidebar (Lista de Usuários com Busca e Filtros) -->
+    <!-- MODAL: CHAT RESTAURADO E FUNÇÕES JS RESPONSIVAS -->
+    <div id="modal-chat" class="fixed inset-0 bg-black bg-opacity-75 hidden z-[120] flex items-center justify-center p-0 md:p-6 backdrop-blur-md">
+        <div class="bg-white md:rounded-3xl shadow-2xl w-full h-full md:max-w-5xl md:h-[90vh] flex flex-col md:flex-row overflow-hidden relative border-0 md:border border-gray-200">
+            <!-- Sidebar (Lista de Usuários) -->
             <div id="chat-sidebar" class="w-full md:w-[35%] bg-[#f8fafc] border-r border-gray-200 flex flex-col h-full">
-                <!-- Cabeçalho Sidebar -->
                 <div class="p-4 border-b bg-school-green text-white flex justify-between items-center shadow-sm">
                     <div class="flex items-center gap-2">
                         <div class="bg-white text-school-green w-8 h-8 rounded-full flex items-center justify-center shadow-md"><i class="fas fa-comments"></i></div>
@@ -394,7 +393,6 @@
                     <button onclick="closeModal('modal-chat')" class="text-green-200 hover:text-white transition md:hidden"><i class="fas fa-times fa-lg"></i></button>
                 </div>
                 
-                <!-- Busca e Filtros (Oculto para Pais) -->
                 <div id="chat-search-container" class="px-4 py-3 border-b bg-white">
                     <div class="relative">
                         <i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i>
@@ -408,17 +406,16 @@
                     </div>
                 </div>
 
-                <!-- Lista de Contatos -->
                 <div class="p-2 overflow-y-auto flex-1 hide-scroll-x" id="chat-user-list">
                     <!-- Lista de usuários carregada via JS -->
                 </div>
             </div>
             
             <!-- Main Chat (Janela de Conversa) -->
-            <div id="chat-main-window" class="w-full md:w-[65%] hidden md:flex flex-col h-full bg-white absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
+            <div id="chat-main-window" class="w-full md:w-[65%] flex-col h-full bg-white absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
                 <div class="p-4 border-b bg-white flex justify-between items-center shadow-sm z-10" id="mobile-chat-header">
                     <div class="flex items-center gap-3">
-                        <button onclick="document.getElementById('chat-main-window').classList.add('hidden'); document.getElementById('chat-main-window').classList.remove('flex'); document.getElementById('chat-sidebar').classList.remove('hidden');" class="md:hidden text-gray-500 hover:text-school-green p-2"><i class="fas fa-arrow-left"></i></button>
+                        <button onclick="hideChatMainWindow()" class="md:hidden text-gray-500 hover:text-school-green p-2"><i class="fas fa-arrow-left"></i></button>
                         <div>
                             <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2" id="chat-recipient-info">Avisos Gerais <i class="fas fa-check-circle text-blue-500 text-[10px]" title="Oficial"></i></h3>
                             <p class="text-[10px] text-school-green uppercase font-bold tracking-widest" id="chat-recipient-role">Mural da Escola</p>
@@ -430,7 +427,6 @@
                     </div>
                 </div>
                 
-                <!-- Área de Mensagens (Estilo WhatsApp) -->
                 <div id="chat-messages" class="flex-1 p-6 overflow-y-auto bg-[url('https://www.transparenttextures.com/patterns/cubes.png')] bg-gray-50 flex flex-col gap-3 relative">
                     <!-- Mensagens inseridas via JS -->
                 </div>
@@ -440,7 +436,6 @@
                     <button onclick="clearChatAttachment()" class="text-red-500 hover:text-red-700 bg-white w-6 h-6 rounded-full flex items-center justify-center shadow-sm"><i class="fas fa-times"></i></button>
                 </div>
                 
-                <!-- Input de Mensagem -->
                 <div class="p-3 bg-white border-t flex items-center gap-2 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)]">
                     <label class="cursor-pointer text-gray-400 hover:text-school-green transition p-2 bg-gray-100 rounded-full w-10 h-10 flex items-center justify-center">
                         <input type="file" id="chat-file" class="hidden" onchange="handleChatFile(this)">
@@ -1272,26 +1267,43 @@
             });
         }
 
+        function showChatMainWindow() {
+            const sidebar = document.getElementById('chat-sidebar');
+            const main = document.getElementById('chat-main-window');
+            if (window.innerWidth < 768) {
+                if(sidebar) sidebar.style.display = 'none';
+                if(main) { main.style.display = 'flex'; main.classList.remove('hidden'); }
+            } else {
+                if(sidebar) sidebar.style.display = 'flex';
+                if(main) { main.style.display = 'flex'; main.classList.remove('hidden'); }
+            }
+        }
+
+        function hideChatMainWindow() {
+            const sidebar = document.getElementById('chat-sidebar');
+            const main = document.getElementById('chat-main-window');
+            if (window.innerWidth < 768) {
+                if(sidebar) sidebar.style.display = 'flex';
+                if(main) { main.style.display = 'none'; main.classList.add('hidden'); }
+            }
+        }
+
         function openChat() {
             const modalChat = document.getElementById('modal-chat');
             if(modalChat) modalChat.classList.remove('hidden');
             
-            const chatSidebar = document.getElementById('chat-sidebar');
-            const chatMainWindow = document.getElementById('chat-main-window');
-            
             // Layout exclusivo: Pais só falam com a Direção
             if(currentUser.role === 'parent') {
-                if(chatSidebar) chatSidebar.classList.add('hidden');
+                const sidebar = document.getElementById('chat-sidebar');
+                if (sidebar) sidebar.style.display = 'none';
+                
+                const main = document.getElementById('chat-main-window');
+                if (main) { main.style.display = 'flex'; main.classList.remove('hidden'); }
                 
                 const mobileChatHeader = document.getElementById('mobile-chat-header');
                 if(mobileChatHeader) {
                     const btnBack = mobileChatHeader.querySelector('button');
                     if (btnBack) btnBack.classList.add('hidden'); // hide back button for parents
-                }
-                
-                if(chatMainWindow) {
-                    chatMainWindow.classList.remove('hidden');
-                    chatMainWindow.classList.add('flex'); // Force show on mobile for parents
                 }
                 
                 // Encontrar o Admin para redirecionar (Direção)
@@ -1301,13 +1313,13 @@
                     setChatRecipient(adminId, 'Direção (Atendimento ao Pai/Responsável)', 'Atendimento Oficial');
                 });
             } else {
-                if(chatSidebar) chatSidebar.classList.remove('hidden');
+                const sidebar = document.getElementById('chat-sidebar');
+                if (sidebar) sidebar.style.display = 'flex';
                 
-                if (window.innerWidth < 768) {
-                    if(chatMainWindow) {
-                        chatMainWindow.classList.add('hidden');
-                        chatMainWindow.classList.remove('flex');
-                    }
+                hideChatMainWindow(); // on mobile hide main, on desktop it stays flex
+                if (window.innerWidth >= 768) {
+                    const main = document.getElementById('chat-main-window');
+                    if (main) { main.style.display = 'flex'; main.classList.remove('hidden'); }
                 }
                 
                 if (chatRecipient === 'global') setChatRecipient('global', 'Avisos Gerais', 'Mural da Escola');
@@ -1340,15 +1352,8 @@
             const activeBtn = document.getElementById(id === 'global' ? 'chat-btn-global' : `chat-btn-${id}`);
             if(activeBtn) activeBtn.classList.add('border-green-300', 'bg-green-50');
 
-            if(window.innerWidth < 768 && currentUser.role !== 'parent') {
-                const chatSidebar = document.getElementById('chat-sidebar');
-                if(chatSidebar) chatSidebar.classList.add('hidden');
-                
-                const chatMainWindow = document.getElementById('chat-main-window');
-                if(chatMainWindow) {
-                    chatMainWindow.classList.remove('hidden');
-                    chatMainWindow.classList.add('flex');
-                }
+            if (currentUser.role !== 'parent') {
+                showChatMainWindow();
             }
 
             renderChatMessages(allChatMessagesMaster);
@@ -1616,9 +1621,10 @@
                     allowedSubjects = [];
                 }
             } else if (currentUser.role === 'parent') {
-                const student = appData.students.find(s => s.id === currentUser.studentId);
-                const stClass = student ? student.class : appData.currentClass;
+                const student = appData.students.find(s => s.id === currentUser.studentId || s.studentId === currentUser.studentId);
+                if (student) appData.currentClass = student.class; // FORÇA A TURMA DO ALUNO
                 
+                const stClass = appData.currentClass;
                 let parentSubjectsSet = new Set(appData.curriculum[stClass] || []);
                 
                 if (student && student.subjects) {
@@ -2059,6 +2065,70 @@
 
         function logout() { clearSession(); location.reload(); }
 
+        function updateUI() {
+            if (!currentUser) return; 
+            
+            // GARANTE QUE A TURMA DO ALUNO SEJA SETADA CORRETAMENTE PARA OS RESPONSÁVEIS
+            if (currentUser.role === 'parent') {
+                const myStudent = appData.students.find(s => s.id === currentUser.studentId || s.studentId === currentUser.studentId);
+                if (myStudent) appData.currentClass = myStudent.class;
+            }
+
+            const cs = document.getElementById('class-select');
+            if(cs && cs.value !== appData.currentClass && currentUser.role !== 'parent') {
+                 cs.value = appData.currentClass;
+            }
+
+            // Oculta botão matéria na aba calendário, pois é global
+            const mainControls = document.getElementById('main-controls');
+            if(mainControls) {
+                if(appData.currentMode === 'calendar') mainControls.classList.add('hidden');
+                else mainControls.classList.remove('hidden');
+            }
+
+            // Tabs UI update
+            ['nav-grades','nav-attendance','nav-daily', 'nav-activities', 'nav-schedule', 'nav-calendar'].forEach(id => {
+                const el = document.getElementById(id);
+                if(!el) return;
+                const isActive = `nav-${appData.currentMode}` === id;
+                if(isActive) {
+                    el.classList.add('border-school-green', 'text-school-green');
+                    el.classList.remove('border-transparent', 'text-gray-500');
+                } else {
+                    el.classList.remove('border-school-green', 'text-school-green');
+                    el.classList.add('border-transparent', 'text-gray-500');
+                }
+            });
+
+            ['view-grades', 'view-attendance', 'view-daily', 'view-activities', 'view-schedule', 'view-calendar'].forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.classList.add('hidden');
+            });
+            
+            const actBtns = document.getElementById('action-buttons');
+            if(actBtns) {
+                actBtns.innerHTML = '';
+                if (hasEditPermission() && appData.currentClass && appData.currentSubject) {
+                    const isLocked = appData.diaryLocks && appData.diaryLocks[`${appData.currentClass}_${appData.currentSubject}`];
+                    if (isLocked) {
+                        actBtns.innerHTML += `<button onclick="toggleDiaryLock()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-red-600 transition flex items-center gap-1"><i class="fas fa-lock"></i> Diário Fechado</button>`;
+                    } else {
+                        actBtns.innerHTML += `<button onclick="toggleDiaryLock()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-blue-700 transition flex items-center gap-1"><i class="fas fa-lock-open"></i> Fechar Diário</button>`;
+                    }
+                }
+            }
+
+            const activeView = document.getElementById(`view-${appData.currentMode}`);
+            if (activeView) activeView.classList.remove('hidden');
+
+            if (appData.currentMode === 'grades') renderGradesTable();
+            else if (appData.currentMode === 'attendance') renderAttendanceTable();
+            else if (appData.currentMode === 'daily') loadDailyData();
+            else if (appData.currentMode === 'activities') renderActivitiesView();
+            else if (appData.currentMode === 'schedule') renderScheduleView();
+            else if (appData.currentMode === 'calendar') renderCalendarView();
+        }
+
         function showApp() {
             const loginScreen = document.getElementById('login-screen');
             if(loginScreen) loginScreen.classList.add('hidden');
@@ -2201,7 +2271,7 @@
                     if (currentUser && currentUser.role === 'parent') {
                         if (data.studentId === currentUser.studentId || doc.id === currentUser.studentId) { 
                             list.push({id: doc.id, ...data});
-                            if (!appData.currentClass) appData.currentClass = data.class;
+                            appData.currentClass = data.class; // FORÇA ATRIBUIÇÃO AQUI
                         }
                     } else {
                         list.push({id: doc.id, ...data});
@@ -2517,65 +2587,6 @@
             }
         }
 
-
-        function updateUI() {
-            if (!currentUser) return; 
-
-            const cs = document.getElementById('class-select');
-            if(cs && cs.value !== appData.currentClass && currentUser.role !== 'parent') {
-                 cs.value = appData.currentClass;
-            }
-
-            // Oculta botão matéria na aba calendário, pois é global
-            const mainControls = document.getElementById('main-controls');
-            if(mainControls) {
-                if(appData.currentMode === 'calendar') mainControls.classList.add('hidden');
-                else mainControls.classList.remove('hidden');
-            }
-
-            // Tabs UI update
-            ['nav-grades','nav-attendance','nav-daily', 'nav-activities', 'nav-schedule', 'nav-calendar'].forEach(id => {
-                const el = document.getElementById(id);
-                if(!el) return;
-                const isActive = `nav-${appData.currentMode}` === id;
-                if(isActive) {
-                    el.classList.add('border-school-green', 'text-school-green');
-                    el.classList.remove('border-transparent', 'text-gray-500');
-                } else {
-                    el.classList.remove('border-school-green', 'text-school-green');
-                    el.classList.add('border-transparent', 'text-gray-500');
-                }
-            });
-
-            ['view-grades', 'view-attendance', 'view-daily', 'view-activities', 'view-schedule', 'view-calendar'].forEach(id => {
-                const el = document.getElementById(id);
-                if (el) el.classList.add('hidden');
-            });
-            
-            const actBtns = document.getElementById('action-buttons');
-            if(actBtns) {
-                actBtns.innerHTML = '';
-                if (hasEditPermission() && appData.currentClass && appData.currentSubject) {
-                    const isLocked = appData.diaryLocks && appData.diaryLocks[`${appData.currentClass}_${appData.currentSubject}`];
-                    if (isLocked) {
-                        actBtns.innerHTML += `<button onclick="toggleDiaryLock()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-red-600 transition flex items-center gap-1"><i class="fas fa-lock"></i> Diário Fechado</button>`;
-                    } else {
-                        actBtns.innerHTML += `<button onclick="toggleDiaryLock()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-blue-700 transition flex items-center gap-1"><i class="fas fa-lock-open"></i> Fechar Diário</button>`;
-                    }
-                }
-            }
-
-            const activeView = document.getElementById(`view-${appData.currentMode}`);
-            if (activeView) activeView.classList.remove('hidden');
-
-            if (appData.currentMode === 'grades') renderGradesTable();
-            else if (appData.currentMode === 'attendance') renderAttendanceTable();
-            else if (appData.currentMode === 'daily') loadDailyData();
-            else if (appData.currentMode === 'activities') renderActivitiesView();
-            else if (appData.currentMode === 'schedule') renderScheduleView();
-            else if (appData.currentMode === 'calendar') renderCalendarView();
-        }
-
         // FIM DAS ATUALIZAÇÕES DO UI DE NAVEGAÇÃO
 
         function getStudentsByClass() {
@@ -2735,13 +2746,13 @@
                     type: 'line', data: { labels: labels, datasets: datasets },
                     options: {
                         clip: false, // Permite renderizar a bolinha inteira fora da grade
-                        layout: { padding: { top: 25, right: 15, left: 10 } }, // Dá espaço para a bolinha renderizar
+                        layout: { padding: { top: 12, right: 15, left: 10 } }, // Dá espaço para a bolinha renderizar
                         responsive: true, maintainAspectRatio: false,
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 10.2, // Um pouco acima do 10 para não cortar
-                                ticks: { stepSize: 1, callback: function(value) { return value > 10 ? null : value; } },
+                                max: 10, 
+                                ticks: { stepSize: 2 },
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
@@ -2802,7 +2813,7 @@
                     },
                     options: {
                         clip: false,
-                        layout: { padding: { top: 25 } },
+                        layout: { padding: { top: 12 } },
                         responsive: true, maintainAspectRatio: false,
                         scales: { 
                             y: { 
@@ -3758,13 +3769,13 @@
                     options: {
                         animation: false, // Desabilitado para garantir renderização imediata na impressão
                         clip: false,
-                        layout: { padding: { top: 25 } },
+                        layout: { padding: { top: 20 } },
                         responsive: true, maintainAspectRatio: false,
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 10.2, 
-                                ticks: { stepSize: 1, callback: function(value) { return value > 10 ? null : value; } }, 
+                                max: 10.5, 
+                                ticks: { stepSize: 1, callback: function(value) { return value > 10 ? '' : value; } }, 
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
@@ -3791,13 +3802,13 @@
                     options: {
                         animation: false, // Desabilitado para impressão
                         clip: false,
-                        layout: { padding: { top: 25 } },
+                        layout: { padding: { top: 20 } },
                         responsive: true, maintainAspectRatio: false,
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 100, 
-                                ticks: { stepSize: 20 }, 
+                                max: 105, 
+                                ticks: { stepSize: 20, callback: function(value) { return value > 100 ? '' : value; } }, 
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
