@@ -415,10 +415,10 @@
             </div>
             
             <!-- Main Chat (Janela de Conversa) -->
-            <div id="chat-main-window" class="w-full md:w-[65%] flex-col h-full bg-white hidden absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
+            <div id="chat-main-window" class="w-full md:w-[65%] hidden md:flex flex-col h-full bg-white absolute md:relative z-10 md:z-auto inset-0 md:inset-auto">
                 <div class="p-4 border-b bg-white flex justify-between items-center shadow-sm z-10" id="mobile-chat-header">
                     <div class="flex items-center gap-3">
-                        <button onclick="document.getElementById('chat-main-window').style.display = ''; document.getElementById('chat-main-window').classList.add('hidden'); document.getElementById('chat-sidebar').classList.remove('hidden');" class="md:hidden text-gray-500 hover:text-school-green p-2"><i class="fas fa-arrow-left"></i></button>
+                        <button onclick="document.getElementById('chat-main-window').classList.add('hidden'); document.getElementById('chat-main-window').classList.remove('flex'); document.getElementById('chat-sidebar').classList.remove('hidden');" class="md:hidden text-gray-500 hover:text-school-green p-2"><i class="fas fa-arrow-left"></i></button>
                         <div>
                             <h3 class="font-bold text-gray-800 text-sm flex items-center gap-2" id="chat-recipient-info">Avisos Gerais <i class="fas fa-check-circle text-blue-500 text-[10px]" title="Oficial"></i></h3>
                             <p class="text-[10px] text-school-green uppercase font-bold tracking-widest" id="chat-recipient-role">Mural da Escola</p>
@@ -1276,9 +1276,11 @@
             const modalChat = document.getElementById('modal-chat');
             if(modalChat) modalChat.classList.remove('hidden');
             
+            const chatSidebar = document.getElementById('chat-sidebar');
+            const chatMainWindow = document.getElementById('chat-main-window');
+            
             // Layout exclusivo: Pais só falam com a Direção
             if(currentUser.role === 'parent') {
-                const chatSidebar = document.getElementById('chat-sidebar');
                 if(chatSidebar) chatSidebar.classList.add('hidden');
                 
                 const mobileChatHeader = document.getElementById('mobile-chat-header');
@@ -1287,10 +1289,9 @@
                     if (btnBack) btnBack.classList.add('hidden'); // hide back button for parents
                 }
                 
-                const chatMainWindow = document.getElementById('chat-main-window');
                 if(chatMainWindow) {
                     chatMainWindow.classList.remove('hidden');
-                    chatMainWindow.style.display = 'flex'; // Force show on mobile for parents
+                    chatMainWindow.classList.add('flex'); // Force show on mobile for parents
                 }
                 
                 // Encontrar o Admin para redirecionar (Direção)
@@ -1300,8 +1301,14 @@
                     setChatRecipient(adminId, 'Direção (Atendimento ao Pai/Responsável)', 'Atendimento Oficial');
                 });
             } else {
-                const chatSidebar = document.getElementById('chat-sidebar');
                 if(chatSidebar) chatSidebar.classList.remove('hidden');
+                
+                if (window.innerWidth < 768) {
+                    if(chatMainWindow) {
+                        chatMainWindow.classList.add('hidden');
+                        chatMainWindow.classList.remove('flex');
+                    }
+                }
                 
                 if (chatRecipient === 'global') setChatRecipient('global', 'Avisos Gerais', 'Mural da Escola');
             }
@@ -1340,7 +1347,7 @@
                 const chatMainWindow = document.getElementById('chat-main-window');
                 if(chatMainWindow) {
                     chatMainWindow.classList.remove('hidden');
-                    chatMainWindow.style.display = 'flex';
+                    chatMainWindow.classList.add('flex');
                 }
             }
 
@@ -2733,8 +2740,8 @@
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 10, // Mantido no 10 para exibir o texto "10" na lateral corretamente
-                                ticks: { stepSize: 2 },
+                                max: 10.2, // Um pouco acima do 10 para não cortar
+                                ticks: { stepSize: 1, callback: function(value) { return value > 10 ? null : value; } },
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
@@ -3756,8 +3763,8 @@
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 10, 
-                                ticks: { stepSize: 2 }, 
+                                max: 10.2, 
+                                ticks: { stepSize: 1, callback: function(value) { return value > 10 ? null : value; } }, 
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
