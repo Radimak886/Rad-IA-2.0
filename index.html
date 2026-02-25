@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - 2026</title>
+    <title>DIÁRIO ESCOLAR - CONCENAL</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,6 +16,8 @@
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+    <!-- FIREBASE STORAGE SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
     <script>
         tailwind.config = {
@@ -631,7 +633,7 @@
             <label class="block text-[10px] font-bold text-gray-600 uppercase mb-1">Título da Atividade</label>
             <input type="text" id="act-title" class="w-full border p-2.5 rounded-lg text-sm mb-3 outline-none focus:ring-1 focus:ring-school-green" placeholder="Ex: Lista de Exercícios 01">
             
-            <label class="block text-[10px] font-bold text-gray-600 uppercase mb-1">Arquivo PDF (Max: 800KB)</label>
+            <label class="block text-[10px] font-bold text-gray-600 uppercase mb-1">Arquivo PDF (Max: 10MB)</label>
             <div class="border-2 border-dashed border-gray-300 rounded-xl p-4 text-center hover:bg-gray-50 transition cursor-pointer mb-4 relative">
                 <input type="file" id="act-file" accept="application/pdf" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer" onchange="previewActivityFile(this)">
                 <i class="fas fa-file-pdf text-3xl text-red-400 mb-2"></i>
@@ -969,6 +971,7 @@
                     firebase.initializeApp(firebaseConfig);
                 }
                 db = firebase.firestore();
+                window.firebaseStorage = firebase.storage();
                 
                 try {
                     db.settings({ experimentalForceLongPolling: true, useFetchStreams: false });
@@ -1095,6 +1098,19 @@
                     });
                 }
             } catch(e) {}
+        }
+        
+        async function uploadFileToStorage(base64Data, fileName, path) {
+            if (!window.firebaseStorage) throw new Error("Storage não inicializado.");
+            const storageRef = window.firebaseStorage.ref();
+            const uniqueName = `${Date.now()}_${fileName.replace(/[^a-zA-Z0-9.]/g, '_')}`;
+            const fileRef = storageRef.child(`${path}/${uniqueName}`);
+            
+            const response = await fetch(base64Data);
+            const blob = await response.blob();
+            
+            await fileRef.put(blob);
+            return await fileRef.getDownloadURL();
         }
 
         // --- GLOBAL SCOPE FUNCTIONS ---
@@ -1392,24 +1408,32 @@
                 timestamp: Date.now()
             };
 
-            if (currentChatFile) {
-                msgData.file = currentChatFile;
-            }
+            const loadingOverlay = document.getElementById('loading-overlay');
+            if(currentChatFile && loadingOverlay) loadingOverlay.classList.remove('hidden');
 
             try {
+                if (currentChatFile) {
+                    const fileUrl = await uploadFileToStorage(currentChatFile.data, currentChatFile.name, `artifacts/${window.APP_ID}/chat`);
+                    msgData.file = { name: currentChatFile.name, type: currentChatFile.type, data: fileUrl };
+                }
+
                 await getCollection('concenal_chat').add(msgData);
                 input.value = '';
                 clearChatAttachment();
+                const div = document.getElementById('chat-messages');
+                if(div) setTimeout(() => div.scrollTop = div.scrollHeight, 100);
             } catch(e) {
                 console.error(e);
                 alert("Erro ao enviar: " + e.message);
+            } finally {
+                if(loadingOverlay) loadingOverlay.classList.add('hidden');
             }
         }
 
         function handleChatFile(input) {
             const file = input.files[0];
             if (!file) return;
-            if (file.size > 2 * 1024 * 1024) return alert('Tamanho máximo permitido: 2MB');
+            if (file.size > 10 * 1024 * 1024) return alert('Tamanho máximo permitido: 10MB');
             
             const reader = new FileReader();
             reader.readAsDataURL(file);
@@ -1497,7 +1521,7 @@
                                 Object.entries(data.attendance).forEach(([date, att]) => {
                                     if(typeof att === 'object' && att.pendingReview) {
                                         hasPending = true;
-                                        const btn = att.doc ? `<button onclick="viewDoc('${att.doc}')" class="text-blue-500 bg-blue-50 w-6 h-6 rounded-full hover:bg-blue-100 mx-2"><i class="fas fa-paperclip"></i></button>` : '';
+                                        const btn = att.doc ? `<button onclick="window.open('${att.doc}', '_blank')" class="text-blue-500 bg-blue-50 w-6 h-6 rounded-full hover:bg-blue-100 mx-2"><i class="fas fa-paperclip"></i></button>` : '';
                                         pendingList.innerHTML += `
                                             <div class="p-3 bg-orange-50 border border-orange-100 rounded-lg mb-2 text-xs shadow-sm">
                                                 <div class="font-bold flex justify-between text-gray-800">${s.name} ${btn}</div>
@@ -2018,7 +2042,7 @@
             if (btnNotif) btnNotif.classList.toggle('hidden', !isAdmin && !isCoord);
 
             const btnChat = document.getElementById('btn-chat');
-            if (btnChat) btnChat.classList.toggle('hidden', isParent);
+            if (btnChat) btnChat.classList.toggle('hidden', isParent); // Chat button shown differently ou hidden temporariamente dependendo do caso. Modificamos na aba abaixo
 
             // Abas Novas: Apenas Prof/Coord/Admin
             const navSchedule = document.getElementById('nav-schedule');
@@ -2255,8 +2279,8 @@
                 const date = m.timestamp ? new Date(m.timestamp).toLocaleTimeString('pt-BR', {hour:'2-digit', minute:'2-digit'}) : '';
                 let fH = '';
                 if(m.file) {
-                     if(m.file.type.startsWith('image')) fH = `<img src="${m.file.data}" class="max-h-48 rounded-lg mb-2 shadow-sm cursor-pointer" onclick="viewDoc('${m.file.data}')">`;
-                     else fH = `<a href="${m.file.data}" download="${m.file.name}" class="bg-black bg-opacity-5 p-2 rounded-lg block text-[10px] border border-black border-opacity-5 mb-2"><i class="fas fa-file-alt mr-1"></i> ${m.file.name}</a>`;
+                     if(m.file.type.startsWith('image')) fH = `<img src="${m.file.data}" class="max-h-48 rounded-lg mb-2 shadow-sm cursor-pointer" onclick="window.open('${m.file.data}', '_blank')">`;
+                     else fH = `<a href="${m.file.data}" target="_blank" rel="noopener noreferrer" class="bg-black bg-opacity-5 p-2 rounded-lg block text-[10px] border border-black border-opacity-5 mb-2"><i class="fas fa-file-alt mr-1"></i> ${m.file.name}</a>`;
                 }
 
                 // Todos podem deletar a própria mensagem. Admin pode deletar de todos.
@@ -2658,13 +2682,13 @@
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 10, 
-                                ticks: { stepSize: 1 }, 
+                                max: 10.5, 
+                                ticks: { stepSize: 2, callback: function(value) { return value > 10 ? '' : value; } },
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
                         },
-                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 10 } } }
+                        plugins: { legend: { position: 'bottom', labels: { usePointStyle: true, boxWidth: 8 } } }
                     }
                 });
             }
@@ -2725,8 +2749,8 @@
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 100, 
-                                ticks: { stepSize: 20 }, 
+                                max: 105, 
+                                ticks: { stepSize: 20, callback: function(value) { return value > 100 ? '' : value; } },
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
@@ -3682,8 +3706,8 @@
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 10, 
-                                ticks: { stepSize: 1 }, 
+                                max: 10.5, 
+                                ticks: { stepSize: 1, callback: function(value) { return value > 10 ? '' : value; } }, 
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
@@ -3715,8 +3739,8 @@
                         scales: { 
                             y: { 
                                 beginAtZero: true, 
-                                max: 100, 
-                                ticks: { stepSize: 20 }, 
+                                max: 105, 
+                                ticks: { stepSize: 20, callback: function(value) { return value > 100 ? '' : value; } }, 
                                 grid: { color: '#F3F4F6' } 
                             }, 
                             x: { grid: { display: false } } 
