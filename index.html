@@ -2858,6 +2858,16 @@
             const btnContainer = document.getElementById('action-buttons');
             if (btnContainer && appData.currentMode === 'grades') {
                 let html = '';
+                
+                // Reincluída a opção de fechar diário para não ser apagada pela tabela
+                if (hasEditPermission() && appData.currentClass && appData.currentSubject) {
+                    if (isLocked) {
+                        html += `<button onclick="toggleDiaryLock()" class="bg-red-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-red-600 transition flex items-center gap-1"><i class="fas fa-lock"></i> Diário Fechado</button>`;
+                    } else {
+                        html += `<button onclick="toggleDiaryLock()" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-blue-700 transition flex items-center gap-1"><i class="fas fa-lock-open"></i> Fechar Diário</button>`;
+                    }
+                }
+
                 if(canEdit) {
                     html += `<button onclick="openAddModal()" class="bg-school-green text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2">Novo Aluno</button>`;
                     html += `<button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2">Importar Massa</button>`;
@@ -2893,6 +2903,7 @@
                 let indvActions = '';
                 if(canEdit) {
                     indvActions = `
+                        <button onclick="editStudentName('${s.id}')" class="text-gray-400 hover:text-gray-600 transition no-print ml-2" title="Editar nome do aluno"><i class="fas fa-edit"></i></button>
                         <button onclick="clearStudentGrades('${s.id}')" class="text-orange-400 hover:text-orange-600 transition no-print ml-2" title="Limpar notas deste aluno"><i class="fas fa-eraser"></i></button>
                         <button onclick="transferStudent('${s.id}')" class="text-blue-400 hover:text-blue-600 transition no-print ml-2" title="Transferir aluno de turma"><i class="fas fa-exchange-alt"></i></button>
                         <button onclick="deleteStudent('${s.id}')" class="text-red-300 hover:text-red-500 transition no-print ml-2" title="Apagar aluno do sistema"><i class="fas fa-trash"></i></button>
@@ -3425,6 +3436,18 @@
         function updateGrade(id,i,v){ const s=appData.students.find(x=>x.id===id); const sd=ensureSubjectData(s,appData.currentSubject); sd.units[i]=v; getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{units:sd.units}}},{merge:true}); }
         function updateRecovery(id,v){ const s=appData.students.find(x=>x.id===id); getCollection('concenal_students').doc(id).set({subjects:{[appData.currentSubject]:{recovery:v}}},{merge:true}); }
         function deleteStudent(id){ if(confirm("Remover aluno permanentemente?")) getCollection('concenal_students').doc(id).delete(); }
+        
+        function editStudentName(id) {
+            const student = appData.students.find(x => x.id === id);
+            if (!student) return;
+            const newName = prompt("Edite o nome do aluno:", student.name);
+            if (newName && newName.trim() !== "" && newName !== student.name) {
+                getCollection('concenal_students').doc(id).update({ name: newName.trim() })
+                    .then(() => alert("Nome atualizado com sucesso!"))
+                    .catch(e => alert("Erro ao atualizar o nome: " + e.message));
+            }
+        }
+
         function addStudent(){ 
             const newNameInput = document.getElementById('new-name');
             if(!newNameInput) return;
