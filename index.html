@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR - CONCENAL</title>
+    <title>DIÁRIO ESCOLAR</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1961,17 +1961,17 @@
 
             const totalFaults = countFaults(d);
             const totalDays = SUBJECT_DAYS[subjName] || SUBJECT_DAYS['default'];
-            const freqPercent = ((totalDays - totalFaults) / totalDays) * 100;
+        const freqPercent = ((totalDays - totalFaults) / totalDays) * 100;
+        
+        let st = "Cursando", cl = "status-badge bg-blue-100 text-blue-800";
+        let finalAvg = avgNum;
+        
+        if(filled === 6) {
+            const numAvg = parseFloat(avg);
+            const rVal = (d.recovery !== null && d.recovery !== undefined && d.recovery !== "" && !isNaN(d.recovery)) ? parseFloat(d.recovery) : null;
             
-            let st = "Cursando", cl = "status-badge bg-blue-100 text-blue-800";
-            let finalAvg = avgNum;
-            
-            if(filled >= 3) {
-                const numAvg = parseFloat(avg);
-                const rVal = (d.recovery !== null && d.recovery !== undefined && d.recovery !== "" && !isNaN(d.recovery)) ? parseFloat(d.recovery) : null;
-                
-                if(numAvg < 6.0) { 
-                    if(rVal !== null) { 
+            if(numAvg < 6.0) { 
+                if(rVal !== null) { 
                         let f = (numAvg + rVal) / 2;
                         finalAvg = f;
                         if(f >= 6.0) { st = "Aprovado (Rec)"; cl = "status-badge bg-green-100 text-green-800"; }
@@ -3624,6 +3624,9 @@
             }
 
             let totalAvg = 0, avgCount = 0, totalFaultsGlobal = 0, totalDaysGlobal = 0;
+            let isCursando = false;
+            let isReprovado = false;
+            let isRecuperacao = false;
             
             let chartLabels = [];
             let chartGrades = [];
@@ -3632,6 +3635,10 @@
             subjectsToDisplay.sort().forEach(subjName => {
                 const d = student.subjects?.[subjName] || { units: [], extras: [], attendance: {}, recovery: null, extraEnabled: false };
                 const c = calculateStatus(d, subjName);
+
+                if (c.status === "Cursando") isCursando = true;
+                if (c.status.includes("Reprovado") || c.status.includes("Rep.")) isReprovado = true;
+                if (c.status === "Recuperação") isRecuperacao = true;
 
                 totalFaultsGlobal += c.faults;
                 totalDaysGlobal += SUBJECT_DAYS[subjName] || SUBJECT_DAYS['default'];
@@ -3683,8 +3690,17 @@
             }
             
             let globalStatus = "CURSANDO";
-            if(finalGlobalAvg !== '-' && finalGlobalAvg >= 6.0 && finalGlobalFreq >= 75) globalStatus = "APROVADO GERAL";
-            if(finalGlobalFreq !== '-' && finalGlobalFreq < 75) globalStatus = "REPROVADO POR FALTAS";
+            if (isReprovado) {
+                globalStatus = "REPROVADO";
+            } else if (finalGlobalFreq !== '-' && finalGlobalFreq < 75) {
+                globalStatus = "REPROVADO POR FALTAS";
+            } else if (isRecuperacao) {
+                globalStatus = "RECUPERAÇÃO";
+            } else if (isCursando) {
+                globalStatus = "CURSANDO";
+            } else if (finalGlobalAvg !== '-' && finalGlobalAvg >= 6.0 && finalGlobalFreq >= 75) {
+                globalStatus = "APROVADO GERAL";
+            }
             
             const rStatus = document.getElementById('report-status');
             if(rStatus) rStatus.innerText = globalStatus;
