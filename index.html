@@ -32,7 +32,7 @@
     </script>
 
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #F3F4F6; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #F3F4F6; transition: background-color 0.3s ease, color 0.3s ease; }
         input[type=number]::-webkit-inner-spin-button, input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         .fade-in { animation: fadeIn 0.3s ease-in-out; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
@@ -63,6 +63,29 @@
         .no-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scroll-x::-webkit-scrollbar { height: 0px; background: transparent; }
         .hide-scroll-x { scrollbar-width: none; }
+
+        /* Dark Mode Overrides */
+        body.dark-theme { background-color: #111827; color: #f9fafb; }
+        body.dark-theme .bg-white, body.dark-theme .bg-gray-100 { background-color: #1f2937 !important; border-color: #374151 !important; color: #f9fafb !important; }
+        body.dark-theme .bg-gray-50 { background-color: #111827 !important; border-color: #374151 !important; color: #d1d5db !important; }
+        body.dark-theme .text-gray-800, body.dark-theme .text-gray-700 { color: #f9fafb !important; }
+        body.dark-theme .text-gray-600, body.dark-theme .text-gray-500, body.dark-theme .text-gray-400 { color: #9ca3af !important; }
+        body.dark-theme input, body.dark-theme select, body.dark-theme textarea { background-color: #374151 !important; color: #f9fafb !important; border-color: #4b5563 !important; }
+        body.dark-theme .border-b, body.dark-theme .border-t, body.dark-theme .border-l, body.dark-theme .border-r, body.dark-theme border, body.dark-theme td, body.dark-theme th { border-color: #374151 !important; }
+        body.dark-theme .hover\:bg-gray-50:hover { background-color: #374151 !important; }
+        body.dark-theme header { background-color: #064e3b !important; border-bottom: 1px solid #065f46; }
+        body.dark-theme .shadow-sm, body.dark-theme .shadow-md, body.dark-theme .shadow-xl, body.dark-theme .shadow-2xl { box-shadow: 0 4px 6px -1px rgba(0,0,0,0.5), 0 2px 4px -1px rgba(0,0,0,0.3) !important; }
+        body.dark-theme .bg-green-50, body.dark-theme .bg-blue-50, body.dark-theme .bg-yellow-50, body.dark-theme .bg-red-50, body.dark-theme .bg-orange-50, body.dark-theme .bg-yellow-50\/50 { background-color: #374151 !important; }
+        body.dark-theme .status-badge.bg-blue-100 { background-color: #1e3a8a !important; color: #bfdbfe !important; }
+        body.dark-theme .status-badge.bg-green-100 { background-color: #14532d !important; color: #bbf7d0 !important; }
+        body.dark-theme .status-badge.bg-red-100 { background-color: #7f1d1d !important; color: #fecaca !important; }
+        body.dark-theme .status-badge.bg-orange-100 { background-color: #7c2d12 !important; color: #fed7aa !important; }
+        body.dark-theme .status-rf { background-color: #7f1d1d !important; color: #fecaca !important; }
+        body.dark-theme canvas { filter: invert(0.85) hue-rotate(180deg); }
+        body.dark-theme #login-screen { background-color: #064e3b !important; }
+        body.dark-theme #login-screen .bg-white { background-color: #1f2937 !important; }
+        body.dark-theme .chat-msg.received { background-color: #374151 !important; border-color: #4b5563 !important; }
+        body.dark-theme .chat-msg.sent { background-color: #064e3b !important; border-color: #047857 !important; }
     </style>
 </head>
 <body class="text-gray-800 min-h-screen flex flex-col bg-gray-50 overflow-x-hidden">
@@ -146,6 +169,7 @@
                     <button onclick="openUsersModal()" id="btn-admin" class="hidden bg-orange-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm border border-orange-600 hover:bg-orange-600 transition"><i class="fas fa-users-cog mr-1"></i> Gestão</button>
                     <button onclick="openConfigModal()" id="btn-config" class="hidden bg-gray-700 bg-opacity-30 text-white border border-white border-opacity-20 px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm hover:bg-opacity-50 transition"><i class="fas fa-sliders-h mr-1"></i> Currículo</button>
                     
+                    <button onclick="toggleDarkMode()" class="text-white hover:text-yellow-300 ml-2 p-2" title="Modo Noturno"><i id="dark-mode-icon" class="fas fa-moon fa-lg"></i></button>
                     <button onclick="logout()" class="text-white hover:text-red-300 ml-2 p-2" title="Sair"><i class="fas fa-sign-out-alt fa-lg"></i></button>
                 </div>
             </div>
@@ -922,6 +946,8 @@
 
         // --- INICIALIZAÇÃO FIREBASE REFORÇADA ---
         const initFirebase = async () => {
+            applyDarkMode(); // Aplica o tema noturno salvo antes de carregar
+            
             const setupScreen = document.getElementById('setup-screen');
             const setupErrorLog = document.getElementById('setup-error-log');
             try {
@@ -2873,8 +2899,11 @@
                     html += `<button onclick="document.getElementById('modal-import').classList.remove('hidden')" class="bg-blue-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2">Importar Massa</button>`;
                     html += `<button onclick="toggleAllExtra()" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2"><i class="fas fa-star mr-1"></i> Extra Turma</button>`;
                 }
-                if(isManager && !isLocked) {
-                    html += `<button onclick="openManageClassModal()" class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2 hover:bg-black transition"><i class="fas fa-cogs mr-1"></i> Gerenciar Turma</button>`;
+                if(isManager) {
+                    html += `<button onclick="exportGradesCSV()" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2 hover:bg-green-700 transition"><i class="fas fa-file-excel mr-1"></i> Exportar CSV</button>`;
+                    if(!isLocked) {
+                        html += `<button onclick="openManageClassModal()" class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2 hover:bg-black transition"><i class="fas fa-cogs mr-1"></i> Gerenciar Turma</button>`;
+                    }
                 }
                 btnContainer.innerHTML = html;
             }
@@ -4003,6 +4032,21 @@
         function switchUserTab(t){ 
             creatingUserType=t; 
             const tabTeacher = document.getElementById('tab-teacher');
+            const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Notas_${appData.currentClass}_${appData.currentSubject}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        // --- GESTÃO USUÁRIOS E ASSIGNMENTS ---
+        function switchUserTab(t){ 
+            creatingUserType=t; 
+            const tabTeacher = document.getElementById('tab-teacher');
             if(tabTeacher) tabTeacher.className=t==='teacher'?"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition bg-white shadow-sm text-gray-800":"flex-1 py-2 font-bold text-[10px] uppercase rounded-md transition text-gray-400";
             
             const tabParent = document.getElementById('tab-parent');
@@ -4246,6 +4290,70 @@
                     alert("Erro ao gerar backup: " + e.message);
                 }
             }
+        }
+
+        function toggleDarkMode() {
+            const isDark = document.body.classList.toggle('dark-theme');
+            try {
+                localStorage.setItem('concenal_dark_mode', isDark);
+                const icon = document.getElementById('dark-mode-icon');
+                if (icon) {
+                    if (isDark) {
+                        icon.classList.remove('fa-moon');
+                        icon.classList.add('fa-sun');
+                    } else {
+                        icon.classList.remove('fa-sun');
+                        icon.classList.add('fa-moon');
+                    }
+                }
+            } catch(e) {}
+        }
+        
+        function applyDarkMode() {
+            try {
+                const isDark = localStorage.getItem('concenal_dark_mode') === 'true';
+                if(isDark) {
+                    document.body.classList.add('dark-theme');
+                    setTimeout(() => {
+                        const icon = document.getElementById('dark-mode-icon');
+                        if(icon) {
+                            icon.classList.remove('fa-moon');
+                            icon.classList.add('fa-sun');
+                        }
+                    }, 100);
+                }
+            } catch(e) {}
+        }
+
+        function exportGradesCSV() {
+            const students = getStudentsByClass();
+            if(students.length === 0) return alert('Nenhum aluno para exportar.');
+            
+            let csvContent = "\uFEFFAluno;U1;U2;U3;U4;U5;U6;Faltas;Media;Recuperacao;MediaFinal;Status\n";
+            
+            students.forEach(s => {
+                const d = ensureSubjectData(s, appData.currentSubject);
+                const c = calculateStatus(d, appData.currentSubject);
+                
+                let row = [
+                    s.name,
+                    d.units[0] ?? '', d.units[1] ?? '', d.units[2] ?? '',
+                    d.units[3] ?? '', d.units[4] ?? '', d.units[5] ?? '',
+                    c.faults, c.average, d.recovery ?? '', c.finalAverage, c.status
+                ];
+                
+                csvContent += row.join(";") + "\n";
+            });
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            const url = URL.createObjectURL(blob);
+            link.setAttribute("href", url);
+            link.setAttribute("download", `Notas_${appData.currentClass}_${appData.currentSubject}.csv`);
+            link.style.visibility = 'hidden';
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
         }
 
         // --- START ---
