@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DIÁRIO ESCOLAR</title>
+    <title>DIÁRIO ESCOLAR - DIGITAL</title>
     
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -2900,6 +2900,7 @@
                     html += `<button onclick="toggleAllExtra()" class="bg-yellow-500 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2"><i class="fas fa-star mr-1"></i> Extra Turma</button>`;
                 }
                 if(isManager) {
+                    html += `<button onclick="printClassReports()" class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2 hover:bg-indigo-700 transition"><i class="fas fa-print mr-1"></i> Boletins Turma</button>`;
                     html += `<button onclick="exportGradesCSV()" class="bg-green-600 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2 hover:bg-green-700 transition"><i class="fas fa-file-excel mr-1"></i> Exportar CSV</button>`;
                     if(!isLocked) {
                         html += `<button onclick="openManageClassModal()" class="bg-gray-800 text-white px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase shadow-sm ml-2 mb-2 hover:bg-black transition"><i class="fas fa-cogs mr-1"></i> Gerenciar Turma</button>`;
@@ -3628,6 +3629,167 @@
             setTimeout(() => { window.print(); }, 300);
         }
 
+        function printClassReports() {
+            const printArea = document.getElementById('print-area');
+            if(!printArea) return;
+            
+            const students = getStudentsByClass();
+            if(students.length === 0) return alert('Nenhum aluno nesta turma para imprimir.');
+
+            const now = new Date();
+            let finalHtml = '';
+
+            students.forEach((student, index) => {
+                let subjectsToDisplay = appData.curriculum[student.class] || [];
+                if (student.subjects) {
+                    Object.keys(student.subjects).forEach(s => {
+                        if (!subjectsToDisplay.includes(s)) subjectsToDisplay.push(s);
+                    });
+                }
+
+                let totalAvg = 0, avgCount = 0, totalFaultsGlobal = 0, totalDaysGlobal = 0;
+                let isCursando = false, isReprovado = false, isRecuperacao = false;
+                
+                let tableRowsStr = '';
+
+                subjectsToDisplay.sort().forEach(subjName => {
+                    const d = student.subjects?.[subjName] || { units: [], extras: [], attendance: {}, recovery: null, extraEnabled: false };
+                    const c = calculateStatus(d, subjName);
+
+                    if (c.status === "Cursando") isCursando = true;
+                    if (c.status.includes("Reprovado") || c.status.includes("Rep.")) isReprovado = true;
+                    if (c.status === "Recuperação") isRecuperacao = true;
+
+                    totalFaultsGlobal += c.faults;
+                    totalDaysGlobal += SUBJECT_DAYS[subjName] || SUBJECT_DAYS['default'];
+
+                    if(c.finalAverage !== '-') {
+                        totalAvg += parseFloat(c.finalAverage);
+                        avgCount++;
+                    }
+
+                    tableRowsStr += `<tr><td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; border-right: 1px solid #e5e7eb; text-align: left;"><b>${subjName}</b></td>`;
+                    
+                    for(let i=0; i<6; i++) {
+                        const uVal = d.units?.[i];
+                        const extVal = (d.extraEnabled && d.extras && d.extras[i] && !isNaN(d.extras[i])) ? parseFloat(d.extras[i]) : 0;
+                        let finalVal = (uVal !== undefined && uVal !== null && uVal !== "" && !isNaN(uVal)) ? (parseFloat(uVal) + extVal) : null;
+                        if(finalVal !== null && finalVal > 10.0) finalVal = 10.0;
+                        tableRowsStr += `<td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; ${finalVal !== null && finalVal < 6 ? 'color: red; font-weight: bold;' : ''}">${finalVal !== null ? finalVal : '-'}</td>`;
+                    }
+                    tableRowsStr += `<td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; border-left: 1px solid #e5e7eb; font-weight: bold; ${c.freq < 75 ? 'color: red;' : 'color: blue;'}">${c.faults}</td>
+                        <td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; border-left: 1px solid #e5e7eb; font-weight: bold;">${c.average}</td>
+                        <td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; border-left: 1px solid #e5e7eb; font-weight: bold; color: red;">${d.recovery || '-'}</td>
+                        <td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; border-left: 1px solid #e5e7eb; font-weight: bold; color: blue;">${c.finalAverage}</td>
+                        <td style="padding: 8px 12px; border-bottom: 1px solid #f3f4f6; border-left: 1px solid #e5e7eb;">${c.status}</td></tr>`;
+                });
+
+                const finalGlobalAvg = avgCount > 0 ? (totalAvg / avgCount).toFixed(1) : '-';
+                const finalGlobalFreq = totalDaysGlobal > 0 ? (((totalDaysGlobal - totalFaultsGlobal) / totalDaysGlobal) * 100).toFixed(1) : '-';
+                
+                let globalStatus = "CURSANDO";
+                if (isReprovado) {
+                    globalStatus = "REPROVADO";
+                } else if (finalGlobalFreq !== '-' && finalGlobalFreq < 75) {
+                    globalStatus = "REPROVADO POR FALTAS";
+                } else if (isRecuperacao) {
+                    globalStatus = "RECUPERAÇÃO";
+                } else if (isCursando) {
+                    globalStatus = "CURSANDO";
+                } else if (finalGlobalAvg !== '-' && finalGlobalAvg >= 6.0 && finalGlobalFreq >= 75) {
+                    globalStatus = "APROVADO GERAL";
+                }
+
+                finalHtml += `
+                    <div style="display: flex; align-items: center; gap: 24px; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #047857;">
+                        <img src="https://i.ibb.co/JWKSzsWy/colegio-concenal-2.webp" style="height: 64px;">
+                        <div>
+                            <h2 style="font-size: 24px; font-weight: bold; color: #1f2937; margin: 0; line-height: 1;">${student.name}</h2>
+                            <p style="font-size: 10px; color: #047857; text-transform: uppercase; font-weight: bold; letter-spacing: 0.1em; margin: 4px 0 0 0;">Histórico Acadêmico Unificado • ${appData.currentClass} • ${now.getFullYear()}</p>
+                            <p style="font-size: 10px; color: #9ca3af; font-weight: bold; text-transform: uppercase; letter-spacing: 0.1em; margin: 4px 0 0 0;">Gerado em ${now.toLocaleDateString('pt-BR')} às ${now.toLocaleTimeString('pt-BR')}</p>
+                        </div>
+                    </div>
+
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px;">
+                        <div style="background-color: #eff6ff; padding: 16px; border-radius: 12px; border: 1px solid #dbeafe;">
+                            <p style="font-size: 10px; font-weight: bold; color: #3b82f6; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 4px 0;">Média Global</p>
+                            <h3 style="font-size: 24px; font-weight: bold; color: #1d4ed8; margin: 0;">${finalGlobalAvg}</h3>
+                        </div>
+                        <div style="background-color: #f0fdf4; padding: 16px; border-radius: 12px; border: 1px solid #dcfce3;">
+                            <p style="font-size: 10px; font-weight: bold; color: #22c55e; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 4px 0;">Frequência</p>
+                            <h3 style="font-size: 24px; font-weight: bold; color: #15803d; margin: 0;">${finalGlobalFreq !== '-' ? finalGlobalFreq + '%' : '-'}</h3>
+                        </div>
+                        <div style="background-color: #fef2f2; padding: 16px; border-radius: 12px; border: 1px solid #fee2e2;">
+                            <p style="font-size: 10px; font-weight: bold; color: #ef4444; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 4px 0;">Faltas Globais</p>
+                            <h3 style="font-size: 20px; font-weight: bold; color: #b91c1c; margin: 4px 0 0 0;">${totalFaultsGlobal}</h3>
+                        </div>
+                        <div style="background-color: #f9fafb; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb;">
+                            <p style="font-size: 10px; font-weight: bold; color: #6b7280; text-transform: uppercase; letter-spacing: 0.1em; margin: 0 0 4px 0;">Status Atual</p>
+                            <h3 style="font-size: 14px; font-weight: bold; color: #1f2937; margin: 8px 0 0 0;">${globalStatus}</h3>
+                        </div>
+                    </div>
+
+                    <div style="border: 1px solid #e5e7eb; border-radius: 8px; overflow: hidden; margin-bottom: 24px;">
+                        <table style="width: 100%; text-align: center; font-size: 12px; border-collapse: collapse;">
+                            <thead class="print-bg-gray">
+                                <tr style="color: #6b7280; font-size: 10px; text-transform: uppercase;">
+                                    <th style="padding: 12px; text-align: left; border-bottom: 2px solid #e5e7eb;">Disciplina</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U1</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U2</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U3</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U4</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U5</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb;">U6</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb;">Faltas</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb;">Média</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb; color: #ef4444;">Rec</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb; color: #1d4ed8;">Média Final</th>
+                                    <th style="padding: 12px; border-bottom: 2px solid #e5e7eb; border-left: 1px solid #e5e7eb;">Situação</th>
+                                </tr>
+                            </thead>
+                            <tbody style="background-color: white;">
+                                ${tableRowsStr}
+                            </tbody>
+                        </table>
+                    </div>
+                `;
+
+                // Pareceres
+                let allObs = [];
+                if(student.subjects) {
+                    Object.entries(student.subjects).forEach(([subj, data]) => {
+                        if(data.observations) {
+                            data.observations.forEach(o => allObs.push({subj, ...o}));
+                        }
+                    });
+                }
+                
+                finalHtml += `<h3 style="font-size: 14px; font-weight: bold; text-transform: uppercase; margin-top: 32px; border-bottom: 2px solid #047857; padding-bottom: 8px; margin-bottom: 16px; color: #047857; letter-spacing: 0.1em;">Pareceres Pedagógicos</h3>`;
+                if(allObs.length === 0) {
+                    finalHtml += '<p style="font-size: 12px; font-style: italic; color: #6b7280;">Nenhum parecer registrado no sistema.</p>';
+                } else {
+                    finalHtml += `<div style="display: grid; grid-template-columns: 1fr; gap: 12px;">`;
+                    allObs.reverse().forEach(o => {
+                        finalHtml += `
+                        <div style="background-color: #f9fafb; padding: 16px; border-radius: 12px; border: 1px solid #e5e7eb; font-size: 12px; page-break-inside: avoid;">
+                            <div style="display: flex; justify-content: space-between; font-weight: bold; border-bottom: 1px solid #e5e7eb; padding-bottom: 8px; margin-bottom: 8px; font-size: 10px; text-transform: uppercase; color: #6b7280;">
+                                <span><b style="color: #047857;">${o.subj}</b> - ${o.date}</span>
+                                <span>${o.author}</span>
+                            </div>
+                            <p style="color: #1f2937; line-height: 1.6; margin: 0;">${o.text}</p>
+                        </div>`;
+                    });
+                    finalHtml += `</div>`;
+                }
+
+                if (index < students.length - 1) {
+                    finalHtml += `<div style="page-break-after: always; margin-top: 40px; margin-bottom: 40px;"></div>`;
+                }
+            });
+
+            printArea.innerHTML = finalHtml;
+            setTimeout(() => { window.print(); }, 500);
+        }
 
         // --- HISTÓRICO ACADÊMICO UNIFICADO (REFACTOR) ---
         function openReportModal(id){
