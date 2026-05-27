@@ -471,10 +471,6 @@
                         <select id="behavior-student-select" onchange="loadBehaviorReport()" class="w-full border border-green-200 rounded-lg p-2.5 text-sm font-bold bg-white outline-none"></select>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Série / Turma</label>
-                        <input id="behavior-class-display" readonly class="w-full border border-green-200 rounded-lg p-2.5 text-sm font-bold bg-white text-gray-600" value="--">
-                    </div>
-                    <div>
                         <label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Período</label>
                         <select id="behavior-period" onchange="loadBehaviorReport()" class="w-full border border-green-200 rounded-lg p-2.5 text-sm font-bold bg-white outline-none">
                             <option value="1">1ª Unidade</option>
@@ -7853,6 +7849,597 @@
         window.print();
         setTimeout(function(){ printArea.classList.add('hidden'); printArea.innerHTML = ''; }, 500);
     };
+})();
+</script>
+
+
+<!-- PATCH V52.5: correção definitiva da mistura de turmas e remoção do campo Série/Turma duplicado -->
+<script>
+(function(){
+    function byId(id){ return document.getElementById(id); }
+    function esc(v){
+        return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+        });
+    }
+    function pct(a,b){ return b ? Math.round((a / b) * 100) : 0; }
+    function getYear(){ return String(new Date().getFullYear()); }
+
+    function normClass(v){
+        var s = String(v || '')
+            .toUpperCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+            .replace(/º|ª|°/g,'')
+            .replace(/ENSINO\s*MEDIO/g,'EM')
+            .replace(/ENS\.\s*MEDIO/g,'EM')
+            .replace(/MEDIO/g,'EM')
+            .replace(/[^A-Z0-9]/g,'')
+            .trim();
+        s = s.replace(/SERIE/g,'').replace(/TURMA/g,'').replace(/ANO/g,'');
+        return s;
+    }
+    function displayClass(v){
+        var raw = String(v || '').trim();
+        if(!raw) return '';
+        var s = raw.toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/º|ª|°/g,'');
+        var n = (s.match(/(\d+)/) || [])[1] || '';
+        var letters = s.replace(/ENSINO\s*MEDIO|ENS\.\s*MEDIO|MEDIO|EM|ANO|SERIE|TURMA|\d+/g,'').replace(/[^A-Z]/g,'');
+        var letter = letters ? letters[letters.length - 1] : '';
+        if(/EM|MEDIO|ENSINO\s*MEDIO/.test(s) && n) return n + 'º EM' + (letter ? ' ' + letter : '');
+        if(n) return n + 'º ANO' + (letter ? ' ' + letter : '');
+        return raw;
+    }
+    function getAllStudents(){
+        try{ if(typeof appData !== 'undefined' && appData && Array.isArray(appData.students)) return appData.students.slice(); }catch(e){}
+        try{ if(window.appData && Array.isArray(window.appData.students)) return window.appData.students.slice(); }catch(e){}
+        return [];
+    }
+    function getSelectedClass(){
+        var sel = byId('behavior-class-select');
+        if(sel && sel.value){
+            var label = sel.selectedOptions && sel.selectedOptions[0] ? String(sel.selectedOptions[0].textContent || '').trim() : '';
+            return { key: normClass(sel.value), label: label || displayClass(sel.value), value: String(sel.value || '') };
+        }
+        var current = '';
+        try{ current = String(appData.currentClass || ''); }catch(e){}
+        return { key: normClass(current), label: displayClass(current), value: current };
+    }
+    function studentClassKey(st){
+        var fields = [st && st.class, st && st.turma, st && st.className, st && st.serie, st && st.series, st && st.grade, st && st.schoolClass];
+        for(var i=0;i<fields.length;i++){
+            var key = normClass(fields[i]);
+            if(key) return key;
+        }
+        return '';
+    }
+    function getStudentsOnlyFromSelectedClass(){
+        var selected = getSelectedClass();
+        var all = getAllStudents();
+        var seen = {};
+        var filtered = all.filter(function(st){
+            return !!selected.key && studentClassKey(st) === selected.key;
+        }).filter(function(st){
+            var id = String((st && st.id) || (st && st.name) || '');
+            if(!id || seen[id]) return false;
+            seen[id] = true;
+            return true;
+        }).sort(function(a,b){
+            return String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { numeric:true, sensitivity:'base' });
+        });
+        return { selected:selected, students:filtered };
+    }
+    async function loadBehaviorDocs(){
+        var out = {};
+        try{
+            if(!window.db || typeof window.getCollection !== 'function') return out;
+            var snap = await getCollection('concenal_behavior_reports').get();
+            snap.forEach(function(doc){
+                var d = doc.data() || {};
+                var sid = String(d.studentId || '').trim();
+                var period = String(d.period || '').replace(/[^0-9]/g,'').trim();
+                var year = String(d.year || getYear()).trim();
+                if(sid && period) out[sid + '_' + year + '_' + period] = d;
+            });
+        }catch(e){ console.warn('Conferência de relatórios V52.5:', e); }
+        return out;
+    }
+    function ensureVerifierPanel(){
+        if(typeof window.ensureBehaviorVerifierV52 === 'function'){
+            try{ window.ensureBehaviorVerifierV52(); }catch(e){}
+        }
+        return byId('behavior-history-result-v52');
+    }
+    function cleanupBehaviorLayout(){
+        var display = byId('behavior-class-display');
+        if(display){
+            var wrap = display.closest('div');
+            if(wrap) wrap.remove();
+        }
+        var studentSel = byId('behavior-student-select');
+        var controls = studentSel ? studentSel.closest('.grid') : null;
+        if(controls) controls.className = 'p-4 border-b bg-green-50 grid md:grid-cols-3 gap-3 items-end';
+    }
+
+    var oldRender = window.renderBehaviorReportView;
+    if(typeof oldRender === 'function'){
+        window.renderBehaviorReportView = function(){
+            var r = oldRender.apply(this, arguments);
+            cleanupBehaviorLayout();
+            return r;
+        };
+    }
+
+    window.verifyBehaviorReportsV52 = async function(){
+        cleanupBehaviorLayout();
+        var result = ensureVerifierPanel();
+        if(result) result.innerHTML = '<div class="text-xs font-bold text-indigo-700"><i class="fas fa-circle-notch fa-spin mr-1"></i> Verificando somente a turma selecionada...</div>';
+
+        var data = getStudentsOnlyFromSelectedClass();
+        var selected = data.selected;
+        var students = data.students;
+        var year = getYear();
+
+        if(!students.length){
+            if(result){
+                result.innerHTML = '<div class="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-xs font-bold text-yellow-800">Nenhum aluno encontrado para a turma selecionada: <b>'+esc(selected.label || selected.value || '--')+'</b>. Confira se os alunos foram cadastrados/importados exatamente nesta turma.</div>';
+            }
+            return;
+        }
+
+        var docs = await loadBehaviorDocs();
+        var rows = students.map(function(st){
+            var done = 0;
+            var cells = ['1','2','3','4','5','6'].map(function(u){
+                var ok = !!docs[String(st.id) + '_' + year + '_' + u];
+                if(ok) done++;
+                return '<td class="border p-2 text-center">'+(ok ? '<span class="text-green-700 font-black">Salvo</span>' : '<span class="text-red-600 font-black">Pendente</span>')+'</td>';
+            }).join('');
+            return '<tr>'+
+                '<td class="border p-2 font-bold">'+esc(st.name || 'Aluno')+'<div class="text-[9px] uppercase text-gray-400">'+esc(displayClass(st.class || st.turma || selected.label))+'</div></td>'+cells+
+                '<td class="border p-2 text-center font-black">'+pct(done,6)+'%</td>'+
+            '</tr>';
+        }).join('');
+
+        if(result){
+            result.innerHTML = '<div class="mb-2 text-[10px] font-black uppercase tracking-widest text-indigo-700">Turma verificada: '+esc(selected.label || displayClass(selected.value))+' • Alunos: '+students.length+' • Ano: '+esc(year)+'</div>'+
+                '<div class="overflow-x-auto bg-white rounded-lg border border-indigo-100">'+
+                '<table class="w-full text-xs border-collapse"><thead class="bg-indigo-100 text-indigo-900 uppercase"><tr><th class="border p-2 text-left">Aluno</th><th class="border p-2">1ª</th><th class="border p-2">2ª</th><th class="border p-2">3ª</th><th class="border p-2">4ª</th><th class="border p-2">5ª</th><th class="border p-2">6ª</th><th class="border p-2">Concluído</th></tr></thead><tbody>'+rows+'</tbody></table>'+
+                '</div>';
+        }
+    };
+
+    window.printBehaviorChecklistV52 = function(){
+        var result = byId('behavior-history-result-v52');
+        if(!result || !result.innerHTML.trim()) return alert('Clique primeiro em "Verificar turma".');
+        var selected = getSelectedClass();
+        var printArea = byId('print-area');
+        if(!printArea) return window.print();
+        printArea.innerHTML = '<div style="font-family:Arial,sans-serif;padding:10mm;">'+
+            '<h2 style="text-align:center;margin:0;font-size:16px;">CONCENAL - Conferência de Relatórios Individuais</h2>'+ 
+            '<p style="text-align:center;margin:4px 0 15px 0;font-size:12px;">Turma: '+esc(selected.label || displayClass(selected.value))+' • Ano: '+getYear()+'</p>'+ 
+            result.innerHTML+
+            '</div>';
+        printArea.classList.remove('hidden');
+        window.print();
+        setTimeout(function(){ printArea.classList.add('hidden'); printArea.innerHTML = ''; }, 500);
+    };
+
+    document.addEventListener('change', function(ev){
+        if(ev && ev.target && ev.target.id === 'behavior-class-select'){
+            cleanupBehaviorLayout();
+            var result = byId('behavior-history-result-v52');
+            if(result) result.innerHTML = '<div class="text-[10px] font-bold text-indigo-600 uppercase tracking-widest">Turma alterada. Clique em verificar turma para atualizar a conferência.</div>';
+        }
+    });
+
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(cleanupBehaviorLayout, 800); });
+    setTimeout(cleanupBehaviorLayout, 1200);
+})();
+</script>
+
+
+<!-- PATCH V53: Diagnóstico do Sistema + Correção de Inconsistências -->
+<script>
+(function(){
+    function byId(id){ return document.getElementById(id); }
+    function esc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function toastV53(msg, type){
+        try{ if(typeof showToast === 'function') return showToast(msg, type || 'info'); }catch(e){}
+        alert(msg);
+    }
+    function getStudentsV53(){
+        try{ if(typeof appData !== 'undefined' && appData && Array.isArray(appData.students)) return appData.students; }catch(e){}
+        try{ if(window.appData && Array.isArray(window.appData.students)) return window.appData.students; }catch(e){}
+        return [];
+    }
+    function normTextV53(v){
+        return String(v || '').trim().toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ');
+    }
+    function normNameV53(v){
+        return normTextV53(v).replace(/[^A-Z0-9 ]/g,'').replace(/\s+/g,' ').trim();
+    }
+    function normClassKeyV53(v){
+        var s = normTextV53(v)
+            .replace(/º|ª|°/g,'')
+            .replace(/ENSINO\s*MEDIO/g,'EM')
+            .replace(/ENS\.?\s*MEDIO/g,'EM')
+            .replace(/MEDIO/g,'EM')
+            .replace(/SÉRIE|SERIE|TURMA/g,'')
+            .replace(/ANO/g,'')
+            .replace(/[^A-Z0-9]/g,'');
+        var m = s.match(/^(1|2|3)EM([A-Z])$/); if(m) return m[1]+'EM'+m[2];
+        m = s.match(/^(1|2|3)([A-Z])$/); if(m && /EM/.test(normTextV53(v))) return m[1]+'EM'+m[2];
+        m = s.match(/^(6|7|8|9)([A-Z])$/); if(m) return m[1]+'A'+m[2];
+        return s;
+    }
+    function displayClassV53(v){
+        var raw = String(v || '').trim();
+        if(!raw) return '';
+        var key = normClassKeyV53(raw);
+        var m = key.match(/^(1|2|3)EM([A-Z])$/); if(m) return m[1]+'º EM '+m[2];
+        m = key.match(/^(6|7|8|9)A([A-Z])$/); if(m) return m[1]+'º ANO '+m[2];
+        return raw;
+    }
+    function officialClassesV53(){
+        var arr = [];
+        try{ if(typeof DEFAULT_CLASSES !== 'undefined' && Array.isArray(DEFAULT_CLASSES)) arr = arr.concat(DEFAULT_CLASSES); }catch(e){}
+        try{ if(appData && Array.isArray(appData.allClasses)) arr = arr.concat(appData.allClasses); }catch(e){}
+        if(!arr.length){ arr = ['6º ANO A','7º ANO A','8º ANO A','9º ANO A','9º ANO B','1º EM A','2º EM A','3º EM A']; }
+        var map = {};
+        arr.forEach(function(c){ var key = normClassKeyV53(c); if(key) map[key] = displayClassV53(c); });
+        return Object.keys(map).map(function(k){ return {key:k, label:map[k]}; }).sort(function(a,b){ return a.label.localeCompare(b.label,'pt-BR',{numeric:true}); });
+    }
+    function canonicalClassV53(v){
+        var key = normClassKeyV53(v);
+        var official = officialClassesV53().find(function(c){ return c.key === key; });
+        return official ? official.label : displayClassV53(v);
+    }
+    function studentClassKeyV53(st){
+        return normClassKeyV53(st && (st.class || st.turma || st.className || st.serie || st.series || st.grade || st.schoolClass));
+    }
+    function getSelectedBehaviorClassV53(){
+        var sel = byId('behavior-class-select');
+        if(sel && sel.value){
+            var txt = sel.selectedOptions && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent : sel.value;
+            return {key:normClassKeyV53(sel.value || txt), label:canonicalClassV53(txt || sel.value)};
+        }
+        var current = '';
+        try{ current = appData.currentClass || ''; }catch(e){}
+        return {key:normClassKeyV53(current), label:canonicalClassV53(current)};
+    }
+    function dedupeStudentsV53(list){
+        var seen = {};
+        return (list || []).filter(function(st){
+            var key = String(st && st.id || '').trim();
+            if(!key) key = normNameV53(st && st.name) + '|' + studentClassKeyV53(st);
+            if(seen[key]) return false;
+            seen[key] = true;
+            return true;
+        });
+    }
+    function getStudentsByClassV53(classValue){
+        var key = normClassKeyV53(classValue || (getSelectedBehaviorClassV53().key));
+        var list = getStudentsV53().filter(function(st){ return key && studentClassKeyV53(st) === key; });
+        return dedupeStudentsV53(list).sort(function(a,b){ return String(a.name||'').localeCompare(String(b.name||''),'pt-BR',{numeric:true, sensitivity:'base'}); });
+    }
+    function collectBehaviorValuesV53(){
+        var values = {};
+        document.querySelectorAll('.behavior-radio:checked').forEach(function(r){
+            var name = String(r.name || '').replace('behavior_','');
+            if(name) values[name] = r.value;
+        });
+        return values;
+    }
+    function applyBehaviorValuesV53(values){
+        document.querySelectorAll('.behavior-radio').forEach(function(r){ r.checked = false; });
+        Object.keys(values || {}).forEach(function(k){
+            var safe = String(values[k] || '').replace(/"/g,'');
+            var input = document.querySelector('input[name="behavior_'+k+'"][value="'+safe+'"]');
+            if(input) input.checked = true;
+        });
+    }
+    function behaviorDocIdV53(studentId, period){ return String(studentId) + '_' + new Date().getFullYear() + '_' + String(period || '1'); }
+    function setupBehaviorLayoutV53(){
+        var view = byId('view-behavior');
+        var studentSel = byId('behavior-student-select');
+        if(!view || !studentSel) return;
+        var controls = studentSel.closest('.grid');
+        if(controls){ controls.className = 'p-4 border-b bg-green-50 grid md:grid-cols-3 gap-3 items-end'; }
+        var wrap = studentSel.closest('div');
+        if(wrap && !byId('behavior-class-select')){
+            var div = document.createElement('div');
+            div.innerHTML = '<label class="block text-[10px] font-bold text-gray-500 uppercase mb-1">Turma</label><select id="behavior-class-select" onchange="renderBehaviorReportView()" class="w-full border border-green-200 rounded-lg p-2.5 text-sm font-bold bg-white outline-none"></select>';
+            wrap.parentElement.insertBefore(div, wrap);
+        }
+        var display = byId('behavior-class-display');
+        if(display){ var d = display.closest('div'); if(d) d.remove(); }
+    }
+    function renderBehaviorRowsV53(){
+        var body = byId('behavior-report-body');
+        if(!body) return;
+        var sections = window.BEHAVIOR_SECTIONS || [];
+        body.innerHTML = sections.map(function(sec, si){
+            var header = '<tr><td colspan="4" class="bg-gray-200 border border-gray-300 p-2 text-center font-black text-gray-800 uppercase tracking-wider">'+esc(sec.title)+'</td></tr>';
+            var rows = (sec.items || []).map(function(item, ii){
+                var name = 'behavior_' + si + '_' + ii;
+                return '<tr><td class="border border-gray-300 p-2 font-semibold text-gray-700 uppercase text-xs">'+esc(item)+'</td>'+ 
+                    '<td class="border border-gray-300 p-2 text-center"><input type="radio" name="'+name+'" value="sim" class="behavior-radio w-4 h-4"></td>'+ 
+                    '<td class="border border-gray-300 p-2 text-center"><input type="radio" name="'+name+'" value="nao" class="behavior-radio w-4 h-4"></td>'+ 
+                    '<td class="border border-gray-300 p-2 text-center"><input type="radio" name="'+name+'" value="as_vezes" class="behavior-radio w-4 h-4"></td></tr>';
+            }).join('');
+            return header + rows;
+        }).join('');
+    }
+    window.renderBehaviorReportView = function(){
+        setupBehaviorLayoutV53();
+        var clsSel = byId('behavior-class-select');
+        var studentSel = byId('behavior-student-select');
+        if(!studentSel) return;
+        if(clsSel){
+            var current = clsSel.value || normClassKeyV53((window.appData && appData.currentClass) || '');
+            var classes = officialClassesV53();
+            clsSel.innerHTML = classes.map(function(c){ return '<option value="'+esc(c.key)+'">'+esc(c.label)+'</option>'; }).join('');
+            if(current && classes.some(function(c){ return c.key === current; })) clsSel.value = current;
+            else if(classes.length) clsSel.value = classes[0].key;
+            try{ if(appData) appData.currentClass = canonicalClassV53(clsSel.value); }catch(e){}
+        }
+        var selected = getSelectedBehaviorClassV53();
+        var oldStudent = studentSel.value;
+        var students = getStudentsByClassV53(selected.key);
+        studentSel.innerHTML = students.length ? students.map(function(s){ return '<option value="'+esc(s.id)+'">'+esc(s.name || 'Aluno')+'</option>'; }).join('') : '<option value="">Nenhum aluno encontrado</option>';
+        if(oldStudent && students.some(function(s){ return String(s.id) === String(oldStudent); })) studentSel.value = oldStudent;
+        renderBehaviorRowsV53();
+        window.loadBehaviorReport();
+    };
+    window.loadBehaviorReport = async function(){
+        var studentSel = byId('behavior-student-select');
+        var periodEl = byId('behavior-period');
+        var notesEl = byId('behavior-notes');
+        applyBehaviorValuesV53({});
+        if(notesEl) notesEl.value = '';
+        if(!studentSel || !studentSel.value || !periodEl || !window.db || typeof getCollection !== 'function') return;
+        try{
+            var doc = await getCollection('concenal_behavior_reports').doc(behaviorDocIdV53(studentSel.value, periodEl.value)).get();
+            if(doc.exists){
+                var data = doc.data() || {};
+                applyBehaviorValuesV53(data.values || {});
+                if(notesEl) notesEl.value = data.notes || '';
+            }
+        }catch(e){ console.warn('Relatório individual V53:', e); }
+    };
+    window.saveBehaviorReport = async function(){
+        var studentSel = byId('behavior-student-select');
+        var periodEl = byId('behavior-period');
+        var notesEl = byId('behavior-notes');
+        if(!studentSel || !studentSel.value) return alert('Selecione um aluno.');
+        var selected = getSelectedBehaviorClassV53();
+        var st = getStudentsByClassV53(selected.key).find(function(s){ return String(s.id) === String(studentSel.value); });
+        if(!st) return alert('Aluno não encontrado na turma selecionada. Rode o Diagnóstico do Sistema.');
+        var payload = {
+            studentId: st.id,
+            studentName: st.name || '',
+            className: canonicalClassV53(st.class || selected.label),
+            period: periodEl ? periodEl.value : '1',
+            year: new Date().getFullYear(),
+            values: collectBehaviorValuesV53(),
+            notes: notesEl ? notesEl.value : '',
+            updatedAt: Date.now(),
+            updatedBy: window.currentUser ? (currentUser.displayName || currentUser.name || currentUser.username || '') : ''
+        };
+        try{
+            await getCollection('concenal_behavior_reports').doc(behaviorDocIdV53(st.id, payload.period)).set(payload, {merge:true});
+            toastV53('Relatório individual salvo com sucesso.', 'success');
+        }catch(e){ alert('Erro ao salvar relatório: ' + e.message); }
+    };
+    window.verifyBehaviorReportsV52 = async function(){
+        var result = byId('behavior-history-result-v52');
+        if(!result){
+            try{ if(typeof ensureBehaviorVerifierV52 === 'function') ensureBehaviorVerifierV52(); }catch(e){}
+            result = byId('behavior-history-result-v52');
+        }
+        if(result) result.innerHTML = '<div class="text-xs font-bold text-indigo-700"><i class="fas fa-circle-notch fa-spin mr-1"></i> Verificando turma sem duplicidade...</div>';
+        var selected = getSelectedBehaviorClassV53();
+        var students = getStudentsByClassV53(selected.key);
+        var year = String(new Date().getFullYear());
+        if(!students.length){
+            if(result) result.innerHTML = '<div class="rounded-lg border border-yellow-200 bg-yellow-50 p-3 text-xs font-bold text-yellow-800">Nenhum aluno encontrado para a turma selecionada: <b>'+esc(selected.label)+'</b>.</div>';
+            return;
+        }
+        var docs = {};
+        try{
+            if(window.db && typeof getCollection === 'function'){
+                var snap = await getCollection('concenal_behavior_reports').get();
+                snap.forEach(function(doc){ var d = doc.data() || {}; var sid = String(d.studentId || '').trim(); var p = String(d.period || '').replace(/[^0-9]/g,''); var y = String(d.year || year); if(sid && p) docs[sid+'_'+y+'_'+p] = d; });
+            }
+        }catch(e){ console.warn('Conferência V53:', e); }
+        var rows = students.map(function(st){
+            var done = 0;
+            var cells = ['1','2','3','4','5','6'].map(function(u){
+                var ok = !!docs[String(st.id)+'_'+year+'_'+u]; if(ok) done++;
+                return '<td class="border p-2 text-center">'+(ok ? '<span class="text-green-700 font-black">Salvo</span>' : '<span class="text-red-600 font-black">Pendente</span>')+'</td>';
+            }).join('');
+            return '<tr><td class="border p-2 font-bold">'+esc(st.name || 'Aluno')+'<div class="text-[9px] uppercase text-gray-400">'+esc(canonicalClassV53(st.class || selected.label))+'</div></td>'+cells+'<td class="border p-2 text-center font-black">'+Math.round((done/6)*100)+'%</td></tr>';
+        }).join('');
+        if(result){
+            result.innerHTML = '<div class="mb-2 text-[10px] font-black uppercase tracking-widest text-indigo-700">Turma verificada: '+esc(selected.label)+' • Alunos: '+students.length+' • Ano: '+esc(year)+' • Duplicidades ocultadas</div>'+ 
+            '<div class="overflow-x-auto bg-white rounded-lg border border-indigo-100"><table class="w-full text-xs border-collapse"><thead class="bg-indigo-100 text-indigo-900 uppercase"><tr><th class="border p-2 text-left">Aluno</th><th class="border p-2">1ª</th><th class="border p-2">2ª</th><th class="border p-2">3ª</th><th class="border p-2">4ª</th><th class="border p-2">5ª</th><th class="border p-2">6ª</th><th class="border p-2">Concluído</th></tr></thead><tbody>'+rows+'</tbody></table></div>';
+        }
+    };
+    window.getStudentsByClass = function(){
+        try{
+            if(window.currentUser && currentUser.role === 'parent' && typeof window.getLinkedStudentsForParent === 'function') return getLinkedStudentsForParent();
+        }catch(e){}
+        var cls = (window.appData && appData.currentClass) || (getSelectedBehaviorClassV53().key);
+        return getStudentsByClassV53(cls);
+    };
+
+    function analyzeV53(){
+        var students = getStudentsV53();
+        var officialKeys = new Set(officialClassesV53().map(function(c){ return c.key; }));
+        var invalidClass = [], duplicated = [], missing = [], normalized = [];
+        var groups = {};
+        students.forEach(function(st){
+            var key = studentClassKeyV53(st);
+            var cname = canonicalClassV53(st.class || st.turma || '');
+            if(!st.name || !String(st.name).trim()) missing.push({type:'Aluno sem nome', student:st});
+            if(!st.class && !st.turma && !st.className) missing.push({type:'Aluno sem turma', student:st});
+            if(key && !officialKeys.has(key)) invalidClass.push(st);
+            if(key && st.class && st.class !== cname) normalized.push({student:st, from:st.class, to:cname});
+            var dkey = normNameV53(st.name) + '|' + key;
+            if(dkey.trim() !== '|') (groups[dkey] = groups[dkey] || []).push(st);
+        });
+        Object.keys(groups).forEach(function(k){ if(groups[k].length > 1) duplicated.push(groups[k]); });
+        return {students:students.length, invalidClass:invalidClass, duplicated:duplicated, missing:missing, normalized:normalized};
+    }
+    function ensureDiagnosticsAccessV53(){
+        try{
+            if(typeof ACCESS_FEATURES !== 'undefined') ACCESS_FEATURES.diagnostics = 'Diagnóstico do Sistema';
+            if(typeof ACCESS_PRESETS !== 'undefined') ['admin','developer','coord'].forEach(function(k){ if(Array.isArray(ACCESS_PRESETS[k]) && ACCESS_PRESETS[k].indexOf('diagnostics') < 0) ACCESS_PRESETS[k].push('diagnostics'); });
+        }catch(e){}
+    }
+    function ensureDiagnosticsShellV53(){
+        ensureDiagnosticsAccessV53();
+        var tabs = document.querySelector('.max-w-7xl.mx-auto.px-4.flex.gap-6.overflow-x-auto.hide-scroll-x.mt-1');
+        if(tabs && !byId('nav-diagnostics')){
+            var btn = document.createElement('button');
+            btn.id = 'nav-diagnostics'; btn.type = 'button'; btn.onclick = function(){ switchMode('diagnostics'); };
+            btn.className = 'pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap';
+            btn.innerHTML = '<i class="fas fa-stethoscope mr-1"></i> Diagnóstico';
+            tabs.appendChild(btn);
+        }
+        var main = byId('main-content');
+        if(main && !byId('view-diagnostics')){
+            var view = document.createElement('div');
+            view.id = 'view-diagnostics';
+            view.className = 'max-w-7xl mx-auto hidden fade-in space-y-5';
+            view.innerHTML = '<div class="bg-white rounded-2xl shadow-xl border border-gray-200 overflow-hidden">'+
+                '<div class="p-5 border-b bg-gray-50 flex flex-col md:flex-row md:items-center md:justify-between gap-3"><div><h3 class="font-black text-gray-800 text-sm uppercase tracking-widest"><i class="fas fa-stethoscope text-school-green mr-2"></i>V53.1 — Diagnóstico do Sistema</h3><p class="text-[10px] text-gray-500 uppercase mt-1">Corrige turma errada, duplicidade de aluno, aluno não encontrado e registros inválidos.</p></div><div class="flex flex-wrap gap-2"><button onclick="runSystemDiagnosticsV53()" class="bg-school-green text-white px-4 py-2 rounded-lg text-xs font-bold uppercase shadow"><i class="fas fa-search mr-1"></i> Rodar diagnóstico</button><button onclick="fixSystemDiagnosticsV53()" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-xs font-bold uppercase shadow"><i class="fas fa-magic mr-1"></i> Corrigir inconsistências</button></div></div>'+ 
+                '<div id="diagnostics-summary-v53" class="p-5 grid md:grid-cols-5 gap-3"></div><div id="diagnostics-details-v53" class="p-5 pt-0"></div></div>';
+            main.appendChild(view);
+        }
+    }
+    function cardV53(title, value, color){ return '<div class="rounded-xl border '+color+' p-4"><p class="text-[10px] font-black uppercase tracking-widest opacity-80">'+esc(title)+'</p><p class="text-2xl font-black mt-1">'+esc(value)+'</p></div>'; }
+    window.runSystemDiagnosticsV53 = function(){
+        ensureDiagnosticsShellV53();
+        var r = analyzeV53();
+        var summary = byId('diagnostics-summary-v53');
+        var details = byId('diagnostics-details-v53');
+        if(summary){
+            summary.innerHTML = cardV53('Alunos', r.students, 'bg-green-50 border-green-100 text-green-800')+
+                cardV53('Duplicidades', r.duplicated.length, r.duplicated.length ? 'bg-red-50 border-red-100 text-red-800' : 'bg-gray-50 border-gray-100 text-gray-700')+
+                cardV53('Turmas fora do padrão', r.invalidClass.length, r.invalidClass.length ? 'bg-orange-50 border-orange-100 text-orange-800' : 'bg-gray-50 border-gray-100 text-gray-700')+
+                cardV53('Turmas a normalizar', r.normalized.length, r.normalized.length ? 'bg-yellow-50 border-yellow-100 text-yellow-800' : 'bg-gray-50 border-gray-100 text-gray-700')+
+                cardV53('Campos faltando', r.missing.length, r.missing.length ? 'bg-red-50 border-red-100 text-red-800' : 'bg-gray-50 border-gray-100 text-gray-700');
+        }
+        if(details){
+            var dupRows = r.duplicated.map(function(group){ return '<tr><td class="p-2 border font-bold">'+esc(group[0].name)+'</td><td class="p-2 border">'+esc(canonicalClassV53(group[0].class))+'</td><td class="p-2 border text-center font-black text-red-600">'+group.length+'</td></tr>'; }).join('');
+            var normRows = r.normalized.slice(0,80).map(function(x){ return '<tr><td class="p-2 border font-bold">'+esc(x.student.name)+'</td><td class="p-2 border text-red-600">'+esc(x.from)+'</td><td class="p-2 border text-green-700 font-bold">'+esc(x.to)+'</td></tr>'; }).join('');
+            details.innerHTML = '<div class="grid lg:grid-cols-2 gap-4"><div class="border rounded-xl overflow-hidden"><div class="p-3 bg-red-50 font-black text-red-700 uppercase text-xs">Alunos duplicados por nome e turma</div><div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-gray-50"><tr><th class="p-2 border text-left">Aluno</th><th class="p-2 border">Turma</th><th class="p-2 border">Qtd.</th></tr></thead><tbody>'+(dupRows || '<tr><td colspan="3" class="p-4 text-center text-gray-400 font-bold">Nenhuma duplicidade encontrada.</td></tr>')+'</tbody></table></div></div>'+ 
+            '<div class="border rounded-xl overflow-hidden"><div class="p-3 bg-yellow-50 font-black text-yellow-700 uppercase text-xs">Turmas que serão normalizadas</div><div class="overflow-x-auto"><table class="w-full text-xs"><thead class="bg-gray-50"><tr><th class="p-2 border text-left">Aluno</th><th class="p-2 border">Atual</th><th class="p-2 border">Corrigida</th></tr></thead><tbody>'+(normRows || '<tr><td colspan="3" class="p-4 text-center text-gray-400 font-bold">Nenhuma turma fora do padrão.</td></tr>')+'</tbody></table></div></div></div>';
+        }
+    };
+    function mergeSubjectsV53(a,b){
+        var out = JSON.parse(JSON.stringify(a || {}));
+        Object.keys(b || {}).forEach(function(subj){
+            if(!out[subj]) out[subj] = b[subj];
+            else{
+                var src = b[subj] || {}, dst = out[subj] || {};
+                ['units','extras'].forEach(function(k){ if(Array.isArray(src[k])){ dst[k] = Array.isArray(dst[k]) ? dst[k] : []; src[k].forEach(function(v,i){ if((dst[i] == null || dst[i] === '') && v != null && v !== '') dst[i] = v; }); } });
+                dst.attendance = Object.assign({}, src.attendance || {}, dst.attendance || {});
+                dst.dailyLogs = Object.assign({}, src.dailyLogs || {}, dst.dailyLogs || {});
+                out[subj] = Object.assign({}, src, dst);
+            }
+        });
+        return out;
+    }
+    window.fixSystemDiagnosticsV53 = async function(){
+        var r = analyzeV53();
+        if(!r.duplicated.length && !r.normalized.length && !r.invalidClass.length){
+            toastV53('Nenhuma inconsistência crítica encontrada.', 'success');
+            runSystemDiagnosticsV53();
+            return;
+        }
+        if(!confirm('Confirmar correção automática?\n\nO sistema vai normalizar nomes de turmas e remover duplicidades exatas de alunos, mantendo o cadastro mais completo.')) return;
+        var updates = 0, deletes = 0;
+        try{
+            if(typeof getCollection !== 'function') throw new Error('Função de acesso ao banco não encontrada. Faça login novamente e tente de novo.');
+            try{ getCollection('concenal_students'); }catch(dbErr){ throw new Error('Banco de dados ainda não inicializado. Aguarde o carregamento do sistema e tente novamente.'); }
+
+            // 1) Normaliza as turmas no Firestore e também na memória local.
+            for(const x of r.normalized){
+                if(x.student && x.student.id && x.to){
+                    await getCollection('concenal_students').doc(x.student.id).set({ class: x.to }, { merge:true });
+                    x.student.class = x.to;
+                    updates++;
+                }
+            }
+
+            // 2) Remove duplicidades reais por NOME + TURMA, preservando o cadastro mais completo.
+            var idsToRemoveLocal = new Set();
+            for(const group of r.duplicated){
+                var sorted = group.slice().sort(function(a,b){
+                    var ca = JSON.stringify(a.subjects || {}).length + (a.studentKey ? 500 : 0);
+                    var cb = JSON.stringify(b.subjects || {}).length + (b.studentKey ? 500 : 0);
+                    return cb - ca;
+                });
+                var keep = sorted[0];
+                var mergedSubjects = keep.subjects || {};
+                sorted.slice(1).forEach(function(st){ mergedSubjects = mergeSubjectsV53(mergedSubjects, st.subjects || {}); });
+                keep.subjects = mergedSubjects;
+                keep.class = canonicalClassV53(keep.class || keep.turma || '');
+                await getCollection('concenal_students').doc(keep.id).set({ name: keep.name || sorted[0].name, class: keep.class, subjects: mergedSubjects }, { merge:true });
+                for(const st of sorted.slice(1)){
+                    if(st.id && st.id !== keep.id){
+                        await getCollection('concenal_students').doc(st.id).delete();
+                        idsToRemoveLocal.add(String(st.id));
+                        deletes++;
+                    }
+                }
+                updates++;
+            }
+
+            // 3) Atualiza a memória local imediatamente para a tela não continuar exibindo duplicado até o listener recarregar.
+            try{
+                if(appData && Array.isArray(appData.students) && idsToRemoveLocal.size){
+                    appData.students = appData.students.filter(function(st){ return !idsToRemoveLocal.has(String(st.id)); });
+                }
+            }catch(localErr){}
+
+            toastV53('Correção concluída: '+updates+' atualização(ões) e '+deletes+' duplicidade(s) removida(s).', 'success');
+            setTimeout(function(){ runSystemDiagnosticsV53(); if(typeof renderBehaviorReportView === 'function') renderBehaviorReportView(); }, 900);
+        }catch(e){ alert('Erro na correção automática: ' + e.message); }
+    };
+
+    var oldUpdateV53 = window.updateUI;
+    window.updateUI = function(){
+        ensureDiagnosticsShellV53();
+        var res = oldUpdateV53 ? oldUpdateV53.apply(this, arguments) : undefined;
+        try{
+            if(appData && appData.currentMode === 'diagnostics'){
+                ['view-grades','view-attendance','view-daily','view-behavior','view-planning','view-activities','view-schedule','view-calendar','view-dashboard','view-diagnostics'].forEach(function(id){ var el = byId(id); if(el) el.classList.add('hidden'); });
+                var view = byId('view-diagnostics'); if(view) view.classList.remove('hidden');
+                var controls = byId('main-controls'); if(controls) controls.classList.add('hidden');
+                ['nav-grades','nav-attendance','nav-daily','nav-behavior','nav-dashboard','nav-planning','nav-activities','nav-schedule','nav-calendar','nav-diagnostics'].forEach(function(id){
+                    var el = byId(id); if(!el) return; var on = id === 'nav-diagnostics';
+                    el.classList.toggle('border-school-green', on); el.classList.toggle('text-school-green', on); el.classList.toggle('border-transparent', !on); el.classList.toggle('text-gray-500', !on);
+                });
+                runSystemDiagnosticsV53();
+            }
+        }catch(e){ console.warn('Diagnóstico V53 updateUI:', e); }
+        return res;
+    };
+    var oldSwitchV53 = window.switchMode;
+    window.switchMode = function(mode){
+        ensureDiagnosticsShellV53();
+        if(mode === 'diagnostics'){
+            try{ appData.currentMode = 'diagnostics'; }catch(e){}
+            if(typeof window.updateUI === 'function') window.updateUI();
+            return;
+        }
+        return oldSwitchV53 ? oldSwitchV53.apply(this, arguments) : undefined;
+    };
+    document.addEventListener('DOMContentLoaded', function(){ setTimeout(function(){ ensureDiagnosticsShellV53(); setupBehaviorLayoutV53(); }, 900); });
+    setTimeout(function(){ ensureDiagnosticsShellV53(); setupBehaviorLayoutV53(); }, 1300);
 })();
 </script>
 
