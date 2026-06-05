@@ -1313,6 +1313,7 @@
         const chartValueLabelsPlugin = {
             id: 'valueLabelsConcenal',
             afterDatasetsDraw(chart, args, pluginOptions) {
+                if(pluginOptions && pluginOptions.display === false) return;
                 const {ctx} = chart;
                 ctx.save();
                 ctx.font = 'bold 10px Segoe UI';
@@ -9623,6 +9624,1244 @@
     setTimeout(run, 700);
     setTimeout(run, 1800);
     setTimeout(run, 3200);
+})();
+</script>
+
+
+<!-- PATCH V92: Dashboard de Desempenho Premium - CONCENAL
+     Escopo: substitui apenas a tela/funções do Dashboard. Não altera notas, chamada,
+     relatório individual original, planejamento original, login, Firebase ou demais abas. -->
+<script>
+(function(){
+    'use strict';
+
+    var DASH_VERSION = 'V94';
+    var dashboardChartsV90 = {};
+    var dashboardRenderTimerV90 = null;
+
+    function byId(id){ return document.getElementById(id); }
+    function txt(v){ return String(v == null ? '' : v).trim(); }
+    function esc(v){
+        return txt(v).replace(/[&<>"']/g, function(c){
+            return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
+        });
+    }
+    function escAttr(v){ return esc(v).replace(/"/g, '&quot;'); }
+    function num(v){
+        var s = txt(v).replace(',', '.');
+        if(!s && s !== '0') return null;
+        var n = parseFloat(s);
+        return isNaN(n) ? null : n;
+    }
+    function pct(a,b){ return b ? Math.round((a/b)*100) : 0; }
+    function clamp(n,min,max){ n = Number(n || 0); return Math.max(min, Math.min(max, n)); }
+    function avg(arr){
+        arr = (arr || []).filter(function(v){ return typeof v === 'number' && !isNaN(v); });
+        if(!arr.length) return null;
+        return arr.reduce(function(a,b){ return a+b; }, 0) / arr.length;
+    }
+    function fmt(v, dec){
+        if(v === null || v === undefined || isNaN(v)) return '--';
+        return Number(v).toFixed(dec == null ? 1 : dec).replace('.', ',');
+    }
+    function todayBR(){
+        try{ return new Date().toLocaleString('pt-BR'); }catch(e){ return ''; }
+    }
+    function yearNow(){
+        try{ return String(new Date().getFullYear()); }catch(e){ return '2026'; }
+    }
+    function getData(){
+        try{ if(typeof appData !== 'undefined' && appData) return appData; }catch(e){}
+        return window.appData || { students:[], allClasses:[], allSubjects:[], lessonPlans:{} };
+    }
+    function getCurrentUser(){
+        try{ if(typeof currentUser !== 'undefined') return currentUser; }catch(e){}
+        return window.currentUser || null;
+    }
+    function getStudents(){
+        try{
+            var user = getCurrentUser();
+            if(user && user.role === 'parent' && typeof getLinkedStudentsForParent === 'function'){
+                return (getLinkedStudentsForParent() || []).slice();
+            }
+        }catch(e){}
+        var data = getData();
+        return Array.isArray(data.students) ? data.students.slice() : [];
+    }
+    function normalizeKey(v){
+        return txt(v)
+            .toUpperCase()
+            .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+            .replace(/º|ª|°/g, '')
+            .replace(/ENSINO\s*MEDIO|ENS\.\s*MEDIO|MEDIO/g, 'EM')
+            .replace(/\bSERIE\b|\bTURMA\b|\bANO\b/g, '')
+            .replace(/[^A-Z0-9]/g, '')
+            .trim();
+    }
+    function classLabel(v){
+        var raw = txt(v);
+        if(!raw) return 'Sem turma';
+        var key = normalizeKey(raw);
+        var m = key.match(/^([6789])([A-Z])$/);
+        if(m) return m[1] + 'º ANO ' + m[2];
+        m = key.match(/^([123])EM([A-Z])$/) || key.match(/^([123])([A-Z])$/);
+        if(m) return m[1] + 'º EM ' + m[2];
+        return raw.toUpperCase();
+    }
+    function sameClass(a,b){ return normalizeKey(a) && normalizeKey(a) === normalizeKey(b); }
+    function sortByName(a,b){ return txt(a.name || a.nome).localeCompare(txt(b.name || b.nome), 'pt-BR'); }
+
+    function getClassOptions(){
+        var map = {};
+        getStudents().forEach(function(st){
+            var cls = classLabel(st.class || st.turma || '');
+            var key = normalizeKey(cls);
+            if(key && key !== 'SEMTURMA') map[key] = cls;
+        });
+        return Object.keys(map).sort(function(a,b){ return map[a].localeCompare(map[b], 'pt-BR'); }).map(function(k){
+            return { key:k, label:map[k] };
+        });
+    }
+    function subjectKeys(st){
+        return Object.keys((st && st.subjects) || {}).filter(Boolean);
+    }
+    function findSubjectKey(st, subject){
+        if(!st || !st.subjects) return subject;
+        if(st.subjects[subject]) return subject;
+        var target = normalizeKey(subject);
+        var keys = Object.keys(st.subjects || {});
+        for(var i=0;i<keys.length;i++){
+            if(normalizeKey(keys[i]) === target) return keys[i];
+        }
+        return subject;
+    }
+    function subjectData(st, subject){
+        if(!st || !subject) return null;
+        var key = findSubjectKey(st, subject);
+        return (st.subjects && st.subjects[key]) ? st.subjects[key] : null;
+    }
+    function getSubjectsForStudents(students){
+        var data = getData();
+        var f = selectedFilters();
+        var set = {};
+        var ordered = [];
+
+        function addSubject(s){
+            s = txt(s);
+            if(!s || /^sem\s+disciplina$/i.test(s)) return;
+            var k = normalizeKey(s);
+            if(!k || set[k]) return;
+            set[k] = s;
+            ordered.push(s);
+        }
+        function addList(list){
+            if(!Array.isArray(list)) return;
+            list.forEach(addSubject);
+        }
+        function getClassSubjectsFromCurriculum(classKey){
+            var curriculum = data.curriculum || {};
+            var found = [];
+            Object.keys(curriculum).forEach(function(cls){
+                if(!classKey || classKey === 'all' || normalizeKey(cls) === classKey || sameClass(cls, classKey)){
+                    var v = curriculum[cls];
+                    if(Array.isArray(v)) found = found.concat(v);
+                    else if(v && typeof v === 'object') found = found.concat(Object.keys(v).filter(function(k){ return !!v[k]; }));
+                }
+            });
+            return found;
+        }
+        function isFundamentalKey(classKey){ return /^[6789]/.test(normalizeKey(classKey)); }
+        function isHighSchoolOnlySubject(s){
+            var k = normalizeKey(s);
+            return ['FISICA','QUIMICA','BIOLOGIA','FILOSOFIA','SOCIOLOGIA'].indexOf(k) >= 0;
+        }
+
+        var classKey = (f && f.classKey) || 'all';
+        var curriculumSubjects = getClassSubjectsFromCurriculum(classKey);
+        addList(curriculumSubjects);
+
+        // Inclui as disciplinas cadastradas na configuração do sistema, não somente as que já têm nota.
+        addList((data && data.allSubjects) || []);
+        try{ if(typeof DEFAULT_SUBJECTS !== 'undefined') addList(DEFAULT_SUBJECTS); }catch(e){}
+
+        // Inclui disciplinas que já aparecem nos alunos e planejamentos, para não esconder dados existentes.
+        (students || []).forEach(function(st){ subjectKeys(st).forEach(addSubject); });
+        try{
+            var plans = (data.lessonPlans || data.planejamentos || {});
+            Object.keys(plans).forEach(function(key){
+                var plan = plans[key] || {};
+                var cls = plan.className || plan.class || plan.turma || (key.split('__')[0] || '');
+                if(classKey && classKey !== 'all' && normalizeKey(classLabel(cls)) !== classKey && normalizeKey(cls) !== classKey) return;
+                addSubject(plan.subject || plan.discipline || plan.disciplina || (key.split('__')[1] || ''));
+            });
+        }catch(e){}
+        try{ addList((getCurrentUser() && getCurrentUser().subjects) || []); }catch(e){}
+        if(data.currentSubject) addSubject(data.currentSubject);
+
+        ordered = ordered.filter(function(s){
+            // Para turmas do Fundamental, evita que disciplinas exclusivas do Ensino Médio poluam o filtro.
+            if(classKey && classKey !== 'all' && isFundamentalKey(classKey) && isHighSchoolOnlySubject(s)) return false;
+            return true;
+        });
+
+        ordered.sort(function(a,b){ return a.localeCompare(b, 'pt-BR'); });
+        return ordered;
+    }
+    function unitScore(st, subject, unitIndex){
+        var d = subjectData(st, subject);
+        if(!d) return null;
+        var base = num(d.units && d.units[unitIndex]);
+        if(base === null) return null;
+        var extraEnabled = !!d.extraEnabled;
+        var extra = extraEnabled ? (num(d.extras && d.extras[unitIndex]) || 0) : 0;
+        return clamp(base + extra, 0, 10);
+    }
+    function selectedFilters(){
+        var data = getData();
+        return {
+            classKey: byId('dash-v90-class') ? byId('dash-v90-class').value : 'all',
+            subject: byId('dash-v90-subject') ? byId('dash-v90-subject').value : 'all',
+            unit: byId('dash-v90-unit') ? byId('dash-v90-unit').value : '1',
+            studentId: byId('dash-v90-student') ? byId('dash-v90-student').value : 'all',
+            currentClass: data.currentClass || ''
+        };
+    }
+    function filterStudents(){
+        var f = selectedFilters();
+        var students = getStudents();
+        if(f.classKey && f.classKey !== 'all'){
+            students = students.filter(function(st){ return normalizeKey(st.class || st.turma || '') === f.classKey; });
+        }
+        if(f.studentId && f.studentId !== 'all'){
+            students = students.filter(function(st){ return txt(st.id || st.studentId) === txt(f.studentId); });
+        }
+        return students.sort(sortByName);
+    }
+    function selectedSubjects(students){
+        var f = selectedFilters();
+        if(f.subject && f.subject !== 'all') return [f.subject];
+        return getSubjectsForStudents(students);
+    }
+    function getLogoSrc(){
+        var img = document.querySelector('img[alt*="CONCENAL"], img[alt="CONCENAL"]') || document.querySelector('img');
+        return img ? img.src : '';
+    }
+    function getSubjectDisplay(subjects){
+        if(!subjects || !subjects.length) return 'Sem disciplina';
+        if(subjects.length === 1) return subjects[0];
+        return 'Todas as disciplinas cadastradas';
+    }
+
+    function localBehaviorReportsV90(){
+        var out = {};
+        ['concenal_behavior_reports_local_v75','concenal_behavior_reports_local','behavior_reports_local'].forEach(function(key){
+            try{
+                var obj = JSON.parse(localStorage.getItem(key) || '{}') || {};
+                Object.keys(obj).forEach(function(k){ out[k] = obj[k]; });
+            }catch(e){}
+        });
+        return out;
+    }
+    async function loadBehaviorReportsV90(){
+        var docs = localBehaviorReportsV90();
+        try{
+            if(typeof getCollection === 'function'){
+                var snap = await getCollection('concenal_behavior_reports').get();
+                snap.forEach(function(doc){
+                    var d = doc.data ? (doc.data() || {}) : {};
+                    docs[doc.id] = d;
+                    if(d.studentId && d.period) docs[String(d.studentId)+'_'+String(d.year || yearNow())+'_'+String(d.period)] = d;
+                });
+            }
+        }catch(e){
+            console.warn('Dashboard V90: não foi possível carregar relatórios individuais no Firebase.', e);
+        }
+        return docs;
+    }
+    function hasBehaviorReport(reportDocs, studentId, unit){
+        var y = yearNow();
+        return !!(reportDocs[String(studentId)+'_'+y+'_'+String(unit)] || reportDocs[String(studentId)+'_'+String(unit)] || reportDocs[String(studentId)+'_'+String(unit).padStart(2,'0')]);
+    }
+
+    function planningItemsForUnit(plan, unit){
+        if(!plan) return [];
+        var units = plan.units || plan.unidades || {};
+        var unitValue = String(unit || '1').toLowerCase();
+        if(unitValue === 'all'){
+            var all = [];
+            try{
+                Object.keys(units || {}).forEach(function(k){
+                    if(Array.isArray(units[k])) all = all.concat(units[k]);
+                });
+            }catch(e){}
+            if(Array.isArray(plan.items)) all = all.concat(plan.items);
+            if(Array.isArray(plan.conteudos)) all = all.concat(plan.conteudos);
+            var seen = [];
+            return all.filter(function(it){
+                var sig = '';
+                try{ sig = JSON.stringify(it || {}); }catch(e){ sig = String(it); }
+                if(seen.indexOf(sig) >= 0) return false;
+                seen.push(sig);
+                return true;
+            });
+        }
+        var keys = [String(unit), Number(unit), 'u'+unit, 'U'+unit, Number(unit)-1];
+        for(var i=0;i<keys.length;i++){
+            var value = units[keys[i]];
+            if(Array.isArray(value)) return value;
+        }
+        if(Array.isArray(plan.items)) return plan.items.filter(function(it){ return !it.unit || String(it.unit) === String(unit); });
+        if(Array.isArray(plan.conteudos)) return plan.conteudos.filter(function(it){ return !it.unit || String(it.unit) === String(unit); });
+        return [];
+    }
+    function itemDone(it){
+        return !!(it && (it.completed || it.done || it.concluido || it.checked || it.status === 'concluido' || it.status === 'Concluído'));
+    }
+    function computePlanningV90(unit, classKey, subject){
+        var data = getData();
+        var plans = data.lessonPlans || data.planejamentos || {};
+        var rows = [];
+        var done = 0, total = 0;
+        try{
+            Object.keys(plans).forEach(function(key){
+                var plan = plans[key] || {};
+                var cls = classLabel(plan.className || plan.class || plan.turma || (key.split('__')[0] || ''));
+                var subj = txt(plan.subject || plan.discipline || plan.disciplina || (key.split('__')[1] || ''));
+                if(classKey && classKey !== 'all' && normalizeKey(cls) !== classKey) return;
+                if(subject && subject !== 'all' && normalizeKey(subj) !== normalizeKey(subject)) return;
+                var items = planningItemsForUnit(plan, unit);
+                var d = items.filter(itemDone).length;
+                total += items.length;
+                done += d;
+                if(items.length || cls || subj){
+                    rows.push({
+                        className: cls || 'Sem turma',
+                        subject: subj || 'Sem disciplina',
+                        teacher: txt(plan.teacherName || plan.professor || plan.updatedBy || plan.author || 'Professor'),
+                        done: d,
+                        total: items.length,
+                        percent: pct(d, items.length)
+                    });
+                }
+            });
+        }catch(e){ console.warn('Dashboard V90 planejamento:', e); }
+        rows.sort(function(a,b){ return a.percent - b.percent || a.className.localeCompare(b.className, 'pt-BR'); });
+        return {done:done, total:total, percent:pct(done,total), rows:rows};
+    }
+
+    function cardHtml(icon, title, value, sub, tone){
+        var toneClass = tone || 'from-emerald-600 to-green-700';
+        return '<div class="relative overflow-hidden rounded-2xl border border-gray-100 bg-white shadow-sm">'+
+            '<div class="absolute inset-x-0 top-0 h-1 bg-gradient-to-r '+toneClass+'"></div>'+
+            '<div class="p-4 flex items-start gap-3">'+
+                '<div class="w-10 h-10 rounded-xl bg-gray-50 flex items-center justify-center text-school-green text-lg"><i class="fas '+icon+'"></i></div>'+
+                '<div class="min-w-0">'+
+                    '<div class="text-[10px] uppercase tracking-widest font-black text-gray-400">'+esc(title)+'</div>'+
+                    '<div class="text-2xl font-black text-gray-900 leading-tight">'+esc(value)+'</div>'+
+                    '<div class="text-[10px] text-gray-500 mt-1">'+esc(sub)+'</div>'+
+                '</div>'+
+            '</div>'+
+        '</div>';
+    }
+    function badge(value, type){
+        var cls = 'bg-gray-100 text-gray-700 border-gray-200';
+        if(type === 'ok') cls = 'bg-green-100 text-green-800 border-green-200';
+        if(type === 'warn') cls = 'bg-yellow-100 text-yellow-800 border-yellow-200';
+        if(type === 'danger') cls = 'bg-red-100 text-red-800 border-red-200';
+        if(type === 'info') cls = 'bg-blue-100 text-blue-800 border-blue-200';
+        return '<span class="inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] font-black uppercase '+cls+'">'+esc(value)+'</span>';
+    }
+    function progressHtml(p){
+        p = clamp(p,0,100);
+        var color = p >= 80 ? 'bg-green-600' : (p >= 50 ? 'bg-yellow-500' : 'bg-red-500');
+        return '<div class="w-full h-2 bg-gray-100 rounded-full overflow-hidden"><div class="h-2 '+color+' rounded-full" style="width:'+p+'%"></div></div>';
+    }
+
+    function ensureDashboardAccessV90(){
+        try{
+            if(typeof ACCESS_FEATURES !== 'undefined') ACCESS_FEATURES.dashboard = 'Dashboard de desempenho';
+            if(typeof ACCESS_PRESETS !== 'undefined'){
+                ['admin','developer','coord','teacher','demo'].forEach(function(k){
+                    if(Array.isArray(ACCESS_PRESETS[k]) && ACCESS_PRESETS[k].indexOf('dashboard') < 0) ACCESS_PRESETS[k].push('dashboard');
+                });
+            }
+        }catch(e){}
+    }
+
+    function ensureDashboardShellV90(){
+        ensureDashboardAccessV90();
+
+        var tabs = document.querySelector('.max-w-7xl.mx-auto.px-4.flex.gap-6.overflow-x-auto.hide-scroll-x.mt-1') || document.querySelector('header + nav .flex') || byId('nav-grades') && byId('nav-grades').parentElement;
+        if(tabs && !byId('nav-dashboard')){
+            var btn = document.createElement('button');
+            btn.id = 'nav-dashboard';
+            btn.type = 'button';
+            btn.onclick = function(){ if(typeof switchMode === 'function') switchMode('dashboard'); else { getData().currentMode = 'dashboard'; showDashboardV90(); } };
+            btn.className = 'pb-2 pt-2 text-[11px] font-bold uppercase border-b-2 border-transparent text-gray-500 hover:text-school-green transition whitespace-nowrap';
+            btn.innerHTML = '<i class="fas fa-chart-pie mr-1"></i> Dashboard';
+            var planning = byId('nav-planning');
+            if(planning && planning.parentElement === tabs) tabs.insertBefore(btn, planning);
+            else tabs.appendChild(btn);
+        }
+
+        var main = byId('main-content') || document.querySelector('main');
+        if(!main) return;
+
+        var view = byId('view-dashboard');
+        if(!view){
+            view = document.createElement('div');
+            view.id = 'view-dashboard';
+            view.className = 'max-w-7xl mx-auto hidden fade-in space-y-5';
+            main.appendChild(view);
+        }
+
+        if(view.getAttribute('data-dashboard-v90-ready') === '1') return;
+        view.setAttribute('data-dashboard-v90-ready', '1');
+
+        view.innerHTML = ''+
+            '<div class="rounded-3xl overflow-hidden shadow-xl border border-green-100 bg-white">'+
+                '<div class="relative p-5 md:p-6 bg-gradient-to-r from-green-900 via-school-green to-emerald-600 text-white">'+
+                    '<div class="absolute inset-0 opacity-10" style="background-image:radial-gradient(circle at 20% 20%,#fff 0,transparent 28%),radial-gradient(circle at 80% 0,#fff 0,transparent 22%);"></div>'+
+                    '<div class="relative flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">'+
+                        '<div>'+
+                            '<h3 class="text-2xl md:text-3xl font-black tracking-tight mt-1"><i class="fas fa-chart-line mr-2"></i>Dashboard de Desempenho</h3>'+
+                            '<p class="text-xs md:text-sm opacity-90 mt-1">Turmas, alunos, médias, relatórios individuais e andamento do planejamento da unidade.</p>'+
+                        '</div>'+
+                        '<div class="flex flex-wrap gap-2">'+
+                            '<button onclick="printDashboardClassReportV90()" class="bg-white text-school-green px-4 py-2 rounded-xl text-xs font-black uppercase shadow hover:bg-green-50 transition"><i class="fas fa-print mr-1"></i> Relatório da turma</button>'+
+                            '<button onclick="printDashboardStudentReportV90()" class="bg-green-950/70 text-white px-4 py-2 rounded-xl text-xs font-black uppercase shadow hover:bg-green-950 transition"><i class="fas fa-user-graduate mr-1"></i> Relatório do aluno</button>'+
+                            '<button onclick="printDashboardPlanningReportV90()" class="bg-amber-400 text-gray-900 px-4 py-2 rounded-xl text-xs font-black uppercase shadow hover:bg-amber-300 transition"><i class="fas fa-tasks mr-1"></i> Planejamento</button>'+
+                        '</div>'+
+                    '</div>'+
+                '</div>'+
+
+                '<div class="p-4 md:p-5 border-b bg-gray-50">'+
+                    '<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">'+
+                        '<div><label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Turma</label><select id="dash-v90-class" onchange="dashboardClassChangedV90()" class="w-full border border-gray-200 rounded-xl p-2.5 text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-school-green"></select></div>'+
+                        '<div><label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Aluno</label><select id="dash-v90-student" onchange="renderPerformanceDashboardV90()" class="w-full border border-gray-200 rounded-xl p-2.5 text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-school-green"></select></div>'+
+                        '<div><label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Disciplina</label><select id="dash-v90-subject" onchange="renderPerformanceDashboardV90()" class="w-full border border-gray-200 rounded-xl p-2.5 text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-school-green"></select></div>'+
+                        '<div><label class="block text-[10px] font-black uppercase tracking-widest text-gray-400 mb-1">Unidade</label><select id="dash-v90-unit" onchange="renderPerformanceDashboardV90()" class="w-full border border-gray-200 rounded-xl p-2.5 text-xs font-bold bg-white outline-none focus:ring-2 focus:ring-school-green"><option value="all">Todas as unidades</option><option value="1">1ª Unidade</option><option value="2">2ª Unidade</option><option value="3">3ª Unidade</option><option value="4">4ª Unidade</option><option value="5">5ª Unidade</option><option value="6">6ª Unidade</option></select></div>'+
+                        '<div class="flex items-end"><button onclick="renderPerformanceDashboardV90()" class="w-full bg-school-green text-white rounded-xl px-4 py-2.5 text-xs font-black uppercase shadow hover:bg-green-700 transition"><i class="fas fa-sync-alt mr-1"></i> Atualizar</button></div>'+
+                    '</div>'+
+                    '<div class="mt-3 flex flex-wrap gap-2 text-[10px] font-bold text-gray-500">'+
+                        '<span><i class="fas fa-filter text-school-green mr-1"></i> As turmas exibidas aqui são somente turmas com alunos cadastrados.</span>'+
+                        '<span><i class="fas fa-qrcode text-school-green mr-1"></i> Impressões com logo, assinatura digital e QR Code de autenticação.</span>'+
+                    '</div>'+
+                '</div>'+
+
+                '<div id="dash-v90-kpis" class="p-4 md:p-5 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3"></div>'+
+
+                '<div class="p-4 md:p-5 pt-0 grid grid-cols-1 lg:grid-cols-2 gap-4">'+
+                    '<div class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"><div class="px-4 py-3 bg-green-50 border-b"><h4 class="text-xs font-black uppercase tracking-widest text-school-green"><i class="fas fa-school mr-1"></i>Média por turma</h4></div><div class="p-4 h-72"><canvas id="dash-v90-chart-class"></canvas></div></div>'+
+                    '<div class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"><div class="px-4 py-3 bg-blue-50 border-b"><h4 class="text-xs font-black uppercase tracking-widest text-blue-700"><i class="fas fa-wave-square mr-1"></i>Evolução por unidade</h4></div><div class="p-4 h-72"><canvas id="dash-v90-chart-units"></canvas></div></div>'+
+                    '<div class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"><div class="px-4 py-3 bg-orange-50 border-b"><h4 class="text-xs font-black uppercase tracking-widest text-orange-700"><i class="fas fa-triangle-exclamation mr-1"></i>Situação dos alunos</h4></div><div class="p-4 h-72"><canvas id="dash-v90-chart-status"></canvas></div></div>'+
+                    '<div class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"><div class="px-4 py-3 bg-amber-50 border-b"><h4 class="text-xs font-black uppercase tracking-widest text-amber-700"><i class="fas fa-clipboard-list mr-1"></i>Planejamento da unidade</h4></div><div class="p-4 h-72"><canvas id="dash-v90-chart-planning"></canvas></div></div>'+
+                '</div>'+
+
+                '<div class="p-4 md:p-5 pt-0 grid grid-cols-1 xl:grid-cols-3 gap-4">'+
+                    '<div class="xl:col-span-2 rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"><div class="px-4 py-3 bg-gray-50 border-b flex items-center justify-between"><h4 class="text-xs font-black uppercase tracking-widest text-gray-700"><i class="fas fa-users mr-1"></i>Notas dos alunos por turma</h4><span id="dash-v90-table-count" class="text-[10px] font-black text-gray-400 uppercase"></span></div><div id="dash-v90-students-table" class="p-4 overflow-x-auto"></div></div>'+
+                    '<div class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"><div class="px-4 py-3 bg-red-50 border-b"><h4 class="text-xs font-black uppercase tracking-widest text-red-700"><i class="fas fa-user-clock mr-1"></i>Alunos que precisam de atenção</h4></div><div id="dash-v90-alerts" class="p-4 max-h-[420px] overflow-y-auto"></div></div>'+
+                '</div>'+
+
+                '<div class="p-4 md:p-5 pt-0 grid grid-cols-1 xl:grid-cols-2 gap-4">'+
+                    '<div class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"><div class="px-4 py-3 bg-indigo-50 border-b flex items-center justify-between"><h4 class="text-xs font-black uppercase tracking-widest text-indigo-700"><i class="fas fa-file-signature mr-1"></i>Relatórios individuais</h4><button onclick="printDashboardClassReportV90()" class="text-[10px] font-black uppercase text-indigo-700 hover:text-indigo-900"><i class="fas fa-print mr-1"></i>Imprimir notas</button></div><div id="dash-v90-reports-table" class="p-4 overflow-x-auto"></div></div>'+
+                    '<div class="rounded-2xl border border-gray-100 bg-white shadow-sm overflow-hidden"><div class="px-4 py-3 bg-amber-50 border-b flex items-center justify-between"><h4 class="text-xs font-black uppercase tracking-widest text-amber-700"><i class="fas fa-tasks mr-1"></i>Andamento do planejamento</h4><button onclick="printDashboardPlanningReportV90()" class="text-[10px] font-black uppercase text-amber-700 hover:text-amber-900"><i class="fas fa-print mr-1"></i>Imprimir</button></div><div id="dash-v90-planning-table" class="p-4 overflow-x-auto"></div></div>'+
+                '</div>'+
+            '</div>';
+
+        populateDashboardFiltersV90(false);
+    }
+
+    function populateDashboardFiltersV90(keepValues){
+        var data = getData();
+        var classSelect = byId('dash-v90-class');
+        var studentSelect = byId('dash-v90-student');
+        var subjectSelect = byId('dash-v90-subject');
+        var unitSelect = byId('dash-v90-unit');
+        if(!classSelect || !studentSelect || !subjectSelect) return;
+
+        var oldClass = keepValues ? classSelect.value : (data.currentClass ? normalizeKey(data.currentClass) : 'all');
+        var oldStudent = keepValues ? studentSelect.value : 'all';
+        var oldSubject = keepValues ? subjectSelect.value : (data.currentSubject || 'all');
+
+        var classes = getClassOptions();
+        classSelect.innerHTML = '<option value="all">Todas as turmas com alunos</option>' + classes.map(function(c){
+            return '<option value="'+escAttr(c.key)+'">'+esc(c.label)+'</option>';
+        }).join('');
+        if(oldClass && (oldClass === 'all' || classes.some(function(c){ return c.key === oldClass; }))) classSelect.value = oldClass;
+        else classSelect.value = 'all';
+
+        var students = filterStudents();
+        studentSelect.innerHTML = '<option value="all">Todos os alunos</option>' + students.map(function(st){
+            return '<option value="'+escAttr(st.id || st.studentId || st.name)+'">'+esc(st.name || st.nome || 'Aluno')+'</option>';
+        }).join('');
+        if(oldStudent && students.some(function(st){ return txt(st.id || st.studentId || st.name) === txt(oldStudent); })) studentSelect.value = oldStudent;
+        else studentSelect.value = 'all';
+
+        var subjects = getSubjectsForStudents(students);
+        subjectSelect.innerHTML = '<option value="all">Todas as disciplinas</option>' + subjects.map(function(s){
+            return '<option value="'+escAttr(s)+'">'+esc(s)+'</option>';
+        }).join('');
+        if(oldSubject && (oldSubject === 'all' || subjects.indexOf(oldSubject) >= 0)) subjectSelect.value = oldSubject;
+        else subjectSelect.value = 'all';
+
+        if(unitSelect && !unitSelect.value) unitSelect.value = '1';
+    }
+
+    window.dashboardClassChangedV90 = function(){
+        populateDashboardFiltersV90(true);
+        renderPerformanceDashboardV90();
+    };
+
+    function buildDashboardDataV90(reportDocs){
+        var filters = selectedFilters();
+        var allUnits = String(filters.unit || '1') === 'all';
+        var unit = allUnits ? 'all' : parseInt(filters.unit || '1', 10);
+        var uIndex = allUnits ? 0 : clamp(unit - 1, 0, 5);
+        var unitLabel = allUnits ? 'Todas as unidades' : (unit + 'ª unidade');
+        var students = filterStudents();
+        var subjects = selectedSubjects(students);
+        var rows = [];
+        var classMap = {};
+        var alerts = [];
+        var allScores = [];
+        var below = 0, missing = 0, reportDone = 0;
+        var reportTotal = allUnits ? students.length * 6 : students.length;
+
+        students.forEach(function(st){
+            var studentUnitScores = [];
+            var unitScoresBySubject = {};
+            var missingForStudent = 0;
+
+            subjects.forEach(function(subj){
+                if(allUnits){
+                    var valsSubject = [];
+                    for(var ai=0; ai<6; ai++){
+                        var sv = unitScore(st, subj, ai);
+                        if(sv === null){
+                            missing++;
+                            missingForStudent++;
+                        }else{
+                            valsSubject.push(sv);
+                            allScores.push(sv);
+                            if(sv < 6) below++;
+                        }
+                    }
+                    var subjectAverage = avg(valsSubject);
+                    unitScoresBySubject[subj] = subjectAverage;
+                    if(subjectAverage !== null) studentUnitScores.push(subjectAverage);
+                }else{
+                    var score = unitScore(st, subj, uIndex);
+                    unitScoresBySubject[subj] = score;
+                    if(score === null){
+                        missing++;
+                        missingForStudent++;
+                    }else{
+                        studentUnitScores.push(score);
+                        allScores.push(score);
+                        if(score < 6) below++;
+                    }
+                }
+            });
+
+            var cls = classLabel(st.class || st.turma || '');
+            var key = normalizeKey(cls);
+            if(!classMap[key]) classMap[key] = { label:cls, students:0, scores:[], missing:0, reports:0, reportTotal:0 };
+            classMap[key].students++;
+            studentUnitScores.forEach(function(s){ classMap[key].scores.push(s); });
+            classMap[key].missing += missingForStudent;
+
+            var studentReports = 0;
+            if(allUnits){
+                for(var ru=1; ru<=6; ru++) if(hasBehaviorReport(reportDocs, st.id || st.studentId || st.name, ru)) studentReports++;
+                reportDone += studentReports;
+                classMap[key].reports += studentReports;
+                classMap[key].reportTotal += 6;
+            }else{
+                var hasReport = hasBehaviorReport(reportDocs, st.id || st.studentId || st.name, unit);
+                if(hasReport){ reportDone++; classMap[key].reports++; }
+                classMap[key].reportTotal += 1;
+            }
+
+            var unitAvgs = [];
+            for(var ui=0; ui<6; ui++){
+                var vals = subjects.map(function(subj){ return unitScore(st, subj, ui); }).filter(function(v){ return v !== null; });
+                unitAvgs.push(avg(vals));
+            }
+            var mediaUnidade = allUnits ? avg(unitAvgs) : avg(studentUnitScores);
+            var mediaFinal = avg(unitAvgs);
+            var hasReportRow = allUnits ? (studentReports === 6) : hasBehaviorReport(reportDocs, st.id || st.studentId || st.name, unit);
+
+            var status = 'Sem nota';
+            if(mediaUnidade !== null) status = mediaUnidade >= 6 ? 'Adequado' : 'Atenção';
+
+            var row = {
+                id: st.id || st.studentId || st.name,
+                name: st.name || st.nome || 'Aluno',
+                className: cls,
+                scores: unitScoresBySubject,
+                unitAvg: mediaUnidade,
+                finalAvg: mediaFinal,
+                units: unitAvgs,
+                missing: missingForStudent,
+                hasReport: hasReportRow,
+                reportCount: studentReports,
+                status: status
+            };
+            rows.push(row);
+
+            if(mediaUnidade === null || mediaUnidade < 6 || missingForStudent > 0 || !hasReportRow){
+                alerts.push(row);
+            }
+        });
+
+        var classRows = Object.keys(classMap).map(function(k){
+            var d = classMap[k];
+            return {
+                key:k,
+                className:d.label,
+                students:d.students,
+                avg:avg(d.scores),
+                missing:d.missing,
+                reports:d.reports,
+                reportPct:pct(d.reports, d.reportTotal || d.students)
+            };
+        }).sort(function(a,b){ return a.className.localeCompare(b.className, 'pt-BR'); });
+
+        var unitEvolution = [];
+        for(var u=0; u<6; u++){
+            var valsU = [];
+            students.forEach(function(st){
+                subjects.forEach(function(subj){
+                    var s = unitScore(st, subj, u);
+                    if(s !== null) valsU.push(s);
+                });
+            });
+            unitEvolution.push(avg(valsU));
+        }
+
+        var planning = computePlanningV90(unit, filters.classKey, filters.subject);
+        var statusCounts = {
+            ok: rows.filter(function(r){ return r.unitAvg !== null && r.unitAvg >= 6; }).length,
+            attention: rows.filter(function(r){ return r.unitAvg !== null && r.unitAvg < 6; }).length,
+            noGrade: rows.filter(function(r){ return r.unitAvg === null; }).length
+        };
+
+        return {
+            filters: filters,
+            unit: unit,
+            unitLabel: unitLabel,
+            allUnits: allUnits,
+            students: students,
+            subjects: subjects,
+            rows: rows,
+            alerts: alerts,
+            classRows: classRows,
+            unitEvolution: unitEvolution,
+            planning: planning,
+            avgGeneral: avg(allScores),
+            below: below,
+            missing: missing,
+            reportDone: reportDone,
+            reportTotal: reportTotal,
+            statusCounts: statusCounts
+        };
+    }
+
+    function destroyChart(id){
+        try{ if(dashboardChartsV90[id]) dashboardChartsV90[id].destroy(); }catch(e){}
+        dashboardChartsV90[id] = null;
+    }
+    function normalizeChartOptionsV92(options){
+        options = options || {};
+        options.responsive = true;
+        options.maintainAspectRatio = false;
+        options.layout = options.layout || { padding:{ top:14, right:12, bottom:6, left:6 } };
+        options.plugins = options.plugins || {};
+        options.plugins.valueLabelsConcenal = { display:false };
+        options.plugins.tooltip = options.plugins.tooltip || { backgroundColor:'#111827' };
+        if(options.scales && options.scales.y){
+            options.scales.y.beginAtZero = true;
+            options.scales.y.min = 0;
+            options.scales.y.max = 10;
+            options.scales.y.ticks = options.scales.y.ticks || { stepSize:1 };
+        }
+        return options;
+    }
+    function renderChart(id, type, data, options){
+        var canvas = byId(id);
+        if(!canvas || typeof Chart === 'undefined') return;
+        destroyChart(id);
+        try{
+            dashboardChartsV90[id] = new Chart(canvas, {
+                type:type,
+                data:data,
+                options: normalizeChartOptionsV92(options)
+            });
+        }catch(e){
+            console.warn('Dashboard V92: falha ao renderizar gráfico '+id, e);
+        }
+    }
+
+    function renderChartsV90(d){
+        renderChart('dash-v90-chart-class', 'bar', {
+            labels: d.classRows.map(function(r){ return r.className; }),
+            datasets: [{ label:'Média da unidade', data:d.classRows.map(function(r){ return r.avg === null ? null : Number(r.avg.toFixed(2)); }), borderWidth:1, maxBarThickness:56, categoryPercentage:0.55, barPercentage:0.7 }]
+        }, {
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:false } },
+            scales:{ y:{ beginAtZero:true, max:10 } }
+        });
+
+        renderChart('dash-v90-chart-units', 'line', {
+            labels:['U1','U2','U3','U4','U5','U6'],
+            datasets:[{ label:'Média geral', data:d.unitEvolution.map(function(v){ return v === null ? null : Number(v.toFixed(2)); }), tension:0.35, spanGaps:true, borderWidth:3, pointRadius:4 }]
+        }, {
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ display:false } },
+            scales:{ y:{ beginAtZero:true, max:10 } }
+        });
+
+        renderChart('dash-v90-chart-status', 'doughnut', {
+            labels:['Adequado','Atenção','Sem nota'],
+            datasets:[{ data:[d.statusCounts.ok, d.statusCounts.attention, d.statusCounts.noGrade], borderWidth:2 }]
+        }, {
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, font:{ size:10, weight:'bold' } } } }
+        });
+
+        var planDone = d.planning.done || 0;
+        var planPending = Math.max(0, (d.planning.total || 0) - planDone);
+        renderChart('dash-v90-chart-planning', 'doughnut', {
+            labels:['Concluído','Pendente'],
+            datasets:[{ data:[planDone, planPending], borderWidth:2 }]
+        }, {
+            responsive:true, maintainAspectRatio:false,
+            plugins:{ legend:{ position:'bottom', labels:{ boxWidth:12, font:{ size:10, weight:'bold' } } } }
+        });
+    }
+
+    function renderTablesV90(d){
+        var tableCount = byId('dash-v90-table-count');
+        if(tableCount) tableCount.textContent = d.rows.length + ' aluno(s)';
+
+        var stEl = byId('dash-v90-students-table');
+        if(stEl){
+            if(!d.rows.length){
+                stEl.innerHTML = '<div class="text-center text-gray-400 p-8 font-black uppercase text-xs">Nenhum aluno encontrado na seleção.</div>';
+            }else if(d.allUnits){
+                stEl.innerHTML = '<table class="w-full text-xs border-collapse">'+
+                    '<thead class="bg-gray-50 text-gray-500 uppercase"><tr>'+
+                    '<th class="p-2 text-left">Aluno</th><th class="p-2 text-left">Turma</th><th class="p-2 text-center">U1</th><th class="p-2 text-center">U2</th><th class="p-2 text-center">U3</th><th class="p-2 text-center">U4</th><th class="p-2 text-center">U5</th><th class="p-2 text-center">U6</th><th class="p-2 text-center">Média geral</th><th class="p-2 text-center">Situação</th><th class="p-2 text-center">Relatórios</th>'+
+                    '</tr></thead><tbody>'+
+                    d.rows.map(function(r){
+                        var statusType = r.unitAvg === null ? 'warn' : (r.unitAvg >= 6 ? 'ok' : 'danger');
+                        var statusText = r.unitAvg === null ? 'Sem nota' : (r.unitAvg >= 6 ? 'Adequado' : 'Atenção');
+                        var unitCells = (r.units || []).map(function(v){ return '<td class="p-2 text-center font-black '+(v !== null && v < 6 ? 'text-red-600' : 'text-school-green')+'">'+fmt(v)+'</td>'; }).join('');
+                        return '<tr class="border-b hover:bg-gray-50">'+
+                            '<td class="p-2 font-black text-gray-800">'+esc(r.name)+'</td>'+
+                            '<td class="p-2 text-gray-500 font-bold">'+esc(r.className)+'</td>'+ unitCells +
+                            '<td class="p-2 text-center font-black '+(r.unitAvg !== null && r.unitAvg < 6 ? 'text-red-600' : 'text-gray-800')+'">'+fmt(r.unitAvg)+'</td>'+
+                            '<td class="p-2 text-center">'+badge(statusText, statusType)+'</td>'+
+                            '<td class="p-2 text-center">'+badge((r.reportCount || 0)+'/6', (r.reportCount || 0) === 6 ? 'ok' : 'danger')+'</td>'+
+                        '</tr>';
+                    }).join('')+
+                    '</tbody></table>';
+            }else{
+                var subjectHeader = d.subjects.length === 1 ? esc(d.subjects[0]) : 'Média das disciplinas';
+                stEl.innerHTML = '<table class="w-full text-xs border-collapse">'+
+                    '<thead class="bg-gray-50 text-gray-500 uppercase"><tr>'+
+                    '<th class="p-2 text-left">Aluno</th><th class="p-2 text-left">Turma</th><th class="p-2 text-center">'+subjectHeader+'</th><th class="p-2 text-center">Média final</th><th class="p-2 text-center">Situação</th><th class="p-2 text-center">Relatório</th>'+
+                    '</tr></thead><tbody>'+
+                    d.rows.map(function(r){
+                        var statusType = r.unitAvg === null ? 'warn' : (r.unitAvg >= 6 ? 'ok' : 'danger');
+                        var statusText = r.unitAvg === null ? 'Sem nota' : (r.unitAvg >= 6 ? 'Adequado' : 'Atenção');
+                        return '<tr class="border-b hover:bg-gray-50">'+
+                            '<td class="p-2 font-black text-gray-800">'+esc(r.name)+'</td>'+
+                            '<td class="p-2 text-gray-500 font-bold">'+esc(r.className)+'</td>'+
+                            '<td class="p-2 text-center font-black '+(r.unitAvg !== null && r.unitAvg < 6 ? 'text-red-600' : 'text-school-green')+'">'+fmt(r.unitAvg)+'</td>'+
+                            '<td class="p-2 text-center font-black text-gray-700">'+fmt(r.finalAvg)+'</td>'+
+                            '<td class="p-2 text-center">'+badge(statusText, statusType)+'</td>'+
+                            '<td class="p-2 text-center">'+(r.hasReport ? badge('Salvo','ok') : badge('Pendente','danger'))+'</td>'+
+                        '</tr>';
+                    }).join('')+
+                    '</tbody></table>';
+            }
+        }
+
+        var alertEl = byId('dash-v90-alerts');
+        if(alertEl){
+            var alerts = d.alerts.slice().sort(function(a,b){
+                var aa = a.unitAvg === null ? 999 : a.unitAvg;
+                var bb = b.unitAvg === null ? 999 : b.unitAvg;
+                return aa - bb || a.name.localeCompare(b.name, 'pt-BR');
+            }).slice(0, 30);
+            if(!alerts.length){
+                alertEl.innerHTML = '<div class="text-center p-8 text-gray-400 font-black uppercase text-xs"><i class="fas fa-circle-check text-green-500 text-4xl mb-3"></i><br>Nenhum alerta na seleção atual.</div>';
+            }else{
+                alertEl.innerHTML = '<div class="space-y-2">'+alerts.map(function(r){
+                    var chips = [];
+                    if(r.unitAvg === null) chips.push(badge('Sem nota','warn'));
+                    else if(r.unitAvg < 6) chips.push(badge('Média '+fmt(r.unitAvg),'danger'));
+                    if(r.missing > 0) chips.push(badge(r.missing+' pendência(s)','warn'));
+                    if(d.allUnits && (r.reportCount || 0) < 6) chips.push(badge('Relatórios '+(r.reportCount || 0)+'/6','info'));
+                    if(!d.allUnits && !r.hasReport) chips.push(badge('Relatório pendente','info'));
+                    return '<div class="rounded-xl border border-gray-100 bg-white p-3 shadow-sm">'+
+                        '<div class="font-black text-sm text-gray-800">'+esc(r.name)+'</div>'+
+                        '<div class="text-[10px] uppercase font-bold text-gray-400 mb-2">'+esc(r.className)+'</div>'+
+                        '<div class="flex flex-wrap gap-1">'+chips.join('')+'</div>'+
+                    '</div>';
+                }).join('')+'</div>';
+            }
+        }
+
+        var repEl = byId('dash-v90-reports-table');
+        if(repEl){
+            if(!d.rows.length){
+                repEl.innerHTML = '<div class="text-center text-gray-400 p-8 font-black uppercase text-xs">Nenhum aluno para conferir.</div>';
+            }else{
+                repEl.innerHTML = '<table class="w-full text-xs border-collapse"><thead class="bg-gray-50 text-gray-500 uppercase"><tr><th class="p-2 text-left">Aluno</th><th class="p-2 text-center">U1</th><th class="p-2 text-center">U2</th><th class="p-2 text-center">U3</th><th class="p-2 text-center">U4</th><th class="p-2 text-center">U5</th><th class="p-2 text-center">U6</th></tr></thead><tbody>'+
+                    d.rows.map(function(r){
+                        var cells = [1,2,3,4,5,6].map(function(u){
+                            var ok = hasBehaviorReport(window.__dashboardReportDocsV90 || {}, r.id, u);
+                            return '<td class="p-2 text-center">'+(ok ? '<span class="text-green-700 font-black">✓</span>' : '<span class="text-red-500 font-black">—</span>')+'</td>';
+                        }).join('');
+                        return '<tr class="border-b"><td class="p-2 font-bold text-gray-700">'+esc(r.name)+'<div class="text-[9px] text-gray-400 uppercase">'+esc(r.className)+'</div></td>'+cells+'</tr>';
+                    }).join('')+
+                    '</tbody></table>';
+            }
+        }
+
+        var planEl = byId('dash-v90-planning-table');
+        if(planEl){
+            if(!d.planning.rows.length){
+                planEl.innerHTML = '<div class="text-center text-gray-400 p-8 font-black uppercase text-xs">Nenhum planejamento encontrado para a seleção.</div>';
+            }else{
+                planEl.innerHTML = '<div class="space-y-3">'+d.planning.rows.map(function(r){
+                    return '<div class="rounded-xl border border-gray-100 bg-white p-3 shadow-sm">'+
+                        '<div class="flex items-start justify-between gap-3">'+
+                            '<div><div class="font-black text-gray-800 text-sm">'+esc(r.subject)+'</div><div class="text-[10px] uppercase font-bold text-gray-400">'+esc(r.className)+' • '+esc(r.teacher)+'</div></div>'+
+                            badge(r.percent+'%', r.percent >= 80 ? 'ok' : (r.percent >= 50 ? 'warn' : 'danger'))+
+                        '</div>'+
+                        '<div class="mt-2">'+progressHtml(r.percent)+'</div>'+
+                        '<div class="text-[10px] text-gray-500 mt-1">'+r.done+'/'+r.total+' conteúdo(s) concluído(s).</div>'+
+                    '</div>';
+                }).join('')+'</div>';
+            }
+        }
+    }
+
+    window.renderPerformanceDashboardV90 = async function(){
+        ensureDashboardShellV90();
+        populateDashboardFiltersV90(true);
+
+        var kpiEl = byId('dash-v90-kpis');
+        if(kpiEl) kpiEl.innerHTML = '<div class="col-span-full text-xs font-black uppercase text-school-green p-4"><i class="fas fa-circle-notch fa-spin mr-1"></i> Carregando dados do dashboard...</div>';
+
+        var reports = await loadBehaviorReportsV90();
+        window.__dashboardReportDocsV90 = reports;
+        var d = buildDashboardDataV90(reports);
+        window.__dashboardDataV90 = d;
+
+        var kpis = [
+            cardHtml('fa-users','Alunos filtrados', String(d.rows.length), 'na seleção atual', 'from-green-700 to-emerald-500'),
+            cardHtml('fa-chart-line', d.allUnits ? 'Média geral' : 'Média da unidade', fmt(d.avgGeneral), d.unitLabel+' • '+getSubjectDisplay(d.subjects), 'from-blue-700 to-sky-500'),
+            cardHtml('fa-triangle-exclamation','Notas abaixo de 6,0', String(d.below), 'lançamentos em atenção', 'from-orange-600 to-amber-400'),
+            cardHtml('fa-file-signature','Relatórios feitos', d.reportDone+'/'+(d.reportTotal || d.rows.length), pct(d.reportDone,(d.reportTotal || d.rows.length))+'% '+(d.allUnits ? 'no geral' : 'na unidade'), 'from-indigo-700 to-violet-500'),
+            cardHtml('fa-tasks','Planejamento', d.planning.percent+'%', d.planning.done+'/'+d.planning.total+' conteúdo(s)', 'from-amber-600 to-yellow-400')
+        ];
+        if(kpiEl) kpiEl.innerHTML = kpis.join('');
+
+        renderChartsV90(d);
+        renderTablesV90(d);
+    };
+
+    window.renderPerformanceDashboardV52 = window.renderPerformanceDashboardV90;
+
+    function showDashboardV90(){
+        ensureDashboardShellV90();
+        try{
+            var data = getData();
+            data.currentMode = 'dashboard';
+        }catch(e){}
+        document.querySelectorAll('[id^="view-"]').forEach(function(el){ el.classList.add('hidden'); });
+        var view = byId('view-dashboard');
+        if(view) view.classList.remove('hidden');
+
+        ['nav-grades','nav-attendance','nav-daily','nav-behavior','nav-planning','nav-activities','nav-schedule','nav-calendar','nav-dashboard'].forEach(function(id){
+            var el = byId(id);
+            if(!el) return;
+            var active = id === 'nav-dashboard';
+            el.classList.toggle('border-school-green', active);
+            el.classList.toggle('text-school-green', active);
+            el.classList.toggle('border-transparent', !active);
+            el.classList.toggle('text-gray-500', !active);
+        });
+
+        var mainControls = byId('main-controls');
+        if(mainControls) mainControls.classList.add('hidden');
+
+        clearTimeout(dashboardRenderTimerV90);
+        dashboardRenderTimerV90 = setTimeout(function(){ renderPerformanceDashboardV90(); }, 80);
+    }
+    window.showDashboardV90 = showDashboardV90;
+
+    function externalQrUrlV90(content){
+        return 'https://api.qrserver.com/v1/create-qr-code/?size=180x180&margin=1&data=' + encodeURIComponent(content || 'CONCENAL DIGITAL');
+    }
+    async function qrDataUrlV90(content){
+        return new Promise(function(resolve){
+            try{
+                if(window.QRCode && typeof window.QRCode.toDataURL === 'function'){
+                    window.QRCode.toDataURL(content, { width:120, margin:1 }, function(err, url){
+                        resolve(err ? '' : url);
+                    });
+                    return;
+                }
+            }catch(e){}
+            try{
+                if(typeof window.QRCode === 'function'){
+                    var holder = document.createElement('div');
+                    holder.style.position = 'fixed';
+                    holder.style.left = '-9999px';
+                    holder.style.top = '-9999px';
+                    document.body.appendChild(holder);
+                    new window.QRCode(holder, { text:content, width:120, height:120, correctLevel: window.QRCode.CorrectLevel ? window.QRCode.CorrectLevel.M : undefined });
+                    setTimeout(function(){
+                        var img = holder.querySelector('img');
+                        var canvas = holder.querySelector('canvas');
+                        var url = '';
+                        try{ url = img ? img.src : (canvas ? canvas.toDataURL('image/png') : ''); }catch(e2){}
+                        holder.remove();
+                        resolve(url || externalQrUrlV90(content));
+                    }, 250);
+                    return;
+                }
+            }catch(e3){}
+            resolve(externalQrUrlV90(content));
+        });
+    }
+    function hashV90(str){
+        var h = 2166136261;
+        str = String(str || '');
+        for(var i=0;i<str.length;i++){
+            h ^= str.charCodeAt(i);
+            h += (h << 1) + (h << 4) + (h << 7) + (h << 8) + (h << 24);
+        }
+        return ('00000000' + (h >>> 0).toString(16).toUpperCase()).slice(-8);
+    }
+    function parseClassFromSubtitleV92(subtitle){
+        var first = txt(subtitle || '').split('•')[0].trim();
+        return first || '-';
+    }
+    function currentUserNameV92(){
+        var u = getCurrentUser();
+        return txt((u && (u.displayName || u.name || u.username || u.email)) || 'CONCENAL Digital');
+    }
+    function saveAuthLocalV92(code, record){
+        ['concenal_print_authentications_v90','concenal_print_authentications','concenal_print_auth'].forEach(function(key){
+            try{
+                var obj = JSON.parse(localStorage.getItem(key) || '{}') || {};
+                obj[code] = record;
+                localStorage.setItem(key, JSON.stringify(obj));
+            }catch(e){}
+        });
+    }
+    async function printWindowV90(title, subtitle, bodyHtml, payload){
+        payload = payload || {};
+        var logo = getLogoSrc();
+        var payloadText = '';
+        try{ payloadText = JSON.stringify(payload || {}); }catch(e){ payloadText = String(title || '') + '|' + String(subtitle || ''); }
+        var code = 'CONCENAL-' + yearNow() + '-' + hashV90(payloadText + Date.now()).slice(0,8);
+        var docType = txt(payload.documentType || payload.title || title || 'Documento CONCENAL');
+        var studentName = txt(payload.studentName || payload.name || payload.student || '');
+        if(!studentName){
+            if(payload.type === 'student-report') studentName = txt(payload.name || 'Aluno selecionado');
+            else if(payload.type === 'class-grades') studentName = 'Relatório coletivo / turma';
+            else if(payload.type === 'planning') studentName = 'Planejamento da unidade';
+            else studentName = '-';
+        }
+        var className = txt(payload.className || payload.class || parseClassFromSubtitleV92(subtitle));
+        var generatedBy = txt(payload.generatedBy || currentUserNameV92());
+        var generatedAt = new Date().toISOString();
+        var verifyUrl = (window.location.href || '').split('?')[0].split('#')[0] + '?verify=' + encodeURIComponent(code);
+        var authRecord = {
+            code:code,
+            authCode:code,
+            title:title,
+            subtitle:subtitle || '',
+            documentType:docType,
+            studentName:studentName,
+            className:className,
+            generatedAt:generatedAt,
+            generatedBy:generatedBy,
+            payload:payload || {},
+            signature:hashV90(payloadText + code + generatedAt),
+            valid:true,
+            verificationUrl:verifyUrl
+        };
+        try{
+            saveAuthLocalV92(code, authRecord);
+            if(typeof getCollection === 'function'){
+                getCollection('concenal_print_authentications').doc(code).set(authRecord, { merge:true }).catch(function(e){ console.warn('Dashboard V92: autenticação local registrada, Firebase indisponível.', e); });
+                getCollection('concenal_print_auth').doc(code).set(authRecord, { merge:true }).catch(function(){});
+            }
+        }catch(e){}
+        var qr = await qrDataUrlV90(verifyUrl);
+
+        var html = '<!doctype html><html><head><meta charset="UTF-8"><title>'+esc(title)+'</title>'+ 
+            '<style>'+ 
+            '@page{size:A4;margin:10mm}*{box-sizing:border-box}body{font-family:Arial,Helvetica,sans-serif;color:#111;margin:0;background:#fff}'+ 
+            '.page{padding:0}.head{display:grid;grid-template-columns:28mm 1fr 28mm;gap:6mm;align-items:center;border-bottom:2px solid #047857;padding-bottom:5mm;margin-bottom:5mm}.logo{max-width:28mm;max-height:20mm;object-fit:contain}.school{text-align:center}.school h1{font-size:14pt;margin:0;font-weight:900;color:#047857}.school p{font-size:8pt;margin:1mm 0 0;color:#444;text-transform:uppercase;letter-spacing:.6px}.qr{text-align:center;font-size:6pt;color:#333}.qr img{width:22mm;height:22mm;object-fit:contain}.title{background:#047857;color:#fff;text-align:center;padding:3mm;border-radius:2mm;margin-bottom:4mm}.title h2{font-size:13pt;margin:0;text-transform:uppercase}.title p{font-size:8pt;margin:1mm 0 0}.meta{font-size:8pt;margin-bottom:4mm;display:grid;grid-template-columns:1fr 1fr;gap:2mm}.box{border:1px solid #d1d5db;border-radius:2mm;padding:2mm;background:#f9fafb}.kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:2mm;margin-bottom:4mm}.kpi{border:1px solid #d1d5db;border-radius:2mm;padding:2mm}.kpi b{font-size:13pt;color:#047857}.kpi span{display:block;font-size:7pt;color:#555;text-transform:uppercase}table{width:100%;border-collapse:collapse;font-size:7.5pt;margin-top:2mm}th{background:#047857;color:#fff;text-transform:uppercase}th,td{border:1px solid #d1d5db;padding:1.6mm;text-align:left}td.center,th.center{text-align:center}.section{font-size:10pt;font-weight:900;color:#047857;margin:5mm 0 1mm;text-transform:uppercase}.sign{display:grid;grid-template-columns:1fr 1fr;gap:10mm;margin-top:11mm;font-size:8pt;text-align:center}.line{border-top:1px solid #111;padding-top:2mm}.auth{margin-top:5mm;border:1px dashed #047857;padding:2mm;font-size:7pt;color:#047857;text-align:center}.break{page-break-before:always}@media print{body{print-color-adjust:exact;-webkit-print-color-adjust:exact}}'+ 
+            '</style></head><body><div class="page">'+ 
+            '<div class="head"><div>'+(logo ? '<img class="logo" src="'+escAttr(logo)+'">' : '')+'</div><div class="school"><h1>CONCENAL</h1><p>Contemporâneo Centro Educacional</p><p>Diário Escolar Digital</p></div><div class="qr">'+(qr ? '<img src="'+qr+'">' : '<div style="border:1px solid #111;padding:2mm;">QR</div>')+'<br>Autenticação</div></div>'+ 
+            '<div class="title"><h2>'+esc(title)+'</h2><p>'+esc(subtitle || '')+'</p></div>'+ 
+            '<div class="meta"><div class="box"><b>Emitido em:</b> '+esc(todayBR())+'</div><div class="box"><b>Código:</b> '+esc(code)+'</div></div>'+ 
+            bodyHtml+ 
+            '<div class="sign"><div class="line">Professor(a) / Responsável</div><div class="line">Coordenação / Direção</div></div>'+ 
+            '<div class="auth"><b>Assinatura digital:</b> Documento gerado pelo CONCENAL Digital. Código '+esc(code)+'. QR Code vinculado ao registro oficial de autenticação.</div>'+ 
+            '</div></body></html>';
+
+        var w = window.open('', '_blank');
+        if(w){
+            w.document.open();
+            w.document.write(html);
+            w.document.close();
+            setTimeout(function(){ try{ w.focus(); w.print(); }catch(e){} }, qr && /^https?:/i.test(qr) ? 1600 : 800);
+        }else{
+            var area = byId('print-area');
+            if(area){
+                area.innerHTML = html.replace(/<!doctype[\s\S]*?<body>/i,'').replace(/<\/body><\/html>/i,'');
+                area.classList.remove('hidden');
+                setTimeout(function(){ window.print(); area.classList.add('hidden'); area.innerHTML = ''; }, 700);
+            }else{
+                alert('Autorize pop-ups para imprimir o relatório.');
+            }
+        }
+    }
+
+    function ensureLatestDataForPrint(){
+        return window.__dashboardDataV90 || null;
+    }
+    function printKpisHtml(d){
+        return '<div class="kpis">'+
+            '<div class="kpi"><span>Alunos</span><b>'+esc(d.rows.length)+'</b></div>'+
+            '<div class="kpi"><span>'+esc(d.allUnits ? 'Média geral' : 'Média da unidade')+'</span><b>'+esc(fmt(d.avgGeneral))+'</b></div>'+
+            '<div class="kpi"><span>Abaixo de 6,0</span><b>'+esc(d.below)+'</b></div>'+
+            '<div class="kpi"><span>Relatórios</span><b>'+esc(d.reportDone+'/'+(d.reportTotal || d.rows.length))+'</b></div>'+
+        '</div>';
+    }
+    window.printDashboardClassReportV90 = async function(){
+        var reports = await loadBehaviorReportsV90();
+        window.__dashboardReportDocsV90 = reports;
+        var d = buildDashboardDataV90(reports);
+        var title = 'Relatório de Notas por Turma';
+        var cls = selectedFilters().classKey === 'all' ? 'Todas as turmas com alunos' : (d.rows[0] ? d.rows[0].className : 'Turma selecionada');
+        var subtitle = cls+' • '+d.unitLabel+' • '+getSubjectDisplay(d.subjects);
+
+        var rows;
+        var head;
+        if(d.allUnits){
+            head = '<tr><th>Aluno</th><th>Turma</th><th class="center">U1</th><th class="center">U2</th><th class="center">U3</th><th class="center">U4</th><th class="center">U5</th><th class="center">U6</th><th class="center">Média geral</th><th class="center">Situação</th><th class="center">Relatórios</th></tr>';
+            rows = d.rows.map(function(r){
+                var unitCells = (r.units || []).map(function(v){ return '<td class="center">'+esc(fmt(v))+'</td>'; }).join('');
+                return '<tr><td>'+esc(r.name)+'</td><td>'+esc(r.className)+'</td>'+unitCells+'<td class="center">'+esc(fmt(r.unitAvg))+'</td><td class="center">'+esc(r.unitAvg === null ? 'Sem nota' : (r.unitAvg >= 6 ? 'Adequado' : 'Atenção'))+'</td><td class="center">'+esc((r.reportCount || 0)+'/6')+'</td></tr>';
+            }).join('');
+        }else{
+            head = '<tr><th>Aluno</th><th>Turma</th><th class="center">Média da unidade</th><th class="center">Média final</th><th class="center">Situação</th><th class="center">Relatório individual</th></tr>';
+            rows = d.rows.map(function(r){
+                return '<tr><td>'+esc(r.name)+'</td><td>'+esc(r.className)+'</td><td class="center">'+esc(fmt(r.unitAvg))+'</td><td class="center">'+esc(fmt(r.finalAvg))+'</td><td class="center">'+esc(r.unitAvg === null ? 'Sem nota' : (r.unitAvg >= 6 ? 'Adequado' : 'Atenção'))+'</td><td class="center">'+(r.hasReport ? 'Salvo' : 'Pendente')+'</td></tr>';
+            }).join('');
+        }
+        var body = printKpisHtml(d)+
+            '<div class="section">Notas dos alunos</div>'+
+            '<table><thead>'+head+'</thead><tbody>'+rows+'</tbody></table>';
+
+        await printWindowV90(title, subtitle, body, {type:'class-grades', documentType:title, className:cls, studentName:'Relatório coletivo / turma', unit:d.unitLabel, subjects:d.subjects, rows:d.rows.length});
+    };
+    window.printDashboardStudentReportV90 = async function(){
+        var reports = await loadBehaviorReportsV90();
+        window.__dashboardReportDocsV90 = reports;
+        var d = buildDashboardDataV90(reports);
+        var selected = selectedFilters().studentId;
+        var row = null;
+        if(selected && selected !== 'all') row = d.rows.filter(function(r){ return txt(r.id) === txt(selected); })[0] || null;
+        if(!row && d.rows.length === 1) row = d.rows[0];
+        if(!row){
+            alert('Selecione um aluno no filtro para imprimir o relatório individual do dashboard.');
+            return;
+        }
+        var unitRows = [1,2,3,4,5,6].map(function(u, idx){
+            var rep = hasBehaviorReport(reports, row.id, u) ? 'Salvo' : 'Pendente';
+            return '<tr><td class="center">'+u+'ª Unidade</td><td class="center">'+esc(fmt(row.units[idx]))+'</td><td class="center">'+rep+'</td></tr>';
+        }).join('');
+        var subjectRows = d.subjects.map(function(subj){
+            var vals = [0,1,2,3,4,5].map(function(i){ return unitScore(d.students.filter(function(st){ return txt(st.id || st.studentId || st.name) === txt(row.id); })[0], subj, i); });
+            return '<tr><td>'+esc(subj)+'</td>'+vals.map(function(v){ return '<td class="center">'+esc(fmt(v))+'</td>'; }).join('')+'<td class="center">'+esc(fmt(avg(vals)))+'</td></tr>';
+        }).join('');
+
+        var body = '<div class="meta"><div class="box"><b>Aluno:</b> '+esc(row.name)+'</div><div class="box"><b>Turma:</b> '+esc(row.className)+'</div></div>'+
+            '<div class="section">Resumo por unidade</div>'+
+            '<table><thead><tr><th class="center">Unidade</th><th class="center">Média</th><th class="center">Relatório individual</th></tr></thead><tbody>'+unitRows+'</tbody></table>'+
+            '<div class="section">Notas por disciplina</div>'+
+            '<table><thead><tr><th>Disciplina</th><th class="center">U1</th><th class="center">U2</th><th class="center">U3</th><th class="center">U4</th><th class="center">U5</th><th class="center">U6</th><th class="center">Média</th></tr></thead><tbody>'+subjectRows+'</tbody></table>';
+
+        await printWindowV90('Relatório Individual de Desempenho', row.name+' • '+row.className, body, {type:'student-report', documentType:'Relatório Individual de Desempenho', student:row.id, studentName:row.name, name:row.name, className:row.className});
+    };
+    window.printDashboardPlanningReportV90 = async function(){
+        var reports = await loadBehaviorReportsV90();
+        var d = buildDashboardDataV90(reports);
+        var rows = d.planning.rows.map(function(r){
+            return '<tr><td>'+esc(r.className)+'</td><td>'+esc(r.subject)+'</td><td>'+esc(r.teacher)+'</td><td class="center">'+esc(r.done+'/'+r.total)+'</td><td class="center">'+esc(r.percent+'%')+'</td></tr>';
+        }).join('');
+        if(!rows) rows = '<tr><td colspan="5" class="center">Nenhum planejamento encontrado para a seleção.</td></tr>';
+        var body = '<div class="kpis"><div class="kpi"><span>Concluído</span><b>'+esc(d.planning.percent+'%')+'</b></div><div class="kpi"><span>Conteúdos feitos</span><b>'+esc(d.planning.done)+'</b></div><div class="kpi"><span>Total</span><b>'+esc(d.planning.total)+'</b></div><div class="kpi"><span>Unidade</span><b>'+esc(d.unitLabel)+'</b></div></div>'+
+            '<div class="section">Andamento por turma/disciplina</div>'+
+            '<table><thead><tr><th>Turma</th><th>Disciplina</th><th>Professor</th><th class="center">Concluído</th><th class="center">%</th></tr></thead><tbody>'+rows+'</tbody></table>';
+        await printWindowV90('Relatório do Planejamento da Unidade', d.unitLabel+' • '+getSubjectDisplay(d.subjects), body, {type:'planning', documentType:'Relatório do Planejamento da Unidade', studentName:'Planejamento da unidade', className:(d.filters.classKey === 'all' ? 'Todas as turmas' : (d.planning.rows[0] ? d.planning.rows[0].className : 'Turma selecionada')), unit:d.unitLabel, percent:d.planning.percent});
+    };
+
+    function patchUpdateUiV90(){
+        if(window.__dashboardV90UpdatePatched) return;
+        window.__dashboardV90UpdatePatched = true;
+
+        var oldUpdate = window.updateUI;
+        if(typeof oldUpdate === 'function'){
+            window.updateUI = function(){
+                oldUpdate.apply(this, arguments);
+                try{
+                    if(getData().currentMode === 'dashboard') showDashboardV90();
+                    else {
+                        var mainControls = byId('main-controls');
+                        if(mainControls && getData().currentMode !== 'calendar') mainControls.classList.remove('hidden');
+                    }
+                }catch(e){}
+            };
+        }
+
+        var oldSwitch = window.switchMode;
+        if(typeof oldSwitch === 'function'){
+            window.switchMode = function(m){
+                if(m === 'dashboard'){
+                    getData().currentMode = 'dashboard';
+                    showDashboardV90();
+                    return;
+                }
+                return oldSwitch.apply(this, arguments);
+            };
+        }
+    }
+
+    function bootV90(){
+        ensureDashboardShellV90();
+        patchUpdateUiV90();
+        if(getData().currentMode === 'dashboard') showDashboardV90();
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+        setTimeout(bootV90, 300);
+        setTimeout(bootV90, 1200);
+        setTimeout(bootV90, 2500);
+    });
+    setTimeout(bootV90, 800);
+    setTimeout(bootV90, 2000);
+})();
+</script>
+
+
+
+<!-- PATCH V92.1: correção da verificação de autenticidade e limpeza visual dos gráficos -->
+<script>
+(function(){
+    'use strict';
+    function byId(id){ return document.getElementById(id); }
+    function cleanCode(v){ return String(v || '').trim().toUpperCase(); }
+    function esc(v){ return String(v == null ? '' : v).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+    function parseClassFromSubtitle(subtitle){
+        var first = String(subtitle || '').split('•')[0].trim();
+        return first || '-';
+    }
+    function readAuthMap(key){
+        try{ return JSON.parse(localStorage.getItem(key) || '{}') || {}; }catch(e){ return {}; }
+    }
+    function findLocalAuthRecord(code){
+        var keys = ['concenal_print_authentications_v90','concenal_print_authentications','concenal_print_auth','concenal_print_auth_local'];
+        var compact = code.replace(/[^A-Z0-9]/g,'');
+        for(var i=0;i<keys.length;i++){
+            var map = readAuthMap(keys[i]);
+            if(map[code]) return map[code];
+            var found = Object.keys(map).find(function(k){ return String(k).toUpperCase() === code || String(k).toUpperCase().replace(/[^A-Z0-9]/g,'') === compact; });
+            if(found) return map[found];
+        }
+        return null;
+    }
+    async function findAuthRecord(code){
+        var local = findLocalAuthRecord(code);
+        if(local) return local;
+        if(typeof getCollection === 'function'){
+            var collections = ['concenal_print_authentications','concenal_print_auth'];
+            for(var i=0;i<collections.length;i++){
+                try{
+                    var doc = await getCollection(collections[i]).doc(code).get();
+                    if(doc && doc.exists) return doc.data();
+                }catch(e){}
+            }
+        }
+        return null;
+    }
+    function normalizeAuthRecord(d, code){
+        d = d || {};
+        var payload = d.payload || d.summary || {};
+        var subtitle = d.subtitle || payload.subtitle || '';
+        var typeMap = {
+            'class-grades':'Relatório de Notas por Turma',
+            'student-report':'Relatório Individual de Desempenho',
+            'planning':'Relatório do Planejamento da Unidade'
+        };
+        var docType = d.documentType || d.title || payload.documentType || typeMap[payload.type] || payload.type || d.type || 'Documento CONCENAL';
+        var studentName = d.studentName || payload.studentName || payload.name || payload.student || '';
+        if(!studentName){
+            if(payload.type === 'class-grades') studentName = 'Relatório coletivo / turma';
+            else if(payload.type === 'planning') studentName = 'Planejamento da unidade';
+            else studentName = '-';
+        }
+        var className = d.className || payload.className || payload.class || parseClassFromSubtitle(subtitle);
+        var generatedBy = d.generatedBy || payload.generatedBy || 'CONCENAL Digital';
+        var generatedAt = d.generatedAt || payload.generatedAt || '';
+        return { code: code, valid: d.valid !== false, documentType:docType, studentName:studentName || '-', className:className || '-', generatedBy:generatedBy || '-', generatedAt:generatedAt, signature:d.signature || payload.signature || '-' };
+    }
+    window.verifyPrintedDocument = async function(){
+        var input = byId('verify-doc-code');
+        var result = byId('verify-doc-result');
+        if(!input || !result) return;
+        var code = cleanCode(input.value);
+        if(!code) return alert('Digite o código de autenticação.');
+        result.className = 'rounded-xl border p-4 text-sm bg-gray-50 border-gray-200 text-gray-600';
+        result.innerHTML = '<i class="fas fa-circle-notch fa-spin mr-1"></i> Consultando registro de autenticação...';
+        result.classList.remove('hidden');
+        try{
+            var raw = await findAuthRecord(code);
+            if(!raw || raw.valid === false){
+                result.className = 'rounded-xl border p-4 text-sm bg-red-50 border-red-200 text-red-700';
+                result.innerHTML = '<b><i class="fas fa-times-circle mr-1"></i> Documento não confirmado.</b><br><span class="text-xs">O código não foi encontrado no registro local/Firebase ou foi cancelado.</span>';
+                return;
+            }
+            var d = normalizeAuthRecord(raw, code);
+            var date = d.generatedAt ? new Date(d.generatedAt).toLocaleString('pt-BR') : '-';
+            result.className = 'rounded-xl border p-4 text-sm bg-green-50 border-green-200 text-green-800';
+            result.innerHTML = '<b><i class="fas fa-check-circle mr-1"></i> Documento autêntico.</b><br>'+ 
+                '<span class="text-xs block mt-2"><b>Código:</b> '+esc(d.code)+'</span>'+ 
+                '<span class="text-xs block"><b>Aluno/Registro:</b> '+esc(d.studentName)+'</span>'+ 
+                '<span class="text-xs block"><b>Turma:</b> '+esc(d.className)+'</span>'+ 
+                '<span class="text-xs block"><b>Tipo:</b> '+esc(d.documentType)+'</span>'+ 
+                '<span class="text-xs block"><b>Gerado em:</b> '+esc(date)+'</span>'+ 
+                '<span class="text-xs block"><b>Emitido por:</b> '+esc(d.generatedBy)+'</span>'+ 
+                '<span class="text-[10px] block mt-2 opacity-80"><b>Assinatura:</b> '+esc(d.signature)+'</span>';
+        }catch(e){
+            result.className = 'rounded-xl border p-4 text-sm bg-yellow-50 border-yellow-200 text-yellow-800';
+            result.innerHTML = '<b>Não foi possível consultar agora.</b><br><span class="text-xs">Verifique a conexão e tente novamente.</span>';
+        }
+    };
 })();
 </script>
 
