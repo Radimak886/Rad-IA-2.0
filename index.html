@@ -12082,5 +12082,3306 @@
 })();
 </script>
 
+
+
+<!-- PATCH V116: Designer real + Saudação visível na entrada do sistema -->
+<style id="concenal-v116-style">
+  :root{
+    --v116-green:#047857;
+    --v116-green-dark:#064e3b;
+    --v116-green-light:#10b981;
+    --v116-red:#dc2626;
+    --v116-blue:#2563eb;
+    --v116-bg:#f3f7f5;
+    --v116-card:#ffffff;
+    --v116-text:#0f172a;
+    --v116-muted:#64748b;
+  }
+
+  body{background:linear-gradient(180deg,#eef8f2 0%,#f8fafc 38%,#f1f5f9 100%)!important;}
+  #app-screen{background:radial-gradient(circle at top left,rgba(16,185,129,.12),transparent 32%),linear-gradient(180deg,#f8fafc 0%,#eef2f7 100%)!important;}
+
+  #app-screen>header{
+    background:linear-gradient(120deg,#063b2c 0%,#047857 52%,#0f766e 100%)!important;
+    box-shadow:0 10px 32px rgba(4,120,87,.22)!important;
+    border-bottom:1px solid rgba(255,255,255,.12);
+  }
+  #app-screen>header img[alt="CONCENAL"]{
+    height:48px!important;
+    width:72px!important;
+    object-fit:contain!important;
+    border-radius:14px!important;
+    padding:5px!important;
+    box-shadow:0 12px 26px rgba(0,0,0,.18)!important;
+  }
+  #app-screen>header .rounded-lg,
+  #app-screen>header button{
+    border-radius:14px!important;
+  }
+  #user-avatar-header{
+    width:44px!important;
+    height:44px!important;
+    border-radius:16px!important;
+    box-shadow:0 10px 22px rgba(0,0,0,.18)!important;
+  }
+
+  #v116-top-greeting{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    background:rgba(255,255,255,.13);
+    border:1px solid rgba(255,255,255,.18);
+    color:#fff;
+    padding:8px 12px;
+    border-radius:999px;
+    font-size:10px;
+    font-weight:900;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    white-space:nowrap;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+  }
+
+  #v116-hero{
+    width:calc(100% - 32px);
+    max-width:1280px;
+    margin:18px auto 0;
+    border-radius:28px;
+    overflow:hidden;
+    position:relative;
+    background:linear-gradient(135deg,#052e24 0%,#047857 43%,#10b981 100%);
+    color:white;
+    box-shadow:0 24px 70px rgba(4,120,87,.24);
+    border:1px solid rgba(255,255,255,.22);
+    animation:v116Rise .35s ease-out both;
+  }
+  #v116-hero:before{
+    content:'';
+    position:absolute;
+    width:420px;
+    height:420px;
+    right:-130px;
+    top:-190px;
+    border-radius:999px;
+    background:rgba(255,255,255,.15);
+  }
+  #v116-hero:after{
+    content:'';
+    position:absolute;
+    width:280px;
+    height:280px;
+    left:-100px;
+    bottom:-130px;
+    border-radius:999px;
+    background:rgba(255,255,255,.09);
+  }
+  .v116-hero-inner{
+    position:relative;
+    z-index:1;
+    display:grid;
+    grid-template-columns:minmax(0,1.35fr) minmax(320px,.65fr);
+    gap:18px;
+    padding:22px;
+  }
+  .v116-kicker{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background:rgba(255,255,255,.15);
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:10px;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+    margin-bottom:13px;
+  }
+  .v116-title{
+    margin:0;
+    font-size:clamp(26px,3.3vw,42px);
+    line-height:1.02;
+    letter-spacing:-.05em;
+    font-weight:950;
+    text-shadow:0 5px 18px rgba(0,0,0,.16);
+  }
+  .v116-subtitle{
+    max-width:760px;
+    margin:10px 0 0;
+    font-size:14px;
+    line-height:1.5;
+    color:rgba(255,255,255,.88);
+    font-weight:650;
+  }
+  .v116-actions{
+    display:flex;
+    gap:9px;
+    flex-wrap:wrap;
+    margin-top:16px;
+  }
+  .v116-action{
+    border:1px solid rgba(255,255,255,.22);
+    background:rgba(255,255,255,.16);
+    color:#fff;
+    border-radius:999px;
+    padding:10px 14px;
+    font-size:10px;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    cursor:pointer;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.12);
+    transition:.15s ease;
+  }
+  .v116-action:hover{transform:translateY(-2px);background:rgba(255,255,255,.24);}
+  .v116-side{
+    background:rgba(255,255,255,.14);
+    border:1px solid rgba(255,255,255,.20);
+    border-radius:24px;
+    padding:16px;
+    backdrop-filter:blur(10px);
+    display:flex;
+    flex-direction:column;
+    gap:12px;
+    justify-content:center;
+  }
+  .v116-profile{display:flex;align-items:center;gap:12px;min-width:0;}
+  .v116-avatar{
+    width:52px;
+    height:52px;
+    border-radius:20px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    background:#fff;
+    color:#047857;
+    font-size:18px;
+    font-weight:950;
+    overflow:hidden;
+    flex:0 0 auto;
+    box-shadow:0 12px 24px rgba(0,0,0,.15);
+  }
+  .v116-avatar img{width:100%;height:100%;object-fit:cover;}
+  .v116-name{font-size:15px;font-weight:950;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .v116-role{font-size:9px;font-weight:950;text-transform:uppercase;letter-spacing:.13em;color:rgba(255,255,255,.75);margin-top:3px;}
+  .v116-mini-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+  .v116-mini{background:rgba(255,255,255,.14);border:1px solid rgba(255,255,255,.15);border-radius:16px;padding:10px;min-width:0;}
+  .v116-mini-label{font-size:8px;text-transform:uppercase;letter-spacing:.14em;font-weight:950;color:rgba(255,255,255,.68);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .v116-mini-value{font-size:12px;font-weight:950;margin-top:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .v116-quote{display:flex;align-items:flex-start;gap:9px;background:rgba(255,255,255,.12);border-left:4px solid #fff;border-radius:0 16px 16px 0;padding:10px 12px;font-size:12px;font-weight:850;color:#fff;}
+
+  #control-bar{
+    background:rgba(255,255,255,.88)!important;
+    backdrop-filter:blur(16px);
+    border-bottom:1px solid rgba(203,213,225,.78)!important;
+    box-shadow:0 12px 34px rgba(15,23,42,.08)!important;
+  }
+  #main-controls{
+    border-bottom:1px solid #e2e8f0!important;
+    padding-top:14px!important;
+    padding-bottom:14px!important;
+  }
+  #main-controls label{letter-spacing:.08em!important;color:#64748b!important;}
+  #main-controls select{
+    min-height:42px!important;
+    border-radius:16px!important;
+    box-shadow:0 8px 20px rgba(15,23,42,.04)!important;
+    border-color:#bbf7d0!important;
+  }
+  #action-buttons button{
+    border-radius:16px!important;
+    min-height:40px!important;
+    box-shadow:0 12px 22px rgba(15,23,42,.10)!important;
+    transform:translateZ(0);
+  }
+  #action-buttons button:hover{transform:translateY(-1px)!important;}
+
+  #main-content{max-width:1280px!important;padding-top:22px!important;}
+  #main-content>div[id^="view-"]{
+    border-radius:24px!important;
+    border:1px solid rgba(226,232,240,.95)!important;
+    box-shadow:0 22px 54px rgba(15,23,42,.08)!important;
+    overflow:hidden!important;
+  }
+  #main-content>div[id^="view-"]>.bg-gray-50:first-child{
+    background:linear-gradient(90deg,#ffffff 0%,#f0fdf4 100%)!important;
+    padding:16px 18px!important;
+  }
+  #main-content h2{
+    color:#334155!important;
+    font-size:12px!important;
+    letter-spacing:.20em!important;
+  }
+  #view-grades table{border-collapse:separate!important;border-spacing:0!important;}
+  #view-grades thead th{background:#f8fafc!important;color:#64748b!important;border-color:#e2e8f0!important;}
+  #view-grades tbody tr{transition:.15s ease;background:#fff;}
+  #view-grades tbody tr:hover{background:#f0fdf4!important;}
+  #view-grades td,#view-grades th{border-color:#e2e8f0!important;}
+  #view-grades .sticky.left-0{background:#fff!important;}
+  #view-grades tbody tr:hover .sticky.left-0{background:#f0fdf4!important;}
+
+  #login-screen{
+    background:radial-gradient(circle at 20% 20%,rgba(16,185,129,.50),transparent 34%),linear-gradient(135deg,#052e24 0%,#047857 50%,#0f172a 100%)!important;
+  }
+  #login-screen .bg-white{
+    border-radius:28px!important;
+    box-shadow:0 34px 90px rgba(0,0,0,.34)!important;
+    border:1px solid rgba(255,255,255,.45)!important;
+  }
+  #login-screen .bg-white:before{
+    content:'CONCENAL DIGITAL';
+    position:absolute;
+    top:-14px;
+    left:50%;
+    transform:translateX(-50%);
+    background:#dc2626;
+    color:#fff;
+    border-radius:999px;
+    padding:6px 16px;
+    font-size:9px;
+    font-weight:950;
+    letter-spacing:.18em;
+    box-shadow:0 12px 24px rgba(220,38,38,.28);
+  }
+
+  body.dark-theme #app-screen{background:#0b1220!important;}
+  body.dark-theme #control-bar{background:rgba(15,23,42,.90)!important;border-color:#334155!important;}
+  body.dark-theme #main-content>div[id^="view-"]{background:#111827!important;border-color:#334155!important;box-shadow:0 22px 54px rgba(0,0,0,.28)!important;}
+  body.dark-theme #main-content>div[id^="view-"]>.bg-gray-50:first-child{background:linear-gradient(90deg,#111827 0%,#052e24 100%)!important;}
+  body.dark-theme #view-grades thead th{background:#0f172a!important;color:#cbd5e1!important;border-color:#334155!important;}
+  body.dark-theme #view-grades tbody tr{background:#111827!important;}
+  body.dark-theme #view-grades tbody tr:hover{background:#052e24!important;}
+  body.dark-theme #view-grades .sticky.left-0{background:#111827!important;}
+  body.dark-theme #view-grades tbody tr:hover .sticky.left-0{background:#052e24!important;}
+
+  @media(max-width:900px){
+    #v116-top-greeting{display:none;}
+    #v116-hero{width:calc(100% - 20px);margin-top:12px;border-radius:22px;}
+    .v116-hero-inner{grid-template-columns:1fr;padding:18px;}
+    .v116-title{font-size:26px;}
+    .v116-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    #main-content{padding-top:14px!important;}
+  }
+  @media(max-width:520px){
+    .v116-mini-grid{grid-template-columns:1fr;}
+    .v116-action{font-size:9px;padding:9px 11px;}
+  }
+  @media print{#v116-hero,#v116-top-greeting{display:none!important;}}
+  @keyframes v116Rise{from{opacity:0;transform:translateY(18px) scale(.99)}to{opacity:1;transform:translateY(0) scale(1)}}
+</style>
+
+<script id="concenal-v116-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V116_LOADED__) return;
+  window.__CONCENAL_V116_LOADED__ = true;
+
+  function $(id){ return document.getElementById(id); }
+  function str(v){ return String(v == null ? '' : v); }
+  function esc(v){ return str(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function getUser(){ try{ return currentUser || window.currentUser || null; }catch(e){ return window.currentUser || null; } }
+  function getData(){ try{ return appData || window.appData || {}; }catch(e){ return window.appData || {}; } }
+  function firstName(name){ return str(name).trim().split(/\s+/)[0] || 'usuário'; }
+  function userName(u){ return str(u && (u.displayName || u.name || u.fullName || u.username || u.email)) || 'Usuário'; }
+  function roleLabel(u){
+    try{ if(typeof getAccessLabel === 'function') return getAccessLabel(u); }catch(e){}
+    var role = str(u && (u.accessMode || u.role)).toLowerCase();
+    if(role === 'developer') return 'Professor Desenvolvedor';
+    if(role === 'admin') return 'Direção Geral';
+    if(role === 'coord') return 'Coordenação';
+    if(role === 'teacher') return 'Professor(a)';
+    if(role === 'parent') return 'Responsável';
+    if(role === 'secretaria') return 'Secretaria';
+    return 'Usuário';
+  }
+  function now(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Maceio'})); }
+  function greeting(){
+    var h = now().getHours();
+    if(h >= 5 && h < 12) return {text:'Bom dia', icon:'fa-sun', note:'Que seu dia seja leve, organizado e produtivo.'};
+    if(h >= 12 && h < 18) return {text:'Boa tarde', icon:'fa-cloud-sun', note:'Continue acompanhando os registros com clareza e atenção.'};
+    if(h >= 18 && h <= 23) return {text:'Boa noite', icon:'fa-moon', note:'Revise tudo com tranquilidade e mantenha o diário atualizado.'};
+    return {text:'Boa madrugada', icon:'fa-star', note:'Mesmo fora do horário comum, o sistema segue pronto para ajudar.'};
+  }
+  function dateLong(){
+    var d = now();
+    return d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).replace(/^./,function(c){return c.toUpperCase();});
+  }
+  function timeShort(){ return now().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}); }
+  function initials(name){ return str(name).split(/\s+/).filter(Boolean).slice(0,2).map(function(p){return p.charAt(0).toUpperCase();}).join('') || 'U'; }
+  function countStudents(){
+    var d = getData();
+    if(Array.isArray(d.students)) return d.students.length;
+    if(d.students && typeof d.students === 'object') return Object.keys(d.students).length;
+    return '-';
+  }
+  function normClassV127(v){
+    return str(v).toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/º|ª|°/g,'')
+      .replace(/ENSINO\s*MEDIO|ENS\.?\s*MEDIO|MEDIO/g,'EM')
+      .replace(/SERIE|SÉRIE|TURMA|ANO/g,'')
+      .replace(/[^A-Z0-9]/g,'')
+      .trim();
+  }
+  function countCurrentClassStudents(){
+    try{
+      if(typeof getStudentsByClass === 'function'){
+        var realList = getStudentsByClass();
+        if(Array.isArray(realList) && realList.length > 0) return realList.length;
+      }
+    }catch(e){}
+    var d = getData();
+    var arr = Array.isArray(d.students) ? d.students : [];
+    var current = str(d.currentClass || '');
+    if(!current) return arr.length || '-';
+    var key = normClassV127(current);
+    var count = arr.filter(function(s){
+      var raw = str((s && (s.class || s.turma || s.className || s.serie || s.series || s.grade || s.schoolClass)) || '');
+      return normClassV127(raw) === key;
+    }).length;
+    return count;
+  }
+  function countClasses(){
+    var d = getData();
+    if(Array.isArray(d.allClasses)) return d.allClasses.length;
+    if(Array.isArray(d.classes)) return d.classes.length;
+    if(d.classes && typeof d.classes === 'object') return Object.keys(d.classes).length;
+    return '-';
+  }
+  function currentMode(){
+    var m = str(getData().currentMode || 'grades');
+    var map = {grades:'Notas',attendance:'Frequência',daily:'Diário',behavior:'Relatório',dashboard:'Dashboard',planning:'Planejamento',activities:'Atividades',schedule:'Horários',calendar:'Calendário'};
+    return map[m] || 'Painel';
+  }
+  function phrase(){
+    var arr = [
+      'A prática leva à perfeição.',
+      'Organização transforma acompanhamento em resultado.',
+      'Cada registro fortalece a história escolar do aluno.',
+      'Comunicação clara aproxima escola, família e aprendizagem.',
+      'Ensinar bem também é acompanhar com atenção.'
+    ];
+    var d = now();
+    return arr[(d.getDate()+d.getHours()) % arr.length];
+  }
+  function canGo(feature){ try{ return typeof canAccess === 'function' ? canAccess(feature) : true; }catch(e){ return true; } }
+  function actions(u){
+    var role = str(u && u.role).toLowerCase();
+    var items = [];
+    if(canGo('grades')) items.push(['Notas','fa-chart-line',"switchMode('grades')"]);
+    if(canGo('attendance') && role !== 'parent') items.push(['Frequência','fa-user-check',"switchMode('attendance')"]);
+    if(canGo('behavior')) items.push(['Relatório','fa-clipboard-check',"switchMode('behavior')"]);
+    if(canGo('activities')) items.push(['Atividades','fa-file-pdf',"switchMode('activities')"]);
+    if(canGo('chat')) items.push([role === 'parent' ? 'Atendimento' : 'Chat','fa-comments','openChat()']);
+    if(canGo('dashboard') && role !== 'parent') items.push(['Dashboard','fa-gauge-high',"switchMode('dashboard')"]);
+    return items.slice(0,6).map(function(a){ return '<button type="button" class="v116-action" onclick="'+a[2]+'"><i class="fas '+a[1]+' mr-1"></i>'+esc(a[0])+'</button>'; }).join('');
+  }
+
+  function ensureTopGreeting(){
+    var holder = document.querySelector('#app-screen > header .max-w-7xl > .flex.items-center.gap-2');
+    if(!holder) return null;
+    var el = $('v116-top-greeting');
+    if(!el){
+      el = document.createElement('div');
+      el.id = 'v116-top-greeting';
+      holder.insertBefore(el, holder.firstChild);
+    }
+    return el;
+  }
+  function ensureHero(){
+    var app = $('app-screen'), control = $('control-bar');
+    if(!app || !control) return null;
+    var hero = $('v116-hero');
+    if(!hero){
+      hero = document.createElement('section');
+      hero.id = 'v116-hero';
+      hero.className = 'no-print';
+      app.insertBefore(hero, control);
+    }
+    return hero;
+  }
+  function avatarHTML(u, name){
+    var src = str(u && (u.avatarUrl || u.avatar || u.photoURL || u.photo || ''));
+    if(src) return '<img src="'+esc(src)+'" onerror="this.parentElement.textContent=\''+esc(initials(name))+'\'">';
+    return esc(initials(name));
+  }
+  function updateDesigner(){
+    var u = getUser();
+    if(!u) return;
+    var g = greeting();
+    var name = userName(u);
+    var role = roleLabel(u);
+    var d = getData();
+    var subject = str(d.currentSubject || 'Todas');
+    var klass = str(d.currentClass || 'Geral');
+    var top = ensureTopGreeting();
+    if(top){ top.innerHTML = '<i class="fas '+g.icon+'"></i><span>'+esc(g.text)+', '+esc(firstName(name))+'</span><span>•</span><span>'+esc(timeShort())+'</span>'; }
+    var hero = ensureHero();
+    if(!hero) return;
+    var subtitle = role.toLowerCase().indexOf('respons') >= 0
+      ? 'Acompanhe comunicados, atividades, relatórios e atendimentos escolares em um ambiente simples e seguro.'
+      : 'Gerencie notas, frequências, relatórios, planejamentos e comunicação escolar com uma entrada mais moderna e organizada.';
+    hero.innerHTML = ''+
+      '<div class="v116-hero-inner">'+
+        '<div>'+
+          '<div class="v116-kicker"><i class="fas '+g.icon+'"></i><span>'+esc(dateLong())+'</span><span>•</span><span>'+esc(timeShort())+'</span></div>'+ 
+          '<h1 class="v116-title">'+esc(g.text)+', '+esc(firstName(name))+'!</h1>'+ 
+          '<p class="v116-subtitle">Seja bem-vindo(a) ao Diário Escolar CONCENAL. '+esc(subtitle)+' '+esc(g.note)+'</p>'+ 
+          '<div class="v116-actions">'+actions(u)+'</div>'+ 
+        '</div>'+ 
+        '<aside class="v116-side">'+
+          '<div class="v116-profile"><div class="v116-avatar">'+avatarHTML(u,name)+'</div><div class="min-w-0"><div class="v116-name">'+esc(name)+'</div><div class="v116-role">'+esc(role)+'</div></div></div>'+ 
+          '<div class="v116-mini-grid">'+
+            '<div class="v116-mini"><div class="v116-mini-label">Turma</div><div class="v116-mini-value">'+esc(klass)+'</div></div>'+ 
+            '<div class="v116-mini"><div class="v116-mini-label">Disciplina</div><div class="v116-mini-value">'+esc(subject)+'</div></div>'+ 
+            '<div class="v116-mini"><div class="v116-mini-label">Alunos da turma</div><div class="v116-mini-value">'+esc(countCurrentClassStudents())+'</div></div>'+ 
+          '</div>'+ 
+          '<div class="v116-quote"><i class="fas fa-quote-left mt-1"></i><span>'+esc(phrase())+'</span></div>'+ 
+        '</aside>'+ 
+      '</div>';
+  }
+
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v116Hooked) return;
+    var wrapped = function(){
+      var out = fn.apply(this, arguments);
+      setTimeout(updateDesigner, 80);
+      return out;
+    };
+    wrapped.__v116Hooked = true;
+    window[name] = wrapped;
+  }
+
+  function boot(){
+    hook('showApp');
+    hook('updateUI');
+    hook('switchMode');
+    hook('changeSubject');
+    hook('changeClass');
+    updateDesigner();
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 350); });
+  setTimeout(boot, 900);
+  setInterval(updateDesigner, 60000);
+})();
+</script>
+
+<style id="concenal-v117-style">
+  #v117-manage-host{margin-top:18px;}
+  .v117-manage-box{
+    background:rgba(255,255,255,.12);
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:22px;
+    padding:14px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+    backdrop-filter:blur(2px);
+  }
+  .v117-manage-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:12px;}
+  .v117-manage-head span{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.12em;color:#ecfdf5;}
+  .v117-manage-head small{font-size:10px;font-weight:800;color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.08em;}
+  .v117-manage-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;}
+  .v117-manage-btn{
+    min-height:46px!important;
+    margin:0!important;
+    justify-content:center!important;
+    display:flex!important;
+    align-items:center!important;
+    gap:7px!important;
+    border-radius:16px!important;
+    font-size:11px!important;
+    letter-spacing:.02em!important;
+    box-shadow:0 10px 22px rgba(0,0,0,.10)!important;
+    border:1px solid rgba(255,255,255,.16)!important;
+    white-space:nowrap;
+  }
+  body.v117-panel-actions-ready #action-buttons{display:none!important;}
+  @media(max-width:1200px){.v117-manage-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+  @media(max-width:900px){.v117-manage-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:640px){
+    #v117-manage-host{margin-top:14px;}
+    .v117-manage-box{padding:12px;border-radius:18px;}
+    .v117-manage-grid{grid-template-columns:1fr;}
+    .v117-manage-btn{font-size:10px!important;min-height:42px!important;}
+  }
+  @media print{#v117-manage-host{display:none!important;}}
+</style>
+<script id="concenal-v117-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V117_LOADED__) return;
+  window.__CONCENAL_V117_LOADED__ = true;
+
+  function byId(id){ return document.getElementById(id); }
+  function cleanClass(v){ return String(v||'').replace(/\bml-2\b|\bmb-2\b/g,'').replace(/\s+/g,' ').trim(); }
+  function ensureHost(){
+    var hero = byId('v116-hero');
+    if(!hero) return null;
+    var left = hero.querySelector('.v116-hero-inner > div:first-child');
+    if(!left) return null;
+    var host = byId('v117-manage-host');
+    if(!host){
+      host = document.createElement('div');
+      host.id = 'v117-manage-host';
+      left.appendChild(host);
+    }
+    return host;
+  }
+  function syncPanelButtons(){
+    var source = byId('action-buttons');
+    var host = ensureHost();
+    if(!source || !host) return;
+    var buttons = Array.from(source.querySelectorAll('button'));
+    if(!buttons.length){
+      host.innerHTML = '';
+      document.body.classList.remove('v117-panel-actions-ready');
+      return;
+    }
+    document.body.classList.add('v117-panel-actions-ready');
+    host.innerHTML = '<div class="v117-manage-box"><div class="v117-manage-head"><span><i class="fas fa-bolt"></i> Gestão rápida</span><small>Funções principais agora dentro do painel</small></div><div class="v117-manage-grid"></div></div>';
+    var grid = host.querySelector('.v117-manage-grid');
+    buttons.forEach(function(btn){
+      var clone = btn.cloneNode(true);
+      clone.className = cleanClass(btn.className) + ' v117-manage-btn';
+      grid.appendChild(clone);
+    });
+  }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v117Hooked) return;
+    var wrapped = function(){
+      var out = fn.apply(this, arguments);
+      setTimeout(syncPanelButtons, 120);
+      setTimeout(syncPanelButtons, 320);
+      return out;
+    };
+    wrapped.__v117Hooked = true;
+    window[name] = wrapped;
+  }
+  function observe(){
+    var source = byId('action-buttons');
+    if(source && !source.__v117Observed){
+      var mo = new MutationObserver(function(){ setTimeout(syncPanelButtons, 30); });
+      mo.observe(source, {childList:true, subtree:true, attributes:true});
+      source.__v117Observed = true;
+    }
+    var hero = byId('v116-hero');
+    if(hero && !hero.__v117Observed){
+      var mo2 = new MutationObserver(function(){ setTimeout(syncPanelButtons, 30); });
+      mo2.observe(hero, {childList:true, subtree:false});
+      hero.__v117Observed = true;
+    }
+  }
+  function boot(){
+    hook('updateUI');
+    hook('switchMode');
+    hook('changeSubject');
+    hook('changeClass');
+    hook('renderGradesTable');
+    observe();
+    syncPanelButtons();
+    setTimeout(syncPanelButtons, 250);
+    setTimeout(syncPanelButtons, 700);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 400); });
+  setTimeout(boot, 1000);
+})();
+</script>
+
+
+
+<!-- PATCH V118: painel premium organizado por blocos -->
+<style id="concenal-v118-style">
+  body.v118-panel-ready #action-buttons{display:none!important;}
+  body.v118-panel-ready #v117-manage-host{display:none!important;}
+  #v118-action-center{
+    margin-top:18px;
+    animation:v118Enter .35s ease-out both;
+  }
+  .v118-shell{
+    position:relative;
+    overflow:hidden;
+    border-radius:26px;
+    padding:16px;
+    background:linear-gradient(135deg,rgba(255,255,255,.16),rgba(255,255,255,.07));
+    border:1px solid rgba(255,255,255,.18);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.16),0 18px 35px rgba(0,0,0,.14);
+    backdrop-filter:blur(6px);
+  }
+  .v118-shell:before{
+    content:"";
+    position:absolute;
+    inset:auto -80px -120px auto;
+    width:260px;
+    height:260px;
+    border-radius:999px;
+    background:rgba(255,255,255,.08);
+    pointer-events:none;
+  }
+  .v118-head{
+    position:relative;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-start;
+    gap:12px;
+    flex-wrap:wrap;
+    margin-bottom:14px;
+  }
+  .v118-head h3{
+    margin:0;
+    color:#fff;
+    font-size:15px;
+    font-weight:950;
+    letter-spacing:.05em;
+    text-transform:uppercase;
+    display:flex;
+    align-items:center;
+    gap:9px;
+  }
+  .v118-head h3 i{
+    width:34px;
+    height:34px;
+    border-radius:14px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,.17);
+    border:1px solid rgba(255,255,255,.16);
+  }
+  .v118-head p{
+    margin:4px 0 0;
+    color:rgba(255,255,255,.72);
+    font-size:11px;
+    font-weight:800;
+  }
+  .v118-status{
+    color:#d1fae5;
+    background:rgba(6,78,59,.45);
+    border:1px solid rgba(167,243,208,.22);
+    border-radius:999px;
+    padding:8px 12px;
+    font-size:10px;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.08em;
+    white-space:nowrap;
+  }
+  .v118-groups{
+    position:relative;
+    display:grid;
+    grid-template-columns:repeat(4,minmax(0,1fr));
+    gap:12px;
+  }
+  .v118-group{
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.13);
+    border-radius:22px;
+    padding:12px;
+    min-width:0;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+  }
+  .v118-group-title{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+    color:#fff;
+    font-size:10px;
+    font-weight:950;
+    text-transform:uppercase;
+    letter-spacing:.12em;
+  }
+  .v118-group-title i{
+    width:25px;
+    height:25px;
+    border-radius:10px;
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    background:rgba(255,255,255,.16);
+    color:#ecfdf5;
+  }
+  .v118-list{display:flex;flex-direction:column;gap:9px;}
+  .v118-card{
+    width:100%;
+    border:0;
+    border-radius:18px;
+    padding:12px;
+    display:flex;
+    align-items:center;
+    gap:11px;
+    text-align:left;
+    color:#0f172a;
+    background:#fff;
+    box-shadow:0 12px 25px rgba(0,0,0,.12);
+    cursor:pointer;
+    transition:transform .18s ease,box-shadow .18s ease,filter .18s ease;
+    min-height:62px;
+  }
+  .v118-card:hover{
+    transform:translateY(-3px) scale(1.01);
+    box-shadow:0 20px 35px rgba(0,0,0,.18);
+    filter:saturate(1.05);
+  }
+  .v118-card:active{transform:translateY(-1px) scale(.99);}
+  .v118-icon{
+    width:42px;
+    height:42px;
+    min-width:42px;
+    border-radius:16px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    color:#fff;
+    font-size:16px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.18);
+  }
+  .v118-card-title{
+    display:block;
+    font-size:11px;
+    line-height:1.15;
+    font-weight:950;
+    text-transform:uppercase;
+    color:#111827;
+    letter-spacing:.02em;
+  }
+  .v118-card-desc{
+    display:block;
+    margin-top:3px;
+    font-size:9px;
+    line-height:1.2;
+    font-weight:800;
+    color:#64748b;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+  .v118-academico .v118-icon{background:linear-gradient(135deg,#2563eb,#1d4ed8);}
+  .v118-relatorios .v118-icon{background:linear-gradient(135deg,#4f46e5,#7c3aed);}
+  .v118-gestao .v118-icon{background:linear-gradient(135deg,#f97316,#ea580c);}
+  .v118-comunicacao .v118-icon{background:linear-gradient(135deg,#059669,#047857);}
+  .v118-empty{color:rgba(255,255,255,.70);font-size:10px;font-weight:800;padding:8px 4px;}
+  body.dark-theme .v118-card{background:#0f172a;color:#e5e7eb;border:1px solid #334155;}
+  body.dark-theme .v118-card-title{color:#f8fafc;}
+  body.dark-theme .v118-card-desc{color:#94a3b8;}
+  @media(max-width:1280px){.v118-groups{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:740px){
+    #v118-action-center{margin-top:14px;}
+    .v118-shell{padding:13px;border-radius:22px;}
+    .v118-groups{grid-template-columns:1fr;}
+    .v118-card{min-height:56px;padding:10px;}
+    .v118-icon{width:38px;height:38px;min-width:38px;border-radius:14px;}
+  }
+  @media print{#v118-action-center{display:none!important;}}
+  @keyframes v118Enter{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:translateY(0)}}
+</style>
+<script id="concenal-v118-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V118_LOADED__) return;
+  window.__CONCENAL_V118_LOADED__ = true;
+
+  function byId(id){ return document.getElementById(id); }
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function esc(v){ return txt(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function iconClass(btn, label){
+    var i = btn.querySelector('i');
+    if(i){
+      var cls = Array.from(i.classList).filter(function(c){ return c.indexOf('fa-') === 0; });
+      if(cls.length) return cls[0];
+    }
+    var l = label.toLowerCase();
+    if(l.indexOf('fechar')>=0 || l.indexOf('diário')>=0) return 'fa-lock-open';
+    if(l.indexOf('novo')>=0) return 'fa-user-plus';
+    if(l.indexOf('importar')>=0) return 'fa-file-import';
+    if(l.indexOf('extra')>=0) return 'fa-star';
+    if(l.indexOf('bolet')>=0) return 'fa-print';
+    if(l.indexOf('csv')>=0 || l.indexOf('export')>=0) return 'fa-file-excel';
+    if(l.indexOf('gerenciar')>=0) return 'fa-cogs';
+    if(l.indexOf('backup')>=0) return 'fa-database';
+    if(l.indexOf('chat')>=0 || l.indexOf('comunica')>=0) return 'fa-comments';
+    return 'fa-bolt';
+  }
+  function groupFor(label){
+    var l = label.toLowerCase();
+    if(l.indexOf('bolet')>=0 || l.indexOf('csv')>=0 || l.indexOf('export')>=0 || l.indexOf('relat')>=0) return 'relatorios';
+    if(l.indexOf('gerenciar')>=0 || l.indexOf('backup')>=0 || l.indexOf('gest')>=0) return 'gestao';
+    if(l.indexOf('chat')>=0 || l.indexOf('comunica')>=0 || l.indexOf('atendimento')>=0 || l.indexOf('coord')>=0) return 'comunicacao';
+    return 'academico';
+  }
+  function descFor(label){
+    var l = label.toLowerCase();
+    if(l.indexOf('fechar')>=0) return 'Controle de edição';
+    if(l.indexOf('diário fechado')>=0) return 'Reabrir diário';
+    if(l.indexOf('novo')>=0) return 'Cadastrar estudante';
+    if(l.indexOf('importar')>=0) return 'Adicionar em lote';
+    if(l.indexOf('extra')>=0) return 'Marcação da turma';
+    if(l.indexOf('bolet')>=0) return 'Impressão em massa';
+    if(l.indexOf('csv')>=0 || l.indexOf('export')>=0) return 'Planilha de dados';
+    if(l.indexOf('gerenciar')>=0) return 'Organizar turma';
+    if(l.indexOf('backup')>=0) return 'Cópia segura';
+    if(l.indexOf('chat')>=0) return 'Mensagens escolares';
+    return 'Ação rápida';
+  }
+  function groupMeta(id){
+    var map = {
+      academico:{title:'Acadêmico',icon:'fa-graduation-cap'},
+      relatorios:{title:'Relatórios',icon:'fa-chart-pie'},
+      gestao:{title:'Gestão',icon:'fa-user-shield'},
+      comunicacao:{title:'Comunicação',icon:'fa-comments'}
+    };
+    return map[id] || map.academico;
+  }
+  function ensureHost(){
+    var hero = byId('v116-hero');
+    if(!hero) return null;
+    var left = hero.querySelector('.v116-hero-inner > div:first-child');
+    if(!left) return null;
+    var host = byId('v118-action-center');
+    if(!host){
+      host = document.createElement('section');
+      host.id = 'v118-action-center';
+      var anchor = left.querySelector('.v116-actions');
+      if(anchor && anchor.parentNode) anchor.parentNode.insertBefore(host, anchor.nextSibling);
+      else left.appendChild(host);
+    }
+    return host;
+  }
+  function buttonText(btn){
+    return txt(btn.textContent || btn.innerText || 'Ação');
+  }
+  function buildCard(btn){
+    var label = buttonText(btn);
+    var group = groupFor(label);
+    var card = document.createElement('button');
+    card.type = 'button';
+    card.className = 'v118-card v118-' + group;
+    card.innerHTML = '<span class="v118-icon"><i class="fas '+esc(iconClass(btn,label))+'"></i></span><span><span class="v118-card-title">'+esc(label)+'</span><span class="v118-card-desc">'+esc(descFor(label))+'</span></span>';
+    card.addEventListener('click', function(e){
+      e.preventDefault();
+      e.stopPropagation();
+      try{ btn.click(); }catch(err){ console.error('Erro ao executar ação V118:', err); }
+    });
+    return {group:group, card:card, label:label};
+  }
+  function render(){
+    var source = byId('action-buttons');
+    var host = ensureHost();
+    if(!source || !host) return;
+    var buttons = Array.from(source.querySelectorAll('button')).filter(function(b){ return buttonText(b); });
+    if(!buttons.length){ document.body.classList.add('v118-panel-ready'); return; }
+    var signature = buttons.map(function(b){ return buttonText(b); }).join('|');
+    if(host.getAttribute('data-v118-signature') === signature && host.querySelector('.v118-shell')){
+      document.body.classList.add('v118-panel-ready');
+      return;
+    }
+    host.setAttribute('data-v118-signature', signature);
+    document.body.classList.add('v118-panel-ready');
+    var built = {academico:[], relatorios:[], gestao:[], comunicacao:[]};
+    buttons.forEach(function(btn){
+      var item = buildCard(btn);
+      built[item.group].push(item.card);
+    });
+    host.innerHTML = '<div class="v118-shell"><div class="v118-head"><div><h3><i class="fas fa-layer-group"></i> Central de Ações</h3></div></div><div class="v118-groups"></div></div>';
+    var groups = host.querySelector('.v118-groups');
+    ['academico','relatorios','gestao','comunicacao'].forEach(function(id){
+      var meta = groupMeta(id);
+      var group = document.createElement('div');
+      group.className = 'v118-group';
+      group.innerHTML = '<div class="v118-group-title"><i class="fas '+meta.icon+'"></i>'+esc(meta.title)+'</div><div class="v118-list"></div>';
+      var list = group.querySelector('.v118-list');
+      if(built[id].length) built[id].forEach(function(card){ list.appendChild(card); });
+      else list.innerHTML = '<div class="v118-empty">Sem ações disponíveis agora.</div>';
+      groups.appendChild(group);
+    });
+  }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v118Hooked) return;
+    var wrapped = function(){
+      var out = fn.apply(this, arguments);
+      setTimeout(render, 120);
+      setTimeout(render, 450);
+      return out;
+    };
+    wrapped.__v118Hooked = true;
+    window[name] = wrapped;
+  }
+  function observe(){
+    var source = byId('action-buttons');
+    if(source && !source.__v118Observed){
+      new MutationObserver(function(){ setTimeout(render, 60); }).observe(source,{childList:true,subtree:true,attributes:true});
+      source.__v118Observed = true;
+    }
+  }
+  function boot(){
+    hook('updateUI');
+    hook('switchMode');
+    hook('changeSubject');
+    hook('changeClass');
+    hook('renderGradesTable');
+    hook('ensureBackupButton');
+    observe();
+    render();
+    setTimeout(render, 250);
+    setTimeout(render, 900);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 450); });
+  setTimeout(boot, 1100);
+})();
+</script>
+
+
+
+<!-- PATCH V122: menu inicial real, módulos funcionando como páginas internas e botão voltar -->
+<style id="concenal-v122-style">
+  body.v122-home #control-bar,
+  body.v122-home #main-content,
+  body.v122-home #v122-module-bar{display:none!important;}
+  body.v122-home #v116-hero{display:block!important;}
+  body.v122-module #v116-hero{display:none!important;}
+  body.v122-module #control-bar{display:block!important;}
+  body.v122-module #main-content{display:block!important;}
+  body.v122-module #v122-module-bar{display:block!important;}
+  body.v122-module #control-bar > div:nth-child(2){display:none!important;}
+  body.v122-module #action-buttons{display:none!important;}
+  #v116-hero .v116-actions{display:none!important;}
+
+  #v122-modules-center{margin:18px 0 0;}
+  .v122-modules-shell{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:16px;box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 40px rgba(0,0,0,.10);}
+  .v122-modules-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .v122-modules-title{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.14em;color:#ecfdf5;}
+  .v122-modules-sub{font-size:10px;font-weight:850;color:rgba(255,255,255,.72);text-transform:uppercase;letter-spacing:.08em;}
+  .v122-modules-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+  .v122-module-card{display:flex;align-items:center;gap:12px;width:100%;min-height:66px;background:rgba(255,255,255,.96);border:1px solid rgba(15,23,42,.07);border-radius:20px;padding:12px 14px;text-align:left;box-shadow:0 16px 32px rgba(0,0,0,.12);transition:.18s ease;color:#0f172a;cursor:pointer;}
+  .v122-module-card:hover{transform:translateY(-3px);box-shadow:0 20px 38px rgba(0,0,0,.16);}
+  .v122-module-card:active{transform:translateY(-1px) scale(.99);}
+  .v122-module-card.is-active{background:linear-gradient(135deg,#ecfdf5,#d1fae5);border-color:#86efac;}
+  .v122-module-icon{width:44px;height:44px;min-width:44px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#047857,#10b981);color:white;font-size:17px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);}
+  .v122-module-name{display:block;font-size:12px;font-weight:950;line-height:1.15;color:#0f172a;text-transform:uppercase;letter-spacing:.02em;}
+  .v122-module-desc{display:block;font-size:10px;font-weight:800;line-height:1.25;color:#64748b;margin-top:4px;}
+
+  #v122-module-bar{width:min(1536px,calc(100% - 32px));margin:18px auto 0;}
+  .v122-module-shell{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;background:#fff;border:1px solid #dbeafe;border-radius:22px;padding:14px 18px;box-shadow:0 18px 40px rgba(15,23,42,.10);}
+  .v122-back-btn{border:0;background:linear-gradient(135deg,#047857,#10b981);color:white;border-radius:16px;padding:12px 16px;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.05em;display:inline-flex;align-items:center;gap:8px;box-shadow:0 12px 24px rgba(4,120,87,.22);transition:.18s ease;cursor:pointer;}
+  .v122-back-btn:hover{transform:translateY(-2px);box-shadow:0 16px 30px rgba(4,120,87,.30);}
+  .v122-module-info{min-width:0;display:flex;flex-direction:column;gap:2px;}
+  .v122-module-info strong{display:block;font-size:15px;font-weight:950;color:#0f172a;}
+  .v122-module-info span{display:block;font-size:11px;font-weight:800;color:#64748b;}
+  .v122-pill{display:inline-flex;align-items:center;gap:7px;border-radius:999px;background:#ecfdf5;color:#047857;border:1px solid #bbf7d0;padding:7px 10px;font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;}
+  body.dark-theme .v122-module-card{background:#0f172a;color:#f8fafc;border-color:#334155;}
+  body.dark-theme .v122-module-name{color:#f8fafc;}
+  body.dark-theme .v122-module-desc{color:#94a3b8;}
+  body.dark-theme .v122-module-shell{background:#0f172a!important;border-color:#334155!important;color:#f8fafc!important;}
+  body.dark-theme .v122-module-info strong{color:#f8fafc!important;}
+  body.dark-theme .v122-module-info span{color:#94a3b8!important;}
+  @media(max-width:1280px){.v122-modules-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+  @media(max-width:900px){.v122-modules-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:640px){
+    #v122-modules-center{margin-top:14px;}.v122-modules-shell{padding:12px;border-radius:20px;}.v122-modules-grid{grid-template-columns:1fr;}.v122-module-card{min-height:56px;padding:10px 12px;}.v122-module-icon{width:38px;height:38px;min-width:38px;border-radius:14px;font-size:14px;}
+    #v122-module-bar{width:calc(100% - 18px);margin-top:10px;}.v122-module-shell{padding:12px;border-radius:18px;}.v122-back-btn{width:100%;justify-content:center;}.v122-module-info strong{font-size:13px;}
+  }
+  @media print{#v122-modules-center,#v122-module-bar{display:none!important;}}
+</style>
+<script id="concenal-v122-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V122_LOADED__) return;
+  window.__CONCENAL_V122_LOADED__ = true;
+
+  var pageState = 'home';
+  var selectedMode = '';
+  var booted = false;
+
+  function byId(id){ return document.getElementById(id); }
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function esc(v){ return txt(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function appVisible(){ var app = byId('app-screen'); return !!(app && !app.classList.contains('hidden')); }
+  function modes(){ return [
+    {id:'grades',name:'Notas e Médias',desc:'Lançamentos e médias',icon:'fa-chart-line'},
+    {id:'attendance',name:'Frequência',desc:'Controle de presença',icon:'fa-user-check'},
+    {id:'daily',name:'Diário de Bordo',desc:'Registros de aula',icon:'fa-book-open'},
+    {id:'behavior',name:'Relatório Individual',desc:'Aspectos avaliados',icon:'fa-clipboard-check'},
+    {id:'dashboard',name:'Dashboard',desc:'Desempenho visual',icon:'fa-chart-pie'},
+    {id:'planning',name:'Planejamento',desc:'Planos e roteiros',icon:'fa-tasks'},
+    {id:'activities',name:'Atividades e Materiais',desc:'PDFs e materiais',icon:'fa-file-pdf'},
+    {id:'schedule',name:'Horários',desc:'Grade de horários',icon:'fa-clock'},
+    {id:'calendar',name:'Calendário',desc:'Datas e eventos',icon:'fa-calendar-alt'}
+  ]; }
+  function modeName(mode){
+    var found = modes().find(function(m){ return m.id === mode; });
+    return found ? found.name : 'Módulo do Sistema';
+  }
+  function ensureModulesPanel(){
+    var hero = byId('v116-hero');
+    if(!hero) return null;
+    var left = hero.querySelector('.v116-hero-inner > div:first-child');
+    if(!left) return null;
+    var host = byId('v122-modules-center');
+    if(!host){
+      host = document.createElement('section');
+      host.id = 'v122-modules-center';
+      var anchor = byId('v118-action-center') || left.querySelector('.v116-actions');
+      if(anchor && anchor.parentNode) anchor.parentNode.insertBefore(host, anchor);
+      else left.appendChild(host);
+    }
+    renderModulesPanel(host);
+    return host;
+  }
+  function renderModulesPanel(host){
+    var current = selectedMode || (window.appData && window.appData.currentMode) || 'grades';
+    host.innerHTML = '<div class="v122-modules-shell"><div class="v122-modules-head"><span class="v122-modules-title"><i class="fas fa-compass"></i> Módulos do sistema</span></div><div class="v122-modules-grid"></div></div>';
+    var grid = host.querySelector('.v122-modules-grid');
+    modes().forEach(function(m){
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'v122-module-card' + (m.id === current ? ' is-active' : '');
+      card.setAttribute('data-v122-mode', m.id);
+      card.innerHTML = '<span class="v122-module-icon"><i class="fas '+esc(m.icon)+'"></i></span><span><span class="v122-module-name">'+esc(m.name)+'</span><span class="v122-module-desc">'+esc(m.desc)+'</span></span>';
+      card.addEventListener('click', function(e){
+        e.preventDefault();
+        e.stopPropagation();
+        openModule(m.id);
+      });
+      grid.appendChild(card);
+    });
+  }
+  function ensureBackBar(){
+    var main = byId('main-content');
+    if(!main || !main.parentNode) return null;
+    var bar = byId('v122-module-bar');
+    if(!bar){
+      bar = document.createElement('section');
+      bar.id = 'v122-module-bar';
+      bar.className = 'no-print';
+      main.parentNode.insertBefore(bar, main);
+    }
+    var mode = selectedMode || (window.appData && window.appData.currentMode) || 'grades';
+    bar.innerHTML = '<div class="v122-module-shell"><button type="button" class="v122-back-btn" id="v122-back-btn"><i class="fas fa-arrow-left"></i> Voltar ao painel inicial</button><div class="v122-module-info"><strong>'+esc(modeName(mode))+'</strong></div></div>';
+    var btn = byId('v122-back-btn');
+    if(btn) btn.onclick = function(e){ if(e){e.preventDefault();e.stopPropagation();} showHome(); return false; };
+    return bar;
+  }
+  function applyHome(){
+    document.body.classList.add('v122-home');
+    document.body.classList.remove('v122-module');
+    // Remove estados antigos de versões anteriores, se existirem.
+    document.body.classList.add('v120-home','v121-home');
+    document.body.classList.remove('v120-module','v121-module');
+  }
+  function applyModule(){
+    document.body.classList.remove('v122-home','v120-home','v121-home');
+    document.body.classList.add('v122-module','v120-module','v121-module');
+  }
+  function forceVisibleView(mode){
+    var map = {grades:'view-grades',attendance:'view-attendance',daily:'view-daily',behavior:'view-behavior',dashboard:'view-dashboard',planning:'view-planning',activities:'view-activities',schedule:'view-schedule',calendar:'view-calendar'};
+    Object.keys(map).forEach(function(k){
+      var el = byId(map[k]);
+      if(!el) return;
+      if(k === mode){ el.classList.remove('hidden'); el.style.display = ''; }
+      else { el.classList.add('hidden'); }
+    });
+  }
+  function renderMode(mode){
+    try{ if(mode === 'grades' && typeof window.renderGradesTable === 'function') window.renderGradesTable(); }catch(e){}
+    try{ if(mode === 'attendance' && typeof window.renderAttendanceTable === 'function') window.renderAttendanceTable(); }catch(e){}
+    try{ if(mode === 'daily' && typeof window.loadDailyData === 'function') window.loadDailyData(); }catch(e){}
+    try{ if(mode === 'behavior' && typeof window.renderBehaviorReportView === 'function') window.renderBehaviorReportView(); }catch(e){}
+    try{ if(mode === 'dashboard' && typeof window.renderPerformanceDashboardV52 === 'function') window.renderPerformanceDashboardV52(); }catch(e){}
+    try{ if(mode === 'dashboard' && typeof window.showDashboardV90 === 'function') window.showDashboardV90(); }catch(e){}
+    try{ if(mode === 'planning' && typeof window.renderPlanningView === 'function') window.renderPlanningView(); }catch(e){}
+    try{ if(mode === 'activities' && typeof window.renderActivitiesView === 'function') window.renderActivitiesView(); }catch(e){}
+    try{ if(mode === 'schedule' && typeof window.renderScheduleView === 'function') window.renderScheduleView(); }catch(e){}
+    try{ if(mode === 'calendar' && typeof window.renderCalendarView === 'function') window.renderCalendarView(); }catch(e){}
+  }
+  function openModule(mode){
+    if(!mode) return false;
+    pageState = 'module';
+    selectedMode = mode;
+    try{ if(window.appData) window.appData.currentMode = mode; }catch(e){}
+    applyModule();
+    // Chama a função original do sistema, mas garante a página mesmo se algum patch antigo interferir.
+    try{ if(typeof window.switchMode === 'function') window.switchMode(mode); }catch(e){ console.error('Erro ao abrir módulo V122:', e); }
+    try{ if(window.appData) window.appData.currentMode = mode; }catch(e2){}
+    try{ if(typeof window.updateUI === 'function') window.updateUI(); }catch(e3){}
+    applyModule();
+    forceVisibleView(mode);
+    renderMode(mode);
+    ensureBackBar();
+    setTimeout(function(){ applyModule(); forceVisibleView(mode); renderMode(mode); ensureBackBar(); try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); } }, 80);
+    setTimeout(function(){ applyModule(); forceVisibleView(mode); renderMode(mode); ensureBackBar(); }, 350);
+    setTimeout(function(){ applyModule(); forceVisibleView(mode); ensureBackBar(); }, 900);
+    return false;
+  }
+  function showHome(){
+    if(!appVisible()) return;
+    pageState = 'home';
+    applyHome();
+    ensureModulesPanel();
+    ensureBackBar();
+    setTimeout(function(){ try{ window.scrollTo({top:0,behavior:'smooth'}); }catch(e){ window.scrollTo(0,0); } }, 60);
+  }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v122Hooked) return;
+    var wrapped = function(){
+      var out = fn.apply(this, arguments);
+      setTimeout(function(){ ensureModulesPanel(); ensureBackBar(); if(pageState === 'module') applyModule(); else if(appVisible()) applyHome(); }, 120);
+      return out;
+    };
+    wrapped.__v122Hooked = true;
+    window[name] = wrapped;
+  }
+  function boot(){
+    if(!appVisible()) return;
+    hook('showApp'); hook('updateUI'); hook('switchMode'); hook('changeSubject'); hook('changeClass');
+    window.openModuleV122 = openModule;
+    window.returnToStartPanel = showHome;
+    ensureModulesPanel();
+    ensureBackBar();
+    if(!booted){ booted = true; showHome(); }
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 500); });
+  setTimeout(boot, 900);
+  setTimeout(boot, 1600);
+  setTimeout(boot, 2800);
+  setInterval(function(){ if(appVisible()){ ensureModulesPanel(); if(pageState === 'module') applyModule(); } }, 1500);
+})();
+</script>
+
+
+<style id="concenal-v123-style">
+  /* V123: painel inicial mais compacto e com troca de turma/disciplina dentro do próprio painel */
+  body.v122-home #v116-hero{
+    max-width:1180px!important;
+    margin-top:12px!important;
+    border-radius:24px!important;
+    box-shadow:0 18px 46px rgba(4,120,87,.20)!important;
+  }
+  body.v122-home .v116-hero-inner{
+    grid-template-columns:minmax(0,1.25fr) minmax(270px,.55fr)!important;
+    gap:14px!important;
+    padding:16px!important;
+  }
+  body.v122-home .v116-kicker{
+    padding:6px 10px!important;
+    margin-bottom:9px!important;
+    font-size:9px!important;
+  }
+  body.v122-home .v116-title{
+    font-size:clamp(24px,2.55vw,34px)!important;
+    letter-spacing:-.04em!important;
+  }
+  body.v122-home .v116-subtitle{
+    max-width:720px!important;
+    margin-top:7px!important;
+    font-size:12px!important;
+    line-height:1.42!important;
+  }
+  body.v122-home .v116-side{
+    border-radius:20px!important;
+    padding:12px!important;
+    gap:9px!important;
+    justify-content:flex-start!important;
+  }
+  body.v122-home .v116-avatar{width:44px!important;height:44px!important;border-radius:16px!important;}
+  body.v122-home .v116-name{font-size:13px!important;}
+  body.v122-home .v116-mini-grid{gap:7px!important;}
+  body.v122-home .v116-mini{padding:8px!important;border-radius:13px!important;}
+  body.v122-home .v116-mini-value{font-size:11px!important;}
+  body.v122-home .v116-quote{padding:8px 10px!important;font-size:10px!important;border-radius:0 13px 13px 0!important;}
+
+  #v123-panel-selectors{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,220px));
+    gap:10px;
+    margin:12px 0 10px;
+    align-items:end;
+  }
+  .v123-select-card{
+    background:rgba(255,255,255,.13);
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:16px;
+    padding:9px 10px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.10);
+  }
+  .v123-select-card label{
+    display:flex;
+    align-items:center;
+    gap:6px;
+    color:rgba(255,255,255,.75);
+    font-size:8px;
+    font-weight:950;
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    margin-bottom:5px;
+  }
+  .v123-select-card select{
+    width:100%;
+    border:1px solid rgba(255,255,255,.24);
+    background:rgba(255,255,255,.96);
+    color:#064e3b;
+    font-weight:950;
+    border-radius:12px;
+    padding:8px 10px;
+    font-size:12px;
+    outline:none;
+    box-shadow:0 8px 16px rgba(0,0,0,.10);
+  }
+  .v123-select-card select:focus{box-shadow:0 0 0 3px rgba(255,255,255,.20),0 8px 16px rgba(0,0,0,.10);}
+
+  body.v122-home #v122-modules-center{margin-top:10px!important;}
+  body.v122-home .v122-modules-shell{
+    padding:12px!important;
+    border-radius:20px!important;
+  }
+  body.v122-home .v122-modules-head{margin-bottom:10px!important;}
+  body.v122-home .v122-modules-title{font-size:10px!important;letter-spacing:.13em!important;}
+  body.v122-home .v122-modules-sub{font-size:9px!important;}
+  body.v122-home .v122-modules-grid{gap:9px!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+  body.v122-home .v122-module-card{
+    min-height:54px!important;
+    padding:9px 11px!important;
+    border-radius:16px!important;
+    gap:9px!important;
+    box-shadow:0 10px 20px rgba(0,0,0,.10)!important;
+  }
+  body.v122-home .v122-module-icon{width:36px!important;height:36px!important;min-width:36px!important;border-radius:13px!important;font-size:14px!important;}
+  body.v122-home .v122-module-name{font-size:10px!important;}
+  body.v122-home .v122-module-desc{font-size:9px!important;margin-top:2px!important;}
+  body.v122-home #v118-action-center{margin-top:12px!important;}
+  body.v122-home .v118-shell{padding:12px!important;border-radius:20px!important;}
+  body.v122-home .v118-head{margin-bottom:9px!important;}
+  body.v122-home .v118-head h3{font-size:13px!important;}
+  body.v122-home .v118-head p{font-size:10px!important;}
+  body.v122-home .v118-groups{gap:9px!important;grid-template-columns:repeat(4,minmax(0,1fr))!important;}
+  body.v122-home .v118-group{padding:9px!important;border-radius:16px!important;}
+  body.v122-home .v118-group-title{font-size:9px!important;margin-bottom:8px!important;}
+  body.v122-home .v118-card{min-height:48px!important;padding:8px!important;border-radius:14px!important;}
+  body.v122-home .v118-icon{width:34px!important;height:34px!important;min-width:34px!important;border-radius:12px!important;}
+  body.v122-home .v118-card-title{font-size:10px!important;}
+  body.v122-home .v118-card-desc{font-size:9px!important;}
+
+  @media(max-width:1100px){
+    body.v122-home .v116-hero-inner{grid-template-columns:1fr!important;}
+    body.v122-home .v118-groups{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  }
+  @media(max-width:800px){
+    #v123-panel-selectors{grid-template-columns:1fr!important;}
+    body.v122-home .v122-modules-grid{grid-template-columns:1fr!important;}
+    body.v122-home .v118-groups{grid-template-columns:1fr!important;}
+  }
+  @media print{#v123-panel-selectors{display:none!important;}}
+</style>
+<script id="concenal-v123-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V123_LOADED__) return;
+  window.__CONCENAL_V123_LOADED__ = true;
+
+  function byId(id){ return document.getElementById(id); }
+  function cloneOptions(from, to){
+    if(!from || !to) return;
+    var old = to.value;
+    to.innerHTML = from.innerHTML;
+    to.value = from.value || old;
+  }
+  function ensureSelectors(){
+    var hero = byId('v116-hero');
+    if(!hero) return null;
+    var left = hero.querySelector('.v116-hero-inner > div:first-child');
+    if(!left) return null;
+    var host = byId('v123-panel-selectors');
+    if(!host){
+      host = document.createElement('div');
+      host.id = 'v123-panel-selectors';
+      host.innerHTML = ''+
+        '<div class="v123-select-card"><label><i class="fas fa-book"></i> Disciplina</label><select id="v123-subject-select"></select></div>'+
+        '<div class="v123-select-card"><label><i class="fas fa-users"></i> Turma</label><select id="v123-class-select"></select></div>';
+      var subtitle = left.querySelector('.v116-subtitle');
+      if(subtitle && subtitle.parentNode) subtitle.parentNode.insertBefore(host, subtitle.nextSibling);
+      else left.insertBefore(host, left.firstChild);
+    }
+    return host;
+  }
+  function syncSelectors(){
+    var host = ensureSelectors();
+    if(!host) return;
+    var srcSubject = byId('subject-select');
+    var srcClass = byId('class-select');
+    var dstSubject = byId('v123-subject-select');
+    var dstClass = byId('v123-class-select');
+    cloneOptions(srcSubject, dstSubject);
+    cloneOptions(srcClass, dstClass);
+    if(dstSubject && !dstSubject.__v123Ready){
+      dstSubject.__v123Ready = true;
+      dstSubject.addEventListener('change', function(){
+        var src = byId('subject-select');
+        if(src) src.value = this.value;
+        try{ if(typeof window.changeSubject === 'function') window.changeSubject(this.value); }
+        catch(e){ console.error('Erro ao trocar disciplina V123:', e); }
+        setTimeout(syncSelectors, 120);
+      });
+    }
+    if(dstClass && !dstClass.__v123Ready){
+      dstClass.__v123Ready = true;
+      dstClass.addEventListener('change', function(){
+        var src = byId('class-select');
+        if(src) src.value = this.value;
+        try{ if(typeof window.changeClass === 'function') window.changeClass(this.value); }
+        catch(e){ console.error('Erro ao trocar turma V123:', e); }
+        setTimeout(syncSelectors, 120);
+      });
+    }
+  }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v123Hooked) return;
+    var wrapped = function(){
+      var out = fn.apply(this, arguments);
+      setTimeout(syncSelectors, 120);
+      setTimeout(syncSelectors, 450);
+      return out;
+    };
+    wrapped.__v123Hooked = true;
+    window[name] = wrapped;
+  }
+  function observe(){
+    ['subject-select','class-select'].forEach(function(id){
+      var el = byId(id);
+      if(el && !el.__v123Observed){
+        new MutationObserver(function(){ setTimeout(syncSelectors, 60); }).observe(el,{childList:true,subtree:true,attributes:true});
+        el.addEventListener('change', function(){ setTimeout(syncSelectors, 60); });
+        el.__v123Observed = true;
+      }
+    });
+  }
+  function boot(){
+    hook('showApp');
+    hook('updateUI');
+    hook('changeSubject');
+    hook('changeClass');
+    hook('switchMode');
+    observe();
+    syncSelectors();
+    setTimeout(syncSelectors, 300);
+    setTimeout(syncSelectors, 900);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 450); });
+  setTimeout(boot, 1000);
+  setTimeout(boot, 2000);
+  setInterval(function(){ if(byId('app-screen') && !byId('app-screen').classList.contains('hidden')) syncSelectors(); }, 2500);
+})();
+</script>
+
+
+
+<!-- PATCH V124: painel final limpo, profissional, sem textos de versão e sem horários duplicados -->
+<style id="concenal-v124-style">
+  /* Remove duplicidades e textos técnicos de versão/instrução */
+  #v116-top-greeting,
+  #v116-hero .v116-actions,
+  .v118-status,
+  .v118-head p,
+  .v122-modules-sub,
+  .v122-pill,
+  .v122-module-info span{
+    display:none!important;
+  }
+
+  /* Mantém a hora apenas junto da saudação principal */
+  .v116-side .v116-mini[data-v124-hidden="true"]{display:none!important;}
+
+  /* Visual final mais limpo */
+  body.v122-home #v116-hero{overflow:hidden!important;}
+  body.v122-home .v116-kicker{display:inline-flex!important;}
+  body.v122-home .v118-shell,
+  body.v122-home .v122-modules-shell{
+    transition:none!important;
+  }
+  body.v122-home .v118-head{margin-bottom:10px!important;}
+  body.v122-home .v118-head h3,
+  body.v122-home .v122-modules-title{
+    color:#ecfdf5!important;
+  }
+  body.v122-module #v122-module-bar{margin-top:12px!important;}
+  .v122-module-shell{justify-content:flex-start!important;}
+  .v122-module-info strong{font-size:14px!important;}
+
+  /* Evita o pisca-pisca visual da central */
+  #v118-action-center{min-height:0!important;}
+  #v118-action-center .v118-shell{animation:none!important;}
+
+  @media(max-width:900px){
+    body.v122-home .v116-title{font-size:25px!important;}
+  }
+</style>
+<script id="concenal-v124-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V124_LOADED__) return;
+  window.__CONCENAL_V124_LOADED__ = true;
+
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+
+  function cleanFinalPanel(){
+    try{
+      var topGreeting = document.getElementById('v116-top-greeting');
+      if(topGreeting) topGreeting.style.display = 'none';
+
+      document.querySelectorAll('.v118-status,.v118-head p,.v122-modules-sub,.v122-pill,.v122-module-info span').forEach(function(el){
+        el.remove();
+      });
+
+      document.querySelectorAll('.v116-mini').forEach(function(card){
+        var label = card.querySelector('.v116-mini-label');
+        if(label && txt(label.textContent).toLowerCase() === 'horário'){
+          card.setAttribute('data-v124-hidden','true');
+        }
+      });
+
+      document.querySelectorAll('.v118-shell').forEach(function(shell){
+        shell.style.animation = 'none';
+      });
+    }catch(e){ console.warn('Limpeza visual V124:', e); }
+  }
+
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v124Hooked) return;
+    var wrapped = function(){
+      var out = fn.apply(this, arguments);
+      setTimeout(cleanFinalPanel, 80);
+      setTimeout(cleanFinalPanel, 260);
+      return out;
+    };
+    wrapped.__v124Hooked = true;
+    window[name] = wrapped;
+  }
+
+  function boot(){
+    hook('updateUI');
+    hook('switchMode');
+    hook('changeSubject');
+    hook('changeClass');
+    hook('showApp');
+    hook('openModuleV122');
+    cleanFinalPanel();
+    setTimeout(cleanFinalPanel, 300);
+    setTimeout(cleanFinalPanel, 900);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 450); });
+  setTimeout(boot, 1200);
+  new MutationObserver(function(){ cleanFinalPanel(); }).observe(document.documentElement, {childList:true, subtree:true});
+})();
+</script>
+
+<style id="concenal-v125-style">
+  #v116-top-greeting{display:none!important;}
+  #v118-action-center,#v117-manage-host{display:none!important;}
+  .v116-side .v116-mini[data-v125-hide="true"]{display:none!important;}
+  body.v122-home #v125-action-center{display:block;}
+  body.v122-module #v125-action-center{display:none!important;}
+  #v125-action-center{width:min(1400px,calc(100% - 32px));margin:16px auto 0;}
+  .v125-shell{background:linear-gradient(135deg,#0d7f5d 0%, #12b27c 100%);border:1px solid rgba(255,255,255,.16);border-radius:28px;padding:16px;box-shadow:0 24px 56px rgba(15,23,42,.16);position:relative;overflow:hidden;}
+  .v125-shell:before{content:'';position:absolute;right:-90px;bottom:-90px;width:220px;height:220px;border-radius:999px;background:radial-gradient(circle, rgba(255,255,255,.14), rgba(255,255,255,0));pointer-events:none;}
+  .v125-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:12px;position:relative;z-index:1;}
+  .v125-head h3{margin:0;display:flex;align-items:center;gap:10px;font-size:15px;font-weight:950;color:#ffffff;text-transform:uppercase;letter-spacing:.06em;}
+  .v125-head h3 i{width:38px;height:38px;border-radius:14px;background:rgba(255,255,255,.16);display:flex;align-items:center;justify-content:center;box-shadow:inset 0 1px 0 rgba(255,255,255,.18);}
+  .v125-groups{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;position:relative;z-index:1;}
+  .v125-group{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.15);border-radius:18px;padding:10px;backdrop-filter:blur(3px);}
+  .v125-group-title{display:flex;align-items:center;gap:8px;color:#ecfdf5;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;margin-bottom:9px;}
+  .v125-group-title i{width:30px;height:30px;border-radius:12px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;}
+  .v125-list{display:flex;flex-direction:column;gap:8px;}
+  .v125-card{display:flex;align-items:center;gap:9px;width:100%;min-height:54px;background:#ffffff;border:1px solid rgba(15,23,42,.07);border-radius:16px;padding:9px 10px;box-shadow:0 10px 22px rgba(0,0,0,.12);transition:.18s ease;color:#0f172a;text-align:left;}
+  .v125-card:hover{transform:translateY(-2px);box-shadow:0 14px 28px rgba(0,0,0,.16);}
+  .v125-icon{width:34px;height:34px;min-width:34px;border-radius:12px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.22);}
+  .v125-card-title{display:block;font-size:10px;font-weight:950;text-transform:uppercase;line-height:1.15;color:#0f172a;}
+  .v125-card-desc{display:block;font-size:9px;font-weight:800;line-height:1.15;color:#64748b;margin-top:3px;}
+  .v125-academico .v125-icon{background:linear-gradient(135deg,#2563eb,#1d4ed8);}
+  .v125-relatorios .v125-icon{background:linear-gradient(135deg,#4f46e5,#7c3aed);}
+  .v125-gestao .v125-icon{background:linear-gradient(135deg,#f97316,#ea580c);}
+  .v125-comunicacao .v125-icon{background:linear-gradient(135deg,#059669,#047857);}
+  .v125-empty{color:rgba(255,255,255,.78);font-size:10px;font-weight:800;padding:8px 4px;}
+  @media(max-width:1280px){.v125-groups{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:700px){#v125-action-center{width:calc(100% - 18px);margin-top:12px;}.v125-shell{padding:12px;border-radius:22px;}.v125-groups{grid-template-columns:1fr;}.v125-card{min-height:50px;padding:8px;}}
+  @media print{#v125-action-center{display:none!important;}}
+</style>
+<script id="concenal-v125-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V125_LOADED__) return;
+  window.__CONCENAL_V125_LOADED__ = true;
+  function byId(id){ return document.getElementById(id); }
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function esc(v){ return txt(v).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function norm(v){ return txt(v).toLowerCase(); }
+  function currentClass(){
+    try{ if(window.appData && appData.currentClass) return txt(appData.currentClass); }catch(e){}
+    var sel = byId('class-select');
+    return sel ? txt(sel.value || (sel.selectedOptions && sel.selectedOptions[0] ? sel.selectedOptions[0].textContent : '')) : '';
+  }
+  function normClassV127b(v){
+    return txt(v).toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/º|ª|°/g,'')
+      .replace(/ENSINO\s*MEDIO|ENS\.?\s*MEDIO|MEDIO/g,'EM')
+      .replace(/SERIE|SÉRIE|TURMA|ANO/g,'')
+      .replace(/[^A-Z0-9]/g,'')
+      .trim();
+  }
+  function classStudentsCount(){
+    try{
+      if(typeof getStudentsByClass === 'function'){
+        var realList = getStudentsByClass();
+        if(Array.isArray(realList) && realList.length > 0) return realList.length;
+      }
+    }catch(e){}
+    try{
+      var data = window.appData || {};
+      var arr = Array.isArray(data.students) ? data.students : [];
+      var cls = normClassV127b(currentClass());
+      if(!cls) return arr.length;
+      return arr.filter(function(s){
+        var raw = txt((s && (s.class || s.turma || s.className || s.serie || s.series || s.grade || s.schoolClass)) || '');
+        return normClassV127b(raw) === cls;
+      }).length;
+    }catch(e){ return '-'; }
+  }
+  function cleanSideCards(){
+    var side = document.querySelector('#v116-hero .v116-side');
+    if(!side) return;
+    side.querySelectorAll('.v116-mini').forEach(function(card){
+      var labelEl = card.querySelector('.v116-mini-label');
+      var valueEl = card.querySelector('.v116-mini-value');
+      var label = norm(labelEl ? labelEl.textContent : '');
+      card.removeAttribute('data-v125-hide');
+      if(label === 'módulo atual' || label === 'modulo atual' || label === 'horário' || label === 'horario' || label === 'turmas'){
+        card.setAttribute('data-v125-hide','true');
+      }
+      if(label === 'alunos'){
+        if(labelEl) labelEl.textContent = 'Alunos da turma';
+        if(valueEl) valueEl.textContent = classStudentsCount();
+      }
+    });
+  }
+  function sourceButtons(){
+    var source = byId('action-buttons');
+    if(!source) return [];
+    return Array.from(source.querySelectorAll('button')).filter(function(btn){ return txt(btn.textContent); });
+  }
+  function descFor(label){
+    var l = norm(label);
+    if(l.indexOf('fechar diário') >= 0 || l.indexOf('fechar diario') >= 0) return 'Controle de edição';
+    if(l.indexOf('novo aluno') >= 0) return 'Cadastrar estudante';
+    if(l.indexOf('importar massa') >= 0) return 'Adicionar em lote';
+    if(l.indexOf('extra turma') >= 0) return 'Marcação da turma';
+    if(l.indexOf('boletins turma') >= 0) return 'Impressão em massa';
+    if(l.indexOf('exportar csv') >= 0) return 'Planilha de dados';
+    if(l.indexOf('gerenciar turma') >= 0) return 'Organizar turma';
+    if(l.indexOf('backup global') >= 0) return 'Cópia segura';
+    if(l.indexOf('chat') >= 0 || l.indexOf('atendimento') >= 0) return 'Comunicação escolar';
+    return 'Acesso rápido';
+  }
+  function iconClass(label){
+    var l = norm(label);
+    if(l.indexOf('fechar diário') >= 0 || l.indexOf('fechar diario') >= 0) return 'fa-lock-open';
+    if(l.indexOf('novo aluno') >= 0) return 'fa-user-plus';
+    if(l.indexOf('importar massa') >= 0) return 'fa-file-import';
+    if(l.indexOf('extra turma') >= 0) return 'fa-star';
+    if(l.indexOf('boletins turma') >= 0) return 'fa-print';
+    if(l.indexOf('exportar csv') >= 0) return 'fa-file-excel';
+    if(l.indexOf('gerenciar turma') >= 0) return 'fa-cogs';
+    if(l.indexOf('backup global') >= 0) return 'fa-database';
+    if(l.indexOf('chat') >= 0 || l.indexOf('atendimento') >= 0) return 'fa-comments';
+    return 'fa-circle';
+  }
+  function groupKey(label){
+    var l = norm(label);
+    if(l.indexOf('fechar diário') >= 0 || l.indexOf('fechar diario') >= 0 || l.indexOf('novo aluno') >= 0 || l.indexOf('importar massa') >= 0 || l.indexOf('extra turma') >= 0) return 'academico';
+    if(l.indexOf('boletins turma') >= 0 || l.indexOf('exportar csv') >= 0) return 'relatorios';
+    if(l.indexOf('gerenciar turma') >= 0 || l.indexOf('backup global') >= 0) return 'gestao';
+    return 'comunicacao';
+  }
+  function ensureActionHost(){
+    var hero = byId('v116-hero');
+    if(!hero || !hero.parentNode) return null;
+    var host = byId('v125-action-center');
+    if(!host){
+      host = document.createElement('section');
+      host.id = 'v125-action-center';
+      hero.insertAdjacentElement('afterend', host);
+    }
+    return host;
+  }
+  function renderStableActions(){
+    var host = ensureActionHost();
+    var buttons = sourceButtons();
+    if(!host) return;
+    if(!buttons.length){ host.innerHTML = ''; return; }
+    var signature = buttons.map(function(btn){ return txt(btn.textContent); }).join('|');
+    if(host.getAttribute('data-v125-signature') === signature && host.querySelector('.v125-shell')) return;
+    host.setAttribute('data-v125-signature', signature);
+    var meta = {
+      academico:{title:'Acadêmico', icon:'fa-graduation-cap'},
+      relatorios:{title:'Relatórios', icon:'fa-chart-pie'},
+      gestao:{title:'Gestão', icon:'fa-user-cog'},
+      comunicacao:{title:'Comunicação', icon:'fa-comments'}
+    };
+    var groups = {academico:[], relatorios:[], gestao:[], comunicacao:[]};
+    buttons.forEach(function(btn){ groups[groupKey(txt(btn.textContent))].push(btn); });
+    host.innerHTML = '<div class="v125-shell"><div class="v125-head"><h3><i class="fas fa-layer-group"></i>Central de Ações</h3></div><div class="v125-groups"></div></div>';
+    var container = host.querySelector('.v125-groups');
+    Object.keys(meta).forEach(function(key){
+      var block = document.createElement('div');
+      block.className = 'v125-group';
+      block.innerHTML = '<div class="v125-group-title"><i class="fas '+meta[key].icon+'"></i>'+esc(meta[key].title)+'</div><div class="v125-list"></div>';
+      var list = block.querySelector('.v125-list');
+      if(!groups[key].length){ list.innerHTML = '<div class="v125-empty">Sem ações disponíveis agora.</div>'; }
+      else {
+        groups[key].forEach(function(btn){
+          var label = txt(btn.textContent);
+          var card = document.createElement('button');
+          card.type = 'button';
+          card.className = 'v125-card v125-' + key;
+          card.innerHTML = '<span class="v125-icon"><i class="fas '+iconClass(label)+'"></i></span><span><span class="v125-card-title">'+esc(label)+'</span><span class="v125-card-desc">'+esc(descFor(label))+'</span></span>';
+          card.addEventListener('click', function(ev){ ev.preventDefault(); ev.stopPropagation(); btn.click(); });
+          list.appendChild(card);
+        });
+      }
+      container.appendChild(block);
+    });
+  }
+  var timer = null;
+  function refresh(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){ cleanSideCards(); renderStableActions(); }, 40);
+  }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v125Hooked) return;
+    var wrapped = function(){ var out = fn.apply(this, arguments); refresh(); return out; };
+    wrapped.__v125Hooked = true;
+    window[name] = wrapped;
+  }
+  function observe(){
+    ['action-buttons','v116-hero','class-select'].forEach(function(id){
+      var el = byId(id);
+      if(el && !el.__v125Observed){ new MutationObserver(refresh).observe(el,{childList:true,subtree:true,attributes:true}); el.__v125Observed = true; }
+    });
+  }
+  function boot(){
+    hook('showApp'); hook('updateUI'); hook('switchMode'); hook('changeSubject'); hook('changeClass');
+    observe(); refresh(); setTimeout(refresh, 300); setTimeout(refresh, 900);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 500); });
+  setTimeout(boot, 1200);
+  setInterval(cleanSideCards, 1000);
+})();
+</script>
+
+<style id="concenal-v126-style">
+  #v125-action-center{width:min(1360px,calc(100% - 32px))!important;margin:14px auto 0!important;}
+  #v125-action-center .v125-shell{
+    background:linear-gradient(180deg,#f7fffb 0%,#ebfff6 100%)!important;
+    border:1px solid #bdebd8!important;
+    border-radius:24px!important;
+    box-shadow:0 18px 40px rgba(15,23,42,.10)!important;
+    padding:14px!important;
+  }
+  #v125-action-center .v125-shell:before{display:none!important;}
+  #v125-action-center .v125-head{margin-bottom:10px!important;}
+  #v125-action-center .v125-head h3{color:#065f46!important;font-size:14px!important;letter-spacing:.05em!important;}
+  #v125-action-center .v125-head h3 i{background:#d1fae5!important;color:#047857!important;box-shadow:none!important;}
+  #v125-action-center .v125-groups{gap:10px!important;}
+  #v125-action-center .v125-group{
+    background:#ffffff!important;
+    border:1px solid #dcfce7!important;
+    border-radius:18px!important;
+    padding:10px!important;
+    box-shadow:0 8px 22px rgba(15,23,42,.06)!important;
+    backdrop-filter:none!important;
+  }
+  #v125-action-center .v125-group-title{color:#047857!important;font-size:10px!important;margin-bottom:8px!important;}
+  #v125-action-center .v125-group-title i{background:#ecfdf5!important;color:#059669!important;}
+  #v125-action-center .v125-card{
+    border:1px solid #e5e7eb!important;
+    border-radius:14px!important;
+    min-height:50px!important;
+    box-shadow:0 4px 14px rgba(15,23,42,.06)!important;
+    padding:8px 10px!important;
+  }
+  #v125-action-center .v125-card:hover{transform:translateY(-1px)!important;box-shadow:0 8px 18px rgba(15,23,42,.10)!important;}
+  #v125-action-center .v125-card-title{font-size:10px!important;color:#111827!important;}
+  #v125-action-center .v125-card-desc{font-size:9px!important;color:#6b7280!important;}
+  #v125-action-center .v125-empty{color:#6b7280!important;font-size:10px!important;}
+  #v116-hero .v116-side .v116-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  #v116-hero .v116-side .v116-mini-grid .v116-mini:last-child{grid-column:1 / span 2;}
+  @media(max-width:900px){
+    #v125-action-center .v125-groups{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  }
+  @media(max-width:640px){
+    #v125-action-center .v125-groups{grid-template-columns:1fr!important;}
+    #v116-hero .v116-side .v116-mini-grid{grid-template-columns:1fr!important;}
+    #v116-hero .v116-side .v116-mini-grid .v116-mini:last-child{grid-column:auto!important;}
+  }
+</style>
+<script id="concenal-v126-script">
+(function(){
+  'use strict';
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function refreshLateral(){
+    var side = document.querySelector('#v116-hero .v116-side');
+    if(!side) return;
+    var cards = side.querySelectorAll('.v116-mini');
+    cards.forEach(function(card){
+      var labelEl = card.querySelector('.v116-mini-label');
+      var valueEl = card.querySelector('.v116-mini-value');
+      var label = txt(labelEl ? labelEl.textContent : '').toLowerCase();
+      if(label === 'módulo atual' || label === 'modulo atual' || label === 'turmas' || label === 'horário' || label === 'horario'){
+        card.style.display = 'none';
+      }
+      if(label === 'alunos'){
+        if(labelEl) labelEl.textContent = 'Alunos da turma';
+      }
+      if(label === 'alunos da turma'){
+        try{
+          var data = window.appData || {};
+          var arr = Array.isArray(data.students) ? data.students : [];
+          var current = txt(data.currentClass || '');
+          var total = !current ? arr.length : arr.filter(function(s){ return txt((s && (s.class || s.turma)) || '') === current; }).length;
+          if(valueEl) valueEl.textContent = total;
+        }catch(e){}
+      }
+    });
+  }
+  function boot(){ refreshLateral(); setTimeout(refreshLateral, 300); setTimeout(refreshLateral, 1000); }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 500); });
+  setTimeout(boot, 1200);
+  setInterval(refreshLateral, 1000);
+})();
+</script>
+
+
+<script id="concenal-v127-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V127_COUNT_FIX__) return;
+  window.__CONCENAL_V127_COUNT_FIX__ = true;
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function normClass(v){
+    return txt(v).toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/º|ª|°/g,'')
+      .replace(/ENSINO\s*MEDIO|ENS\.?\s*MEDIO|MEDIO/g,'EM')
+      .replace(/SERIE|SÉRIE|TURMA|ANO/g,'')
+      .replace(/[^A-Z0-9]/g,'')
+      .trim();
+  }
+  function currentClass(){
+    try{ if(window.appData && appData.currentClass) return txt(appData.currentClass); }catch(e){}
+    var s = document.getElementById('class-select') || document.getElementById('v123-class-select');
+    return s ? txt(s.value || (s.selectedOptions && s.selectedOptions[0] ? s.selectedOptions[0].textContent : '')) : '';
+  }
+  function allStudents(){
+    try{ return Array.isArray(window.appData && appData.students) ? appData.students : []; }catch(e){ return []; }
+  }
+  function countByClass(){
+    try{
+      if(typeof window.getStudentsByClass === 'function'){
+        var list = window.getStudentsByClass();
+        if(Array.isArray(list)) return list.length;
+      }
+    }catch(e){}
+    var key = normClass(currentClass());
+    var list = allStudents();
+    if(!key) return list.length;
+    return list.filter(function(s){
+      var raw = s && (s.class || s.turma || s.className || s.serie || s.series || s.grade || s.schoolClass);
+      return normClass(raw) === key;
+    }).length;
+  }
+  function forceCount(){
+    var total = countByClass();
+    document.querySelectorAll('#v116-hero .v116-mini').forEach(function(card){
+      var label = card.querySelector('.v116-mini-label');
+      var value = card.querySelector('.v116-mini-value');
+      var l = txt(label ? label.textContent : '').toLowerCase();
+      if(l === 'alunos' || l === 'alunos da turma'){
+        if(label) label.textContent = 'Alunos da turma';
+        if(value) value.textContent = String(total);
+        card.style.display = '';
+      }
+      if(l === 'módulo atual' || l === 'modulo atual' || l === 'turmas' || l === 'horário' || l === 'horario'){
+        card.style.display = 'none';
+      }
+    });
+  }
+  function boot(){ forceCount(); setTimeout(forceCount,200); setTimeout(forceCount,800); }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot,600); });
+  ['changeSubject','changeClass','updateUI','showApp'].forEach(function(name){
+    var fn = window[name];
+    if(typeof fn === 'function' && !fn.__v127CountHooked){
+      window[name] = function(){ var out = fn.apply(this, arguments); setTimeout(forceCount,150); setTimeout(forceCount,700); return out; };
+      window[name].__v127CountHooked = true;
+    }
+  });
+  setInterval(forceCount,1500);
+})();
+</script>
+
+
+<style id="concenal-v128-style">
+  /* V128: remove a faixa superior de matéria/turma dentro dos módulos,
+     pois cada módulo já possui seus próprios filtros internos. */
+  body.v122-module #control-bar{
+    display:none!important;
+  }
+  body.v122-module #v122-module-bar{
+    margin-top:16px!important;
+  }
+  body.v122-home #control-bar{
+    display:none!important;
+  }
+</style>
+<script id="concenal-v128-script">
+(function(){
+  'use strict';
+  function applyV128(){
+    var body = document.body;
+    if(!body) return;
+    var bar = document.getElementById('control-bar');
+    if(bar && (body.classList.contains('v122-module') || body.classList.contains('v122-home'))){
+      bar.style.display = 'none';
+    }
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(applyV128, 300); });
+  ['switchMode','changeSubject','changeClass','showApp'].forEach(function(name){
+    var fn = window[name];
+    if(typeof fn === 'function' && !fn.__v128Hooked){
+      window[name] = function(){ var out = fn.apply(this, arguments); setTimeout(applyV128, 80); return out; };
+      window[name].__v128Hooked = true;
+    }
+  });
+  setTimeout(applyV128, 900);
+  setInterval(applyV128, 1500);
+})();
+</script>
+
+
+<style id="concenal-v129-style">
+  /* V129: remove a central antiga larga e cria uma central no mesmo padrão do painel principal. */
+  #v125-action-center,
+  #v118-action-center,
+  #v117-manage-host{display:none!important;}
+
+  body.v122-home #v129-action-center{display:block!important;}
+  body.v122-module #v129-action-center{display:none!important;}
+
+  #v129-action-center{margin:18px 0 0!important;width:100%!important;}
+  .v129-actions-shell{
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:24px;
+    padding:16px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 18px 40px rgba(0,0,0,.10);
+  }
+  .v129-actions-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:14px;}
+  .v129-actions-title{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.14em;color:#ecfdf5;}
+  .v129-actions-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;}
+  .v129-action-card{
+    display:flex;align-items:center;gap:12px;width:100%;min-height:66px;
+    background:rgba(255,255,255,.96);border:1px solid rgba(15,23,42,.07);
+    border-radius:20px;padding:12px 14px;text-align:left;
+    box-shadow:0 16px 32px rgba(0,0,0,.12);transition:.18s ease;color:#0f172a;cursor:pointer;
+  }
+  .v129-action-card:hover{transform:translateY(-3px);box-shadow:0 20px 38px rgba(0,0,0,.16);}
+  .v129-action-card:active{transform:translateY(-1px) scale(.99);}
+  .v129-action-icon{width:44px;height:44px;min-width:44px;border-radius:16px;display:flex;align-items:center;justify-content:center;background:linear-gradient(135deg,#047857,#10b981);color:white;font-size:17px;box-shadow:inset 0 1px 0 rgba(255,255,255,.25);}
+  .v129-action-name{display:block;font-size:12px;font-weight:950;line-height:1.15;color:#0f172a;text-transform:uppercase;letter-spacing:.02em;}
+  .v129-action-desc{display:block;font-size:10px;font-weight:800;line-height:1.25;color:#64748b;margin-top:4px;}
+  .v129-color-blue{background:linear-gradient(135deg,#2563eb,#1d4ed8)!important;}
+  .v129-color-purple{background:linear-gradient(135deg,#4f46e5,#7c3aed)!important;}
+  .v129-color-orange{background:linear-gradient(135deg,#f97316,#ea580c)!important;}
+  .v129-color-green{background:linear-gradient(135deg,#047857,#10b981)!important;}
+  body.dark-theme .v129-action-card{background:#0f172a;color:#f8fafc;border-color:#334155;}
+  body.dark-theme .v129-action-name{color:#f8fafc;}
+  body.dark-theme .v129-action-desc{color:#94a3b8;}
+  @media(max-width:1280px){.v129-actions-grid{grid-template-columns:repeat(3,minmax(0,1fr));}}
+  @media(max-width:900px){.v129-actions-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:640px){.v129-actions-shell{padding:12px;border-radius:20px;}.v129-actions-grid{grid-template-columns:1fr;}.v129-action-card{min-height:58px;padding:10px 12px;}.v129-action-icon{width:38px;height:38px;min-width:38px;border-radius:14px;font-size:14px;}}
+
+  #v116-hero .v116-side .v116-mini[data-v129-hide="true"]{display:none!important;}
+  #v116-hero .v116-side .v116-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  #v116-hero .v116-side .v116-mini[data-v129-students="true"]{grid-column:1 / span 2;}
+</style>
+<script id="concenal-v129-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V129_LOADED__) return;
+  window.__CONCENAL_V129_LOADED__ = true;
+
+  var lastCountByClass = {};
+  var renderTimer = null;
+  var countTimer = null;
+
+  function byId(id){ return document.getElementById(id); }
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function norm(v){
+    return txt(v).toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/º|ª|°/g,'')
+      .replace(/ENSINO\s*MEDIO|ENS\.?\s*MEDIO|MEDIO/g,'EM')
+      .replace(/SERIE|SÉRIE|TURMA|ANO/g,'')
+      .replace(/[^A-Z0-9]/g,'')
+      .trim();
+  }
+  function esc(v){ return txt(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function selectedClassText(){
+    try{ if(window.appData && appData.currentClass) return txt(appData.currentClass); }catch(e){}
+    var a = byId('v123-class-select') || byId('class-select') || document.querySelector('select[id*="class"]');
+    return a ? txt(a.value || (a.selectedOptions && a.selectedOptions[0] ? a.selectedOptions[0].textContent : '')) : '';
+  }
+  function allStudents(){
+    try{ return Array.isArray(window.appData && appData.students) ? appData.students : []; }catch(e){ return []; }
+  }
+  function countByStudentsArray(clsKey){
+    var list = allStudents();
+    if(!clsKey) return list.length;
+    return list.filter(function(s){
+      var raw = s && (s.class || s.turma || s.className || s.serie || s.series || s.grade || s.schoolClass || '');
+      var k = norm(raw);
+      return k === clsKey || (k && clsKey && (k.indexOf(clsKey) >= 0 || clsKey.indexOf(k) >= 0));
+    }).length;
+  }
+  function stableStudentCount(){
+    var cls = selectedClassText();
+    var clsKey = norm(cls) || '__geral__';
+    var candidates = [];
+    try{
+      if(typeof window.getStudentsByClass === 'function'){
+        var real = window.getStudentsByClass();
+        if(Array.isArray(real)) candidates.push(real.length);
+      }
+    }catch(e){}
+    candidates.push(countByStudentsArray(clsKey === '__geral__' ? '' : clsKey));
+    var total = Math.max.apply(Math, candidates.map(function(n){ return isFinite(n) ? Number(n) : 0; }));
+    if(total > 0) lastCountByClass[clsKey] = total;
+    if(total === 0 && lastCountByClass[clsKey] && allStudents().length > 0) return lastCountByClass[clsKey];
+    return total;
+  }
+  function fixSidePanel(){
+    var side = document.querySelector('#v116-hero .v116-side');
+    if(!side) return;
+    var count = stableStudentCount();
+    side.querySelectorAll('.v116-mini').forEach(function(card){
+      var labelEl = card.querySelector('.v116-mini-label');
+      var valueEl = card.querySelector('.v116-mini-value');
+      var label = txt(labelEl ? labelEl.textContent : '').toLowerCase();
+      card.removeAttribute('data-v129-hide');
+      card.removeAttribute('data-v129-students');
+      if(label === 'módulo atual' || label === 'modulo atual' || label === 'turmas' || label === 'horário' || label === 'horario'){
+        card.setAttribute('data-v129-hide','true');
+        return;
+      }
+      if(label === 'alunos' || label === 'alunos da turma'){
+        card.setAttribute('data-v129-students','true');
+        if(labelEl) labelEl.textContent = 'Alunos da turma';
+        if(valueEl && valueEl.textContent !== String(count)) valueEl.textContent = String(count);
+      }
+    });
+  }
+
+  function actionButtons(){
+    var source = byId('action-buttons');
+    if(!source) return [];
+    var found = Array.from(source.querySelectorAll('button')).filter(function(btn){ return txt(btn.textContent); });
+    return found;
+  }
+  function actionIcon(label){
+    var l = txt(label).toLowerCase();
+    if(l.indexOf('fechar') >= 0 || l.indexOf('diário fechado') >= 0) return 'fa-lock-open';
+    if(l.indexOf('novo aluno') >= 0) return 'fa-user-plus';
+    if(l.indexOf('importar') >= 0) return 'fa-file-import';
+    if(l.indexOf('extra') >= 0) return 'fa-star';
+    if(l.indexOf('bolet') >= 0) return 'fa-print';
+    if(l.indexOf('csv') >= 0 || l.indexOf('export') >= 0) return 'fa-file-excel';
+    if(l.indexOf('gerenciar') >= 0) return 'fa-cogs';
+    if(l.indexOf('backup') >= 0) return 'fa-database';
+    if(l.indexOf('chat') >= 0 || l.indexOf('atendimento') >= 0) return 'fa-comments';
+    return 'fa-bolt';
+  }
+  function actionColor(label){
+    var l = txt(label).toLowerCase();
+    if(l.indexOf('bolet') >= 0 || l.indexOf('csv') >= 0 || l.indexOf('export') >= 0) return 'v129-color-purple';
+    if(l.indexOf('gerenciar') >= 0 || l.indexOf('backup') >= 0) return 'v129-color-orange';
+    if(l.indexOf('chat') >= 0 || l.indexOf('atendimento') >= 0) return 'v129-color-green';
+    return 'v129-color-blue';
+  }
+  function actionDesc(label){
+    var l = txt(label).toLowerCase();
+    if(l.indexOf('fechar') >= 0) return 'Controle de edição';
+    if(l.indexOf('novo aluno') >= 0) return 'Cadastrar estudante';
+    if(l.indexOf('importar') >= 0) return 'Adicionar em lote';
+    if(l.indexOf('extra') >= 0) return 'Marcação da turma';
+    if(l.indexOf('bolet') >= 0) return 'Impressão em massa';
+    if(l.indexOf('csv') >= 0 || l.indexOf('export') >= 0) return 'Planilha de dados';
+    if(l.indexOf('gerenciar') >= 0) return 'Organizar turma';
+    if(l.indexOf('backup') >= 0) return 'Cópia segura';
+    if(l.indexOf('chat') >= 0 || l.indexOf('atendimento') >= 0) return 'Comunicação escolar';
+    return 'Ação rápida';
+  }
+  function ensureActionHost(){
+    var hero = byId('v116-hero');
+    if(!hero) return null;
+    var left = hero.querySelector('.v116-hero-inner > div:first-child');
+    if(!left) return null;
+    var host = byId('v129-action-center');
+    if(!host){
+      host = document.createElement('section');
+      host.id = 'v129-action-center';
+    }
+    var modules = byId('v122-modules-center');
+    if(modules && modules.parentNode === left){
+      if(modules.nextSibling !== host) left.insertBefore(host, modules.nextSibling);
+    }else if(host.parentNode !== left){
+      left.appendChild(host);
+    }
+    return host;
+  }
+  function renderActions(){
+    var host = ensureActionHost();
+    if(!host) return;
+    var btns = actionButtons();
+    if(!btns.length && host.querySelector('.v129-actions-shell')) return;
+    if(!btns.length){ host.innerHTML = ''; return; }
+    var signature = btns.map(function(b){ return txt(b.textContent); }).join('|');
+    if(host.getAttribute('data-v129-signature') === signature && host.querySelector('.v129-actions-shell')) return;
+    host.setAttribute('data-v129-signature', signature);
+    host.innerHTML = '<div class="v129-actions-shell"><div class="v129-actions-head"><span class="v129-actions-title"><i class="fas fa-layer-group"></i> Central de Ações</span></div><div class="v129-actions-grid"></div></div>';
+    var grid = host.querySelector('.v129-actions-grid');
+    btns.forEach(function(btn){
+      var label = txt(btn.textContent);
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'v129-action-card';
+      card.innerHTML = '<span class="v129-action-icon '+actionColor(label)+'"><i class="fas '+actionIcon(label)+'"></i></span><span><span class="v129-action-name">'+esc(label)+'</span><span class="v129-action-desc">'+esc(actionDesc(label))+'</span></span>';
+      card.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); btn.click(); });
+      grid.appendChild(card);
+    });
+  }
+  function refresh(){
+    clearTimeout(renderTimer);
+    renderTimer = setTimeout(function(){ fixSidePanel(); renderActions(); }, 30);
+  }
+  function observeAll(){
+    ['v116-hero','action-buttons','class-select','v123-class-select'].forEach(function(id){
+      var el = byId(id);
+      if(el && !el.__v129Observed){
+        new MutationObserver(refresh).observe(el,{childList:true,subtree:true,attributes:true,characterData:true});
+        el.__v129Observed = true;
+      }
+    });
+  }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v129Hooked) return;
+    var wrapped = function(){ var out = fn.apply(this, arguments); refresh(); setTimeout(refresh,250); return out; };
+    wrapped.__v129Hooked = true;
+    window[name] = wrapped;
+  }
+  function boot(){
+    hook('showApp'); hook('updateUI'); hook('switchMode'); hook('changeSubject'); hook('changeClass'); hook('renderGradesTable');
+    observeAll(); refresh(); setTimeout(refresh,300); setTimeout(refresh,900);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot,500); });
+  setTimeout(boot,1200);
+  setInterval(function(){ fixSidePanel(); }, 300);
+})();
+</script>
+
+
+
+<!-- PATCH V130: painel inicial adaptado para professor, direção/coordenação e responsável -->
+<style id="concenal-v130-style">
+  body.v130-profile-panel #v116-top-greeting{display:none!important;}
+  body.v130-parent-profile #v123-panel-selectors{display:none!important;}
+  body.v130-parent-profile #v129-action-center .v129-actions-title::after{content:' do Responsável';}
+  body.v130-direction-profile #v129-action-center .v129-actions-title::after{content:' da Direção';}
+  .v130-profile-note{margin-top:10px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.15);border-radius:18px;padding:11px 13px;color:#ecfdf5;font-size:11px;font-weight:800;line-height:1.45;}
+  .v130-profile-note i{margin-right:7px;}
+  .v130-parent-profile #v116-hero .v116-mini-grid{grid-template-columns:1fr!important;}
+  .v130-parent-profile #v116-hero .v116-side .v116-mini[data-v130-hide-parent="true"]{display:none!important;}
+  .v130-direction-profile #v116-hero .v116-mini-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  .v130-direction-profile #v116-hero .v116-side .v116-mini[data-v130-hide-direction="true"]{display:none!important;}
+  .v130-profile-panel #v122-modules-center{display:block!important;}
+  .v130-profile-panel .v122-modules-shell{background:rgba(255,255,255,.10)!important;border-color:rgba(255,255,255,.16)!important;}
+  .v130-profile-panel .v122-modules-title{color:#ecfdf5!important;}
+  .v130-profile-panel #v129-action-center{display:block;}
+  .v130-parent-profile #v129-action-center .v129-actions-grid,
+  .v130-direction-profile #v129-action-center .v129-actions-grid{grid-template-columns:repeat(3,minmax(0,1fr))!important;}
+  @media(max-width:900px){
+    .v130-parent-profile #v129-action-center .v129-actions-grid,
+    .v130-direction-profile #v129-action-center .v129-actions-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  }
+  @media(max-width:640px){
+    .v130-parent-profile #v129-action-center .v129-actions-grid,
+    .v130-direction-profile #v129-action-center .v129-actions-grid{grid-template-columns:1fr!important;}
+  }
+</style>
+<script id="concenal-v130-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V130_LOADED__) return;
+  window.__CONCENAL_V130_LOADED__ = true;
+
+  var timer = null;
+  function byId(id){ return document.getElementById(id); }
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function esc(v){ return txt(v).replace(/[&<>"']/g,function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function user(){ try{ return window.currentUser || currentUser || null; }catch(e){ return window.currentUser || null; } }
+  function role(){ var u=user()||{}; return txt(u.role || '').toLowerCase(); }
+  function mode(){ var u=user()||{}; return txt(u.accessMode || '').toLowerCase(); }
+  function isParent(){ return role() === 'parent'; }
+  function isDirection(){ return role() === 'admin' || role() === 'coord' || mode() === 'developer'; }
+  function isTeacher(){ return !isParent() && !isDirection(); }
+  function safeCan(feature){ try{ return typeof window.canAccess === 'function' ? !!window.canAccess(feature) : true; }catch(e){ return true; } }
+  function data(){ try{ return window.appData || appData || {}; }catch(e){ return window.appData || {}; } }
+  function linkedStudents(){
+    try{ if(typeof window.getLinkedStudentsForParent === 'function') return window.getLinkedStudentsForParent() || []; }catch(e){}
+    var d = data();
+    return Array.isArray(d.students) ? d.students : [];
+  }
+  function openModule(mode){
+    try{ if(typeof window.openModuleV122 === 'function') return window.openModuleV122(mode); }catch(e){}
+    try{ if(window.appData) window.appData.currentMode = mode; }catch(e2){}
+    try{ if(typeof window.switchMode === 'function') window.switchMode(mode); }catch(e3){}
+    return false;
+  }
+  function runAction(action){
+    try{
+      if(action.type === 'mode') return openModule(action.value);
+      if(action.type === 'fn' && typeof window[action.value] === 'function') return window[action.value]();
+      if(action.type === 'chat' && typeof window.openChat === 'function') return window.openChat();
+      if(action.type === 'backup' && typeof window.exportSystemBackup === 'function') return window.exportSystemBackup();
+    }catch(err){ console.error('Erro na ação V130:', err); alert('Não foi possível abrir esta função agora.'); }
+    return false;
+  }
+  function ensureLeft(){
+    var hero = byId('v116-hero');
+    if(!hero) return null;
+    return hero.querySelector('.v116-hero-inner > div:first-child') || null;
+  }
+  function ensureModulesHost(){
+    var left = ensureLeft(); if(!left) return null;
+    var host = byId('v122-modules-center');
+    if(!host){ host = document.createElement('section'); host.id = 'v122-modules-center'; left.appendChild(host); }
+    if(host.parentNode !== left){ left.appendChild(host); }
+    return host;
+  }
+  function ensureActionsHost(){
+    var left = ensureLeft(); if(!left) return null;
+    var host = byId('v129-action-center');
+    if(!host){ host = document.createElement('section'); host.id = 'v129-action-center'; left.appendChild(host); }
+    if(host.parentNode !== left){ left.appendChild(host); }
+    return host;
+  }
+  function moduleList(){
+    if(isParent()){
+      var parent = [];
+      if(safeCan('grades')) parent.push({name:'Acompanhamento',desc:'Notas e situação escolar',icon:'fa-chart-line',action:{type:'mode',value:'grades'}});
+      if(safeCan('attendance')) parent.push({name:'Frequência',desc:'Presença e faltas',icon:'fa-user-check',action:{type:'mode',value:'attendance'}});
+      if(safeCan('behavior')) parent.push({name:'Relatórios',desc:'Aspectos avaliados',icon:'fa-clipboard-check',action:{type:'mode',value:'behavior'}});
+      if(safeCan('activities')) parent.push({name:'Atividades',desc:'Materiais e PDFs',icon:'fa-file-pdf',action:{type:'mode',value:'activities'}});
+      if(safeCan('calendar')) parent.push({name:'Calendário',desc:'Datas e eventos',icon:'fa-calendar-alt',action:{type:'mode',value:'calendar'}});
+      if(safeCan('chat')) parent.push({name:'Atendimento',desc:'Fale com a escola',icon:'fa-headset',action:{type:'chat'}});
+      return parent.length ? parent : [{name:'Atendimento',desc:'Fale com a escola',icon:'fa-headset',action:{type:'chat'}}];
+    }
+    if(isDirection()){
+      var dir = [
+        {name:'Coordenação',desc:'Acompanhar registros',icon:'fa-eye',action:{type:'fn',value:'openCoordPanel'}},
+        {name:'Gestão',desc:'Usuários e permissões',icon:'fa-users-cog',action:{type:'fn',value:'openUsersModal'}},
+        {name:'Currículo',desc:'Turmas e matérias',icon:'fa-sliders-h',action:{type:'fn',value:'openConfigModal'}},
+        {name:'Relatórios',desc:'Aspectos avaliados',icon:'fa-clipboard-check',action:{type:'mode',value:'behavior'}},
+        {name:'Dashboard',desc:'Desempenho geral',icon:'fa-gauge-high',action:{type:'mode',value:'dashboard'}},
+        {name:'Comunicação',desc:'Chat escolar',icon:'fa-comments',action:{type:'chat'}},
+        {name:'Calendário',desc:'Datas e eventos',icon:'fa-calendar-alt',action:{type:'mode',value:'calendar'}},
+        {name:'Backup',desc:'Cópia do sistema',icon:'fa-database',action:{type:'backup'}}
+      ];
+      return dir.filter(function(item){
+        if(item.action.value === 'openUsersModal') return typeof window.openUsersModal === 'function' || safeCan('users');
+        if(item.action.value === 'openConfigModal') return typeof window.openConfigModal === 'function' || safeCan('config');
+        if(item.action.value === 'openCoordPanel') return typeof window.openCoordPanel === 'function' || safeCan('coordPanel');
+        if(item.action.type === 'backup') return typeof window.exportSystemBackup === 'function' || safeCan('backup');
+        return true;
+      });
+    }
+    return null;
+  }
+  function renderModules(){
+    var list = moduleList();
+    if(!list) return;
+    var host = ensureModulesHost(); if(!host) return;
+    var signature = (isParent()?'parent':isDirection()?'direction':'teacher') + ':' + list.map(function(i){return i.name;}).join('|');
+    if(host.getAttribute('data-v130-signature') === signature && host.querySelector('.v122-modules-shell')) return;
+    host.setAttribute('data-v130-signature', signature);
+    host.innerHTML = '<div class="v122-modules-shell"><div class="v122-modules-head"><span class="v122-modules-title"><i class="fas fa-compass"></i> Módulos do sistema</span></div><div class="v122-modules-grid"></div></div>';
+    var grid = host.querySelector('.v122-modules-grid');
+    list.forEach(function(item){
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'v122-module-card';
+      card.innerHTML = '<span class="v122-module-icon"><i class="fas '+esc(item.icon)+'"></i></span><span><span class="v122-module-name">'+esc(item.name)+'</span><span class="v122-module-desc">'+esc(item.desc)+'</span></span>';
+      card.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); runAction(item.action); });
+      grid.appendChild(card);
+    });
+  }
+  function actionList(){
+    if(isParent()){
+      return [
+        {name:'Abrir atendimento',desc:'Falar com a escola',icon:'fa-headset',color:'v129-color-green',action:{type:'chat'}},
+        {name:'Ver atividades',desc:'PDFs e materiais',icon:'fa-file-pdf',color:'v129-color-blue',action:{type:'mode',value:'activities'}},
+        {name:'Relatórios',desc:'Acompanhamento do aluno',icon:'fa-clipboard-check',color:'v129-color-purple',action:{type:'mode',value:'behavior'}}
+      ].filter(function(i){ return i.action.type === 'chat' ? safeCan('chat') : safeCan(i.action.value); });
+    }
+    if(isDirection()){
+      return [
+        {name:'Coordenação',desc:'Painel de acompanhamento',icon:'fa-eye',color:'v129-color-green',action:{type:'fn',value:'openCoordPanel'}},
+        {name:'Gestão de usuários',desc:'Logins e permissões',icon:'fa-users-cog',color:'v129-color-orange',action:{type:'fn',value:'openUsersModal'}},
+        {name:'Currículo',desc:'Matérias e turmas',icon:'fa-sliders-h',color:'v129-color-blue',action:{type:'fn',value:'openConfigModal'}},
+        {name:'Comunicação',desc:'Chat escolar',icon:'fa-comments',color:'v129-color-green',action:{type:'chat'}},
+        {name:'Dashboard',desc:'Desempenho geral',icon:'fa-gauge-high',color:'v129-color-purple',action:{type:'mode',value:'dashboard'}},
+        {name:'Backup global',desc:'Cópia segura',icon:'fa-database',color:'v129-color-orange',action:{type:'backup'}}
+      ];
+    }
+    return null;
+  }
+  function renderActions(){
+    var list = actionList();
+    if(!list) return;
+    var host = ensureActionsHost(); if(!host) return;
+    var signature = (isParent()?'parent':isDirection()?'direction':'teacher') + ':' + list.map(function(i){return i.name;}).join('|');
+    if(host.getAttribute('data-v130-signature') === signature && host.querySelector('.v129-actions-shell')) return;
+    host.setAttribute('data-v130-signature', signature);
+    host.innerHTML = '<div class="v129-actions-shell"><div class="v129-actions-head"><span class="v129-actions-title"><i class="fas fa-layer-group"></i> Central de Ações</span></div><div class="v129-actions-grid"></div></div>';
+    var grid = host.querySelector('.v129-actions-grid');
+    list.forEach(function(item){
+      var card = document.createElement('button');
+      card.type = 'button';
+      card.className = 'v129-action-card';
+      card.innerHTML = '<span class="v129-action-icon '+esc(item.color || 'v129-color-green')+'"><i class="fas '+esc(item.icon)+'"></i></span><span><span class="v129-action-name">'+esc(item.name)+'</span><span class="v129-action-desc">'+esc(item.desc)+'</span></span>';
+      card.addEventListener('click', function(e){ e.preventDefault(); e.stopPropagation(); runAction(item.action); });
+      grid.appendChild(card);
+    });
+  }
+  function countLinked(){
+    if(isParent()) return linkedStudents().length || '-';
+    var d=data();
+    if(Array.isArray(d.students)) return d.students.length || '-';
+    return '-';
+  }
+  function updateSidePanel(){
+    var side = document.querySelector('#v116-hero .v116-side');
+    if(!side) return;
+    side.querySelectorAll('.v116-mini').forEach(function(card){
+      var label = txt((card.querySelector('.v116-mini-label')||{}).textContent).toLowerCase();
+      card.removeAttribute('data-v130-hide-parent');
+      card.removeAttribute('data-v130-hide-direction');
+      var value = card.querySelector('.v116-mini-value');
+      var lab = card.querySelector('.v116-mini-label');
+      if(isParent()){
+        if(label.indexOf('módulo')>=0 || label.indexOf('modulo')>=0 || label.indexOf('turma')>=0 || label.indexOf('disciplina')>=0 || label.indexOf('horário')>=0 || label.indexOf('horario')>=0 || label.indexOf('turmas')>=0){ card.setAttribute('data-v130-hide-parent','true'); }
+        if(label.indexOf('alunos')>=0){ if(lab) lab.textContent='Aluno(s) vinculado(s)'; if(value) value.textContent = countLinked(); }
+      }else if(isDirection()){
+        if(label.indexOf('módulo')>=0 || label.indexOf('modulo')>=0 || label.indexOf('horário')>=0 || label.indexOf('horario')){ card.setAttribute('data-v130-hide-direction','true'); }
+        if(label.indexOf('alunos')>=0){ if(lab) lab.textContent='Alunos cadastrados'; if(value) value.textContent = countLinked(); }
+      }
+    });
+    var left = ensureLeft();
+    if(left && !left.querySelector('.v130-profile-note')){
+      var note = document.createElement('div');
+      note.className = 'v130-profile-note';
+      note.innerHTML = isParent()
+        ? '<i class="fas fa-shield-alt"></i> Área do responsável: acompanhe as informações liberadas pela escola e use o atendimento quando precisar.'
+        : '<i class="fas fa-user-shield"></i> Área da direção: acompanhe gestão, comunicação, relatórios e configurações escolares pelo painel.';
+      var subtitle = left.querySelector('.v116-subtitle');
+      if(subtitle && subtitle.parentNode) subtitle.parentNode.insertBefore(note, subtitle.nextSibling);
+      else left.appendChild(note);
+    }
+  }
+  function applyClasses(){
+    document.body.classList.add('v130-profile-panel');
+    document.body.classList.toggle('v130-parent-profile', isParent());
+    document.body.classList.toggle('v130-direction-profile', isDirection());
+  }
+  function refresh(){
+    clearTimeout(timer);
+    timer = setTimeout(function(){
+      if(!user()) return;
+      applyClasses();
+      if(isParent() || isDirection()){
+        renderModules();
+        renderActions();
+        updateSidePanel();
+      }
+    }, 80);
+  }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v130Hooked) return;
+    var wrapped = function(){ var out = fn.apply(this, arguments); refresh(); setTimeout(refresh, 350); return out; };
+    wrapped.__v130Hooked = true;
+    window[name] = wrapped;
+  }
+  function observe(){
+    ['v116-hero','v122-modules-center','v129-action-center'].forEach(function(id){
+      var el = byId(id);
+      if(el && !el.__v130Observed){ new MutationObserver(refresh).observe(el,{childList:true,subtree:true,attributes:true}); el.__v130Observed = true; }
+    });
+  }
+  function boot(){
+    hook('showApp'); hook('updateUI'); hook('switchMode'); hook('changeSubject'); hook('changeClass');
+    observe(); refresh(); setTimeout(refresh, 500); setTimeout(refresh, 1200);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 600); });
+  setTimeout(boot, 1300);
+})();
+</script>
+
+
+<!-- PATCH V131: responsável respeita exatamente as permissões liberadas e não vê módulos indevidos -->
+<style id="concenal-v131-style">
+  body.v131-parent-restricted .v122-module-card,
+  body.v131-parent-restricted .v129-action-card{
+    display:none!important;
+  }
+  body.v131-parent-restricted .v122-module-card[data-v131-allowed="true"],
+  body.v131-parent-restricted .v129-action-card[data-v131-allowed="true"]{
+    display:flex!important;
+  }
+  body.v131-parent-restricted.v122-home #control-bar,
+  body.v131-parent-restricted.v122-home #main-content,
+  body.v131-parent-restricted.v122-home #v122-module-bar{
+    display:none!important;
+  }
+  body.v131-parent-restricted #v123-panel-selectors,
+  body.v131-parent-restricted #class-tabs{
+    display:none!important;
+  }
+</style>
+<script id="concenal-v131-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V131_LOADED__) return;
+  window.__CONCENAL_V131_LOADED__ = true;
+
+  var timer = null;
+  var originalOpenModule = null;
+  function byId(id){ return document.getElementById(id); }
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function norm(v){ return txt(v).toLowerCase(); }
+  function user(){ try{ return window.currentUser || currentUser || null; }catch(e){ return window.currentUser || null; } }
+  function isParent(){ var u = user() || {}; return norm(u.role) === 'parent'; }
+  function permissions(){
+    var u = user() || {};
+    if(Array.isArray(u.permissions)) return u.permissions.map(txt);
+    try{ if(typeof window.getEffectivePermissions === 'function') return (window.getEffectivePermissions(u) || []).map(txt); }catch(e){}
+    try{ if(typeof getEffectivePermissions === 'function') return (getEffectivePermissions(u) || []).map(txt); }catch(e){}
+    return [];
+  }
+  function hasFeature(feature){
+    if(!isParent()) return true;
+    var p = permissions();
+    if(!p.length) return false;
+    if(p.indexOf(feature) >= 0) return true;
+    if(feature === 'dashboard') return p.indexOf('reports') >= 0;
+    if(feature === 'reports') return p.indexOf('dashboard') >= 0 || p.indexOf('behavior') >= 0;
+    return false;
+  }
+  function featureFromMode(mode){
+    var map = {
+      grades:'grades',
+      attendance:'attendance',
+      daily:'daily',
+      behavior:'behavior',
+      dashboard:'dashboard',
+      planning:'planning',
+      activities:'activities',
+      schedule:'schedule',
+      calendar:'calendar'
+    };
+    return map[mode] || mode;
+  }
+  function modeFromLabel(label){
+    var l = norm(label);
+    if(l.indexOf('nota') >= 0 || l.indexOf('acompanhamento') >= 0) return 'grades';
+    if(l.indexOf('frequ') >= 0) return 'attendance';
+    if(l.indexOf('diário') >= 0 || l.indexOf('diario') >= 0 || l.indexOf('bordo') >= 0) return 'daily';
+    if(l.indexOf('relat') >= 0) return 'behavior';
+    if(l.indexOf('dashboard') >= 0 || l.indexOf('desempenho') >= 0) return 'dashboard';
+    if(l.indexOf('planej') >= 0) return 'planning';
+    if(l.indexOf('ativ') >= 0 || l.indexOf('material') >= 0 || l.indexOf('pdf') >= 0) return 'activities';
+    if(l.indexOf('horário') >= 0 || l.indexOf('horario') >= 0) return 'schedule';
+    if(l.indexOf('calend') >= 0) return 'calendar';
+    if(l.indexOf('atendimento') >= 0 || l.indexOf('chat') >= 0 || l.indexOf('comunica') >= 0) return 'chat';
+    return '';
+  }
+  function canOpenMode(mode){
+    if(mode === 'chat') return hasFeature('chat');
+    return hasFeature(featureFromMode(mode));
+  }
+  function markModuleCards(){
+    if(!isParent()) return;
+    document.querySelectorAll('.v122-module-card').forEach(function(card){
+      var mode = txt(card.getAttribute('data-v122-mode')) || modeFromLabel(card.textContent || '');
+      var allowed = canOpenMode(mode);
+      card.toggleAttribute('data-v131-allowed', !!allowed);
+      if(!allowed){
+        card.setAttribute('aria-hidden','true');
+        card.tabIndex = -1;
+      } else {
+        card.removeAttribute('aria-hidden');
+        card.removeAttribute('tabindex');
+      }
+    });
+  }
+  function markActionCards(){
+    if(!isParent()) return;
+    document.querySelectorAll('.v129-action-card').forEach(function(card){
+      var mode = modeFromLabel(card.textContent || '');
+      var allowed = mode ? canOpenMode(mode) : false;
+      card.toggleAttribute('data-v131-allowed', !!allowed);
+      if(!allowed){
+        card.setAttribute('aria-hidden','true');
+        card.tabIndex = -1;
+      } else {
+        card.removeAttribute('aria-hidden');
+        card.removeAttribute('tabindex');
+      }
+    });
+  }
+  function removeOriginalTabsForParent(){
+    if(!isParent()) return;
+    document.querySelectorAll('button[id^="nav-"]').forEach(function(btn){
+      var mode = txt(btn.id).replace(/^nav-/, '');
+      btn.style.display = canOpenMode(mode) ? '' : 'none';
+    });
+  }
+  function preventUnauthorizedContent(){
+    if(!isParent()) return;
+    var currentMode = '';
+    try{ currentMode = txt((window.appData || appData || {}).currentMode || ''); }catch(e){}
+    if(!currentMode) return;
+    if(currentMode !== 'chat' && !canOpenMode(currentMode)){
+      try{ if(typeof window.returnToStartPanel === 'function') window.returnToStartPanel(); }catch(e){}
+      document.body.classList.add('v122-home');
+      document.body.classList.remove('v122-module');
+    }
+  }
+  function wrapOpenModule(){
+    if(originalOpenModule || typeof window.openModuleV122 !== 'function') return;
+    originalOpenModule = window.openModuleV122;
+    window.openModuleV122 = function(mode){
+      if(isParent() && !canOpenMode(mode)){
+        alert('Esse módulo não está liberado para este responsável.');
+        try{ if(typeof window.returnToStartPanel === 'function') window.returnToStartPanel(); }catch(e){}
+        return false;
+      }
+      return originalOpenModule.apply(this, arguments);
+    };
+  }
+  function applyParentRestrictions(){
+    if(!isParent()){
+      document.body.classList.remove('v131-parent-restricted');
+      return;
+    }
+    document.body.classList.add('v131-parent-restricted');
+    wrapOpenModule();
+    markModuleCards();
+    markActionCards();
+    removeOriginalTabsForParent();
+    preventUnauthorizedContent();
+  }
+  function refresh(){
+    clearTimeout(timer);
+    timer = setTimeout(applyParentRestrictions, 30);
+  }
+  function observe(){
+    ['v122-modules-center','v129-action-center','control-bar','main-content','app-screen'].forEach(function(id){
+      var el = byId(id);
+      if(el && !el.__v131Observed){
+        new MutationObserver(refresh).observe(el,{childList:true,subtree:true,attributes:true,attributeFilter:['class','style','data-v122-mode']});
+        el.__v131Observed = true;
+      }
+    });
+  }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v131Hooked) return;
+    var wrapped = function(){ var out = fn.apply(this, arguments); refresh(); setTimeout(refresh, 150); return out; };
+    wrapped.__v131Hooked = true;
+    window[name] = wrapped;
+  }
+  function boot(){
+    hook('showApp'); hook('updateUI'); hook('switchMode'); hook('changeSubject'); hook('changeClass');
+    observe(); refresh(); setTimeout(refresh, 250); setTimeout(refresh, 800); setTimeout(refresh, 1600);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 500); });
+  setTimeout(boot, 1200);
+  setInterval(function(){ observe(); applyParentRestrictions(); }, 500);
+})();
+</script>
+
+
+
+<!-- PATCH V132: força painel moderno nos perfis Direção/Coordenação e Responsável -->
+<style id="concenal-v132-style">
+  body.v132-active.v132-home #v116-hero,
+  body.v132-active.v132-home #control-bar,
+  body.v132-active.v132-home #main-content,
+  body.v132-active.v132-home #v122-module-bar,
+  body.v132-active.v132-home #v129-action-center,
+  body.v132-active.v132-home #v125-action-center{display:none!important;}
+  body.v132-active.v132-home #v132-home-panel{display:block!important;}
+  body.v132-active.v132-module #v132-home-panel{display:none!important;}
+  body.v132-active.v132-module #v116-hero,
+  body.v132-active.v132-module #v129-action-center,
+  body.v132-active.v132-module #v125-action-center,
+  body.v132-active.v132-module #v122-modules-center{display:none!important;}
+  body.v132-active.v132-module #control-bar{display:none!important;}
+  body.v132-active.v132-module #main-content{display:block!important;}
+  body.v132-active.v132-module #v132-module-bar{display:block!important;}
+  #v132-home-panel{width:min(1536px,calc(100% - 32px));margin:18px auto 28px;display:none;}
+  .v132-shell{background:linear-gradient(135deg,#064e3b 0%,#047857 58%,#10b981 100%);border-radius:34px;box-shadow:0 28px 70px rgba(15,23,42,.18);overflow:hidden;position:relative;color:#fff;}
+  .v132-shell:before{content:'';position:absolute;right:-140px;top:-120px;width:390px;height:390px;border-radius:999px;background:rgba(255,255,255,.12);pointer-events:none;}
+  .v132-shell:after{content:'';position:absolute;left:-120px;bottom:-160px;width:360px;height:360px;border-radius:999px;background:rgba(255,255,255,.07);pointer-events:none;}
+  .v132-grid{position:relative;z-index:1;display:grid;grid-template-columns:minmax(0,1.9fr) minmax(360px,.9fr);gap:22px;padding:24px;}
+  .v132-date{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:999px;padding:8px 13px;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.08em;color:#ecfdf5;}
+  .v132-title{margin:18px 0 8px;font-size:40px;line-height:1;font-weight:950;letter-spacing:-.04em;text-shadow:0 3px 12px rgba(0,0,0,.12);}
+  .v132-sub{max-width:850px;font-size:14px;line-height:1.55;font-weight:800;color:#ecfdf5;margin:0 0 14px;}
+  .v132-selects{display:grid;grid-template-columns:repeat(2,minmax(0,260px));gap:12px;margin:14px 0 18px;}
+  .v132-select-card{background:rgba(255,255,255,.11);border:1px solid rgba(255,255,255,.18);border-radius:18px;padding:10px;}
+  .v132-select-card label{display:flex;align-items:center;gap:7px;font-size:9px;font-weight:950;letter-spacing:.13em;text-transform:uppercase;color:#d1fae5;margin-bottom:7px;}
+  .v132-select-card select{width:100%;border:0;outline:none;border-radius:13px;padding:10px 12px;background:#fff;color:#064e3b;font-size:13px;font-weight:900;}
+  .v132-section{background:rgba(255,255,255,.10);border:1px solid rgba(255,255,255,.16);border-radius:24px;padding:14px;margin-top:12px;}
+  .v132-section-head{display:flex;align-items:center;gap:9px;margin-bottom:12px;font-size:13px;font-weight:950;text-transform:uppercase;letter-spacing:.12em;color:#ecfdf5;}
+  .v132-section-head i{width:34px;height:34px;border-radius:13px;background:rgba(255,255,255,.14);display:flex;align-items:center;justify-content:center;}
+  .v132-modules{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+  .v132-card{border:0;cursor:pointer;width:100%;display:flex;align-items:center;gap:12px;text-align:left;background:rgba(255,255,255,.96);color:#0f172a;border-radius:18px;padding:12px 14px;min-height:68px;box-shadow:0 12px 25px rgba(0,0,0,.10);transition:.18s ease;}
+  .v132-card:hover{transform:translateY(-2px);box-shadow:0 18px 32px rgba(0,0,0,.15);}
+  .v132-card-icon{width:44px;height:44px;min-width:44px;border-radius:16px;background:linear-gradient(135deg,#059669,#047857);display:flex;align-items:center;justify-content:center;color:white;font-size:17px;}
+  .v132-card-title{display:block;font-size:12px;line-height:1.1;font-weight:950;text-transform:uppercase;color:#111827;}
+  .v132-card-desc{display:block;font-size:10px;line-height:1.2;font-weight:800;color:#64748b;margin-top:4px;}
+  .v132-side{min-height:100%;background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.18);border-radius:26px;padding:18px;display:flex;flex-direction:column;justify-content:center;gap:14px;}
+  .v132-profile{display:flex;align-items:center;gap:13px;}
+  .v132-avatar{width:64px;height:64px;min-width:64px;border-radius:22px;background:#fff;color:#047857;display:flex;align-items:center;justify-content:center;font-size:21px;font-weight:950;overflow:hidden;box-shadow:0 12px 24px rgba(0,0,0,.12);}
+  .v132-avatar img{width:100%;height:100%;object-fit:cover;}
+  .v132-name{font-size:18px;font-weight:950;line-height:1.1;}
+  .v132-role{font-size:10px;font-weight:950;text-transform:uppercase;letter-spacing:.12em;color:#d1fae5;margin-top:4px;}
+  .v132-info-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;}
+  .v132-info{background:rgba(255,255,255,.13);border:1px solid rgba(255,255,255,.16);border-radius:16px;padding:11px;}
+  .v132-info span{display:block;font-size:9px;text-transform:uppercase;letter-spacing:.13em;font-weight:950;color:#d1fae5;margin-bottom:5px;}
+  .v132-info b{display:block;font-size:14px;font-weight:950;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .v132-quote{border-left:4px solid #fff;background:rgba(255,255,255,.13);border-radius:0 16px 16px 0;padding:11px 13px;font-size:12px;font-weight:850;color:#fff;}
+  .v132-actions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;}
+  .v132-action-card .v132-card-icon{background:linear-gradient(135deg,#2563eb,#1d4ed8);}
+  .v132-action-card.v132-orange .v132-card-icon{background:linear-gradient(135deg,#f97316,#ea580c);}
+  .v132-action-card.v132-purple .v132-card-icon{background:linear-gradient(135deg,#7c3aed,#4f46e5);}
+  .v132-action-card.v132-green .v132-card-icon{background:linear-gradient(135deg,#059669,#047857);}
+  #v132-module-bar{display:none;width:min(1536px,calc(100% - 32px));margin:18px auto 0;}
+  .v132-module-shell{display:flex;align-items:center;gap:14px;background:#fff;border:1px solid #dbeafe;border-radius:22px;padding:14px 18px;box-shadow:0 18px 40px rgba(15,23,42,.10);}
+  .v132-back{border:0;background:linear-gradient(135deg,#047857,#10b981);color:white;border-radius:16px;padding:12px 16px;font-size:11px;font-weight:950;text-transform:uppercase;letter-spacing:.05em;display:inline-flex;align-items:center;gap:8px;box-shadow:0 12px 24px rgba(4,120,87,.22);cursor:pointer;}
+  .v132-module-title{font-size:15px;font-weight:950;color:#0f172a;}
+  body.v132-parent #v132-home-panel .v132-selects{display:none!important;}
+  body.v132-parent #v132-home-panel .v132-actions{grid-template-columns:repeat(2,minmax(0,1fr));}
+  @media(max-width:1100px){.v132-grid{grid-template-columns:1fr;}.v132-modules,.v132-actions{grid-template-columns:repeat(2,minmax(0,1fr));}.v132-side{justify-content:flex-start;}}
+  @media(max-width:640px){#v132-home-panel,#v132-module-bar{width:calc(100% - 16px);margin-top:10px;}.v132-grid{padding:14px;gap:14px;}.v132-title{font-size:28px;}.v132-selects,.v132-modules,.v132-actions,.v132-info-grid{grid-template-columns:1fr!important;}.v132-card{min-height:58px;padding:10px;}.v132-module-shell{flex-direction:column;align-items:stretch;}.v132-back{justify-content:center;}}
+  @media print{#v132-home-panel,#v132-module-bar{display:none!important;}}
+</style>
+<script id="concenal-v132-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V132_LOADED__) return;
+  window.__CONCENAL_V132_LOADED__ = true;
+  var timer=null, lastUserKey='', currentPage='home', currentMode='';
+  function byId(id){return document.getElementById(id);}
+  function txt(v){return String(v==null?'':v).replace(/\s+/g,' ').trim();}
+  function esc(v){return txt(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];});}
+  function norm(v){return txt(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');}
+  function user(){try{return window.currentUser || currentUser || null;}catch(e){return window.currentUser || null;}}
+  function role(){var u=user()||{};return norm(u.role || u.accessMode || u.type || '');}
+  function isParent(){return ['parent','responsavel','responsavel legal','pai','mae','aluno'].indexOf(role())>=0;}
+  function isDirection(){return ['admin','coord','coordenacao','coordenador','direcao','diretor','direction','secretaria','secretary'].indexOf(role())>=0;}
+  function shouldApply(){return !!user() && (isParent() || isDirection());}
+  function appVisible(){var app=byId('app-screen');return !!(app && !app.classList.contains('hidden'));}
+  function name(){var u=user()||{};return txt(u.displayName || u.name || u.fullName || u.username || u.email || 'Usuário');}
+  function firstName(){return name().split(/\s+/)[0] || 'Usuário';}
+  function roleLabel(){if(isParent()) return 'Responsável'; if(isDirection()) return role()==='secretaria'?'Secretaria':'Direção / Coordenação'; return 'Usuário';}
+  function initials(){return name().split(/\s+/).filter(Boolean).slice(0,2).map(function(p){return p[0].toUpperCase();}).join('') || 'U';}
+  function avatar(){var u=user()||{};var src=txt(u.avatarUrl||u.avatar||u.photoURL||u.photo||''); return src?'<img src="'+esc(src)+'" onerror="this.parentElement.textContent=\''+esc(initials())+'\'">':esc(initials());}
+  function now(){return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Maceio'}));}
+  function greet(){var h=now().getHours(); if(h>=5&&h<12)return'Bom dia'; if(h>=12&&h<18)return'Boa tarde'; if(h>=18)return'Boa noite'; return'Boa madrugada';}
+  function dateTime(){var d=now();return d.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'}).replace(/^./,function(c){return c.toUpperCase();})+' • '+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'});}
+  function data(){try{return window.appData || appData || {};}catch(e){return window.appData || {};}}
+  function currentSubject(){return txt(data().currentSubject || (byId('subject-select')?byId('subject-select').value:'') || '');}
+  function currentClass(){return txt(data().currentClass || (byId('class-select')?byId('class-select').value:'') || '');}
+  function studentsCount(){var d=data(), arr=Array.isArray(d.students)?d.students:[]; if(isParent()){var u=user()||{}; if(Array.isArray(u.childrenIds)) return u.childrenIds.length; if(Array.isArray(u.students)) return u.students.length; return 1;} var cls=norm(currentClass()); if(!cls) return arr.length; var count=arr.filter(function(s){return norm(s && (s.class||s.turma||''))===cls;}).length; return count || (typeof window.getStudentsByClass==='function' ? (window.getStudentsByClass()||[]).length : count);}
+  function perms(){var u=user()||{}; var raw=[]; if(Array.isArray(u.permissions)) raw=u.permissions; else {try{ if(typeof window.getEffectivePermissions==='function') raw=window.getEffectivePermissions(u)||[]; }catch(e){}} return raw.map(norm);}
+  function hasPerm(f){if(!isParent())return true; if(f==='chat')return true; var p=perms(); if(!p.length)return false; var map={grades:['grades','notas','notes','boletim'],attendance:['attendance','frequencia','faltas'],daily:['daily','diario'],behavior:['behavior','relatorio','relatorios','reports'],dashboard:['dashboard','desempenho'],planning:['planning','planejamento'],activities:['activities','atividades','materiais'],schedule:['schedule','horarios'],calendar:['calendar','calendario']}; return (map[f]||[f]).some(function(x){return p.indexOf(norm(x))>=0;});}
+  var allModules=[
+    {id:'grades',name:'Notas e Médias',desc:'Lançamentos e médias',icon:'fa-chart-line'},
+    {id:'attendance',name:'Frequência',desc:'Controle de presença',icon:'fa-user-check'},
+    {id:'daily',name:'Diário de Bordo',desc:'Registros de aula',icon:'fa-book-open'},
+    {id:'behavior',name:'Relatório Individual',desc:'Aspectos avaliados',icon:'fa-clipboard-check'},
+    {id:'dashboard',name:'Dashboard',desc:'Desempenho visual',icon:'fa-chart-pie'},
+    {id:'planning',name:'Planejamento',desc:'Planos e roteiros',icon:'fa-tasks'},
+    {id:'activities',name:'Atividades e Materiais',desc:'PDFs e materiais',icon:'fa-file-pdf'},
+    {id:'schedule',name:'Horários',desc:'Grade de horários',icon:'fa-clock'},
+    {id:'calendar',name:'Calendário',desc:'Datas e eventos',icon:'fa-calendar-alt'}
+  ];
+  function modules(){return allModules.filter(function(m){return hasPerm(m.id);});}
+  function actions(){
+    if(isParent()) return [{name:'Abrir Atendimento',desc:'Falar com a escola',icon:'fa-headset',color:'green',fn:function(){try{openChat();}catch(e){}}}];
+    return [
+      {name:'Coordenação',desc:'Painel de acompanhamento',icon:'fa-eye',color:'green',fn:function(){try{openCoordPanel();}catch(e){}}},
+      {name:'Gestão de Usuários',desc:'Usuários e permissões',icon:'fa-users-cog',color:'orange',fn:function(){try{openUsersModal();}catch(e){}}},
+      {name:'Currículo',desc:'Turmas e disciplinas',icon:'fa-sliders-h',color:'purple',fn:function(){try{openConfigModal();}catch(e){}}},
+      {name:'Comunicação',desc:'Chat e atendimentos',icon:'fa-comments',color:'green',fn:function(){try{openChat();}catch(e){}}},
+      {name:'Verificar Documento',desc:'QR Code e autenticidade',icon:'fa-qrcode',color:'purple',fn:function(){try{openDocumentVerification();}catch(e){}}},
+      {name:'Backup Global',desc:'Cópia segura do sistema',icon:'fa-database',color:'orange',fn:function(){try{exportSystemBackup();}catch(e){}}}
+    ];
+  }
+  function syncSelects(){
+    var ss=byId('subject-select'), sc=byId('class-select'), ds=byId('v132-subject'), dc=byId('v132-class');
+    if(ss&&ds){
+      if(document.activeElement !== ds){
+        if(ds.getAttribute('data-v134-options') !== ss.innerHTML){ ds.innerHTML=ss.innerHTML; ds.setAttribute('data-v134-options', ss.innerHTML); }
+        ds.value=ss.value;
+      }
+      if(!ds.__v132){ds.__v132=true; ds.onchange=function(){ss.value=this.value; try{changeSubject(this.value);}catch(e){console.error('Erro ao trocar disciplina:',e);} setTimeout(syncSelects,120);};}
+    }
+    if(sc&&dc){
+      if(document.activeElement !== dc){
+        if(dc.getAttribute('data-v134-options') !== sc.innerHTML){ dc.innerHTML=sc.innerHTML; dc.setAttribute('data-v134-options', sc.innerHTML); }
+        dc.value=sc.value;
+      }
+      if(!dc.__v132){dc.__v132=true; dc.onchange=function(){sc.value=this.value; try{changeClass(this.value);}catch(e){console.error('Erro ao trocar turma:',e);} setTimeout(syncSelects,120);};}
+    }
+  }
+  function cardHTML(item, extra){return '<button type="button" class="v132-card '+(extra||'')+'"><span class="v132-card-icon"><i class="fas '+esc(item.icon)+'"></i></span><span><span class="v132-card-title">'+esc(item.name)+'</span><span class="v132-card-desc">'+esc(item.desc)+'</span></span></button>';}
+  function renderHome(){
+    var app=byId('app-screen'), control=byId('control-bar'); if(!app||!control)return null;
+    var host=byId('v132-home-panel'); if(!host){host=document.createElement('section');host.id='v132-home-panel';app.insertBefore(host,control);} 
+    var sub=isParent()?'Acompanhe comunicados, atividades, relatórios e atendimentos escolares em um ambiente simples e seguro.':'Gerencie acompanhamento, comunicação, relatórios, permissões e organização escolar em um painel único.';
+    var infoTitle=isParent()?'Aluno(s) vinculado(s)':'Alunos da turma';
+    host.innerHTML='<div class="v132-shell"><div class="v132-grid"><div><div class="v132-date"><i class="fas fa-sun"></i>'+esc(dateTime())+'</div><h1 class="v132-title">'+esc(greet())+', '+esc(firstName())+'!</h1><p class="v132-sub">Seja bem-vindo(a) ao Diário Escolar CONCENAL. '+esc(sub)+'</p><div class="v132-selects"><div class="v132-select-card"><label><i class="fas fa-book"></i>Disciplina</label><select id="v132-subject"></select></div><div class="v132-select-card"><label><i class="fas fa-users"></i>Turma</label><select id="v132-class"></select></div></div><div class="v132-section"><div class="v132-section-head"><i class="fas fa-compass"></i>Módulos do Sistema</div><div class="v132-modules"></div></div><div class="v132-section"><div class="v132-section-head"><i class="fas fa-layer-group"></i>Central de Ações</div><div class="v132-actions"></div></div></div><aside class="v132-side"><div class="v132-profile"><div class="v132-avatar">'+avatar()+'</div><div><div class="v132-name">'+esc(name())+'</div><div class="v132-role">'+esc(roleLabel())+'</div></div></div><div class="v132-info-grid"><div class="v132-info"><span>Perfil</span><b>'+esc(roleLabel())+'</b></div><div class="v132-info"><span>Disciplina</span><b>'+esc(currentSubject()||'Geral')+'</b></div><div class="v132-info"><span>Turma</span><b>'+esc(currentClass()||'Geral')+'</b></div><div class="v132-info"><span>'+esc(infoTitle)+'</span><b>'+esc(studentsCount())+'</b></div></div><div class="v132-quote"><i class="fas fa-quote-left mr-2"></i>Comunicação clara aproxima escola, família e aprendizagem.</div></aside></div></div>';
+    var mg=host.querySelector('.v132-modules'); modules().forEach(function(m){var wrap=document.createElement('div');wrap.innerHTML=cardHTML(m);var btn=wrap.firstChild;btn.onclick=function(e){e.preventDefault();openModule(m.id);};mg.appendChild(btn);});
+    var ag=host.querySelector('.v132-actions'); actions().forEach(function(a){var wrap=document.createElement('div');wrap.innerHTML=cardHTML(a,'v132-action-card v132-'+a.color);var btn=wrap.firstChild;btn.onclick=function(e){e.preventDefault();a.fn();};ag.appendChild(btn);});
+    syncSelects(); return host;
+  }
+  function ensureBackBar(){var main=byId('main-content'); if(!main||!main.parentNode)return; var bar=byId('v132-module-bar'); if(!bar){bar=document.createElement('section');bar.id='v132-module-bar';main.parentNode.insertBefore(bar,main);} var found=allModules.find(function(m){return m.id===currentMode;}); bar.innerHTML='<div class="v132-module-shell"><button class="v132-back" type="button"><i class="fas fa-arrow-left"></i>Voltar ao painel inicial</button><div class="v132-module-title">'+esc(found?found.name:'Módulo')+'</div></div>'; var b=bar.querySelector('button'); if(b)b.onclick=function(){showHome();};}
+  function showHome(){if(!shouldApply()||!appVisible())return; currentPage='home'; document.body.classList.add('v132-active','v132-home'); document.body.classList.remove('v132-module','v122-module'); document.body.classList.toggle('v132-parent',isParent()); document.body.classList.toggle('v132-direction',isDirection()); renderHome();}
+  function forceVisibleView(mode){var map={grades:'view-grades',attendance:'view-attendance',daily:'view-daily',behavior:'view-behavior',dashboard:'view-dashboard',planning:'view-planning',activities:'view-activities',schedule:'view-schedule',calendar:'view-calendar'}; Object.keys(map).forEach(function(k){var el=byId(map[k]); if(!el)return; if(k===mode){el.classList.remove('hidden');el.style.display='';}else el.classList.add('hidden');});}
+  function renderMode(mode){try{if(mode==='grades'&&window.renderGradesTable)window.renderGradesTable();}catch(e){} try{if(mode==='attendance'&&window.renderAttendanceTable)window.renderAttendanceTable();}catch(e){} try{if(mode==='daily'&&window.loadDailyData)window.loadDailyData();}catch(e){} try{if(mode==='behavior'&&window.renderBehaviorReportView)window.renderBehaviorReportView();}catch(e){} try{if(mode==='dashboard'&&window.renderPerformanceDashboardV52)window.renderPerformanceDashboardV52();}catch(e){} try{if(mode==='planning'&&window.renderPlanningView)window.renderPlanningView();}catch(e){} try{if(mode==='activities'&&window.renderActivitiesView)window.renderActivitiesView();}catch(e){} try{if(mode==='schedule'&&window.renderScheduleView)window.renderScheduleView();}catch(e){} try{if(mode==='calendar'&&window.renderCalendarView)window.renderCalendarView();}catch(e){}}
+  function openModule(mode){if(isParent()&&!hasPerm(mode)){alert('Esse módulo não está liberado para este responsável.');return false;} currentPage='module'; currentMode=mode; try{data().currentMode=mode;}catch(e){} document.body.classList.add('v132-active','v132-module'); document.body.classList.remove('v132-home','v122-home'); try{if(window.switchMode)window.switchMode(mode);}catch(e){} try{data().currentMode=mode;}catch(e){} forceVisibleView(mode); renderMode(mode); ensureBackBar(); setTimeout(function(){document.body.classList.add('v132-module');document.body.classList.remove('v132-home');forceVisibleView(mode);renderMode(mode);ensureBackBar();scrollTo(0,0);},150); return false;}
+  function refresh(){clearTimeout(timer);timer=setTimeout(function(){if(!shouldApply()||!appVisible())return; document.body.classList.add('v132-active'); document.body.classList.toggle('v132-parent',isParent()); document.body.classList.toggle('v132-direction',isDirection()); if(currentPage==='module'){ensureBackBar();} else showHome();},80);}
+  function hook(name){var fn=window[name]; if(typeof fn!=='function'||fn.__v132Hooked)return; var wrapped=function(){var out=fn.apply(this,arguments); refresh(); setTimeout(refresh,350); return out;}; wrapped.__v132Hooked=true; window[name]=wrapped;}
+  function boot(){hook('showApp');hook('updateUI');hook('switchMode');hook('changeSubject');hook('changeClass');refresh();}
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(boot,500);});
+  setTimeout(boot,1200);
+  // V134: não redesenha o painel a cada segundo, pois isso fechava os seletores de Turma/Disciplina.
+  setInterval(function(){
+    var key = txt((user()||{}).id || (user()||{}).email || (user()||{}).name);
+    if(lastUserKey !== key){
+      lastUserKey = key;
+      currentPage = 'home';
+      boot();
+    }
+  },3000);
+})();
+</script>
+
+
+<style id="concenal-v133-style">
+  /* V133: alinha o card lateral do perfil ao topo do painel, especialmente na Direção */
+  #v132-home-panel .v132-grid{align-items:stretch!important;}
+  #v132-home-panel .v132-side{
+    justify-content:flex-start!important;
+    align-self:stretch!important;
+    padding-top:22px!important;
+    min-height:auto!important;
+  }
+  body.v132-direction #v132-home-panel .v132-side,
+  body.v132-parent #v132-home-panel .v132-side{
+    justify-content:flex-start!important;
+    padding-top:22px!important;
+  }
+  #v132-home-panel .v132-profile{margin-bottom:4px!important;}
+  #v132-home-panel .v132-info-grid{margin-top:2px!important;}
+  @media(max-width:1100px){
+    #v132-home-panel .v132-side{padding-top:16px!important;}
+  }
+</style>
+
+
+<style id="concenal-v134-style">
+  #v132-subject,#v132-class,
+  #v123-subject-select,#v123-class-select{
+    pointer-events:auto!important;
+    cursor:pointer!important;
+    position:relative!important;
+    z-index:50!important;
+  }
+  #v132-home-panel .v132-select-card{position:relative!important;z-index:40!important;}
+  #v132-home-panel .v132-selects{position:relative!important;z-index:35!important;}
+</style>
+<script id="concenal-v134-script">
+(function(){
+  'use strict';
+  function byId(id){return document.getElementById(id);}
+  function syncNow(){
+    var ss=byId('subject-select'), sc=byId('class-select'), ds=byId('v132-subject'), dc=byId('v132-class');
+    if(ss&&ds&&document.activeElement!==ds){
+      if(ds.innerHTML!==ss.innerHTML) ds.innerHTML=ss.innerHTML;
+      ds.value=ss.value;
+      ds.onchange=function(){ ss.value=this.value; if(typeof window.changeSubject==='function') window.changeSubject(this.value); };
+    }
+    if(sc&&dc&&document.activeElement!==dc){
+      if(dc.innerHTML!==sc.innerHTML) dc.innerHTML=sc.innerHTML;
+      dc.value=sc.value;
+      dc.onchange=function(){ sc.value=this.value; if(typeof window.changeClass==='function') window.changeClass(this.value); };
+    }
+  }
+  document.addEventListener('DOMContentLoaded',function(){setTimeout(syncNow,800);setTimeout(syncNow,1500);});
+  ['click','focus','mousedown'].forEach(function(evt){document.addEventListener(evt,function(e){
+    if(e.target && (e.target.id==='v132-subject' || e.target.id==='v132-class')) e.target.style.pointerEvents='auto';
+  },true);});
+  setInterval(function(){
+    var active=document.activeElement;
+    if(active && (active.id==='v132-subject'||active.id==='v132-class')) return;
+    syncNow();
+  },2500);
+})();
+</script>
+
+
+
+<!-- PATCH V135: filtro de turmas por disciplina/segmento -->
+<style id="concenal-v135-style">
+  .v135-filter-note{
+    display:inline-flex;align-items:center;gap:6px;margin-left:8px;
+    font-size:9px;font-weight:900;text-transform:uppercase;letter-spacing:.06em;
+    color:#047857;background:#ecfdf5;border:1px solid #bbf7d0;border-radius:999px;padding:5px 8px;
+  }
+  @media(max-width:640px){.v135-filter-note{display:none!important;}}
+</style>
+<script id="concenal-v135-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V135_LOADED__) return;
+  window.__CONCENAL_V135_LOADED__ = true;
+
+  function byId(id){ return document.getElementById(id); }
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function noAccent(v){ return txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase(); }
+  function getData(){ try{ return window.appData || appData || {}; }catch(e){ return window.appData || {}; } }
+  function getUser(){ try{ return window.currentUser || currentUser || null; }catch(e){ return window.currentUser || null; } }
+  function allClasses(){
+    var d = getData();
+    var list = Array.isArray(d.allClasses) ? d.allClasses.slice() : [];
+    if(!list.length && Array.isArray(window.DEFAULT_CLASSES)) list = window.DEFAULT_CLASSES.slice();
+    return unique(list);
+  }
+  function unique(arr){
+    var seen = new Set(), out = [];
+    (arr || []).forEach(function(v){ var k = noAccent(v); if(!k || seen.has(k)) return; seen.add(k); out.push(txt(v)); });
+    return out;
+  }
+  function subjectSegment(subject){
+    var s = noAccent(subject);
+    if(!s) return 'all';
+    if(s.indexOf('matematica') >= 0) return 'all';
+    if(s === 'ciencias' || s.indexOf('ciencias') >= 0 || s.indexOf('ciências') >= 0) return 'fundamental';
+    var medio = ['fisica','quimica','biologia','filosofia','sociologia'];
+    if(medio.some(function(x){ return s.indexOf(x) >= 0; })) return 'medio';
+    return 'all';
+  }
+  function isMedioClass(cls){
+    var c = noAccent(cls);
+    if(/\b(em|ensino medio|medio|médio)\b/.test(c)) return true;
+    if(/(^|\D)[123]\s*(º|°|o)?\s*(em|medio|médio)/.test(c)) return true;
+    return false;
+  }
+  function isFundamentalClass(cls){
+    var c = noAccent(cls);
+    if(/fundamental/.test(c)) return true;
+    if(/(^|\D)(6|7|8|9)\s*(º|°|o)?\s*(ano|a|b|c|$)/.test(c)) return true;
+    return !isMedioClass(c);
+  }
+  function baseAllowedClasses(subject){
+    var d = getData(), u = getUser();
+    var base = allClasses();
+    if(u && u.role === 'teacher'){
+      if(u.assignments && Object.keys(u.assignments).length){
+        base = (u.assignments[subject] || []).slice();
+      }else if(Array.isArray(u.classes)){
+        base = u.classes.slice();
+      }else{
+        base = [];
+      }
+    }else if(u && u.role === 'parent'){
+      if(d.currentClass) base = [d.currentClass];
+    }
+    return unique(base);
+  }
+  function filteredClassesForSubject(subject){
+    var seg = subjectSegment(subject);
+    var list = baseAllowedClasses(subject);
+    if(seg === 'fundamental') return list.filter(isFundamentalClass);
+    if(seg === 'medio') return list.filter(isMedioClass);
+    return list;
+  }
+  function labelForSegment(subject){
+    var seg = subjectSegment(subject);
+    if(seg === 'fundamental') return 'Fundamental';
+    if(seg === 'medio') return 'Ensino Médio';
+    return 'Todas as turmas';
+  }
+  function renderOptions(select, values, current){
+    if(!select) return;
+    values = unique(values || []);
+    select.innerHTML = values.length
+      ? values.map(function(c){ return '<option value="'+String(c).replace(/"/g,'&quot;')+'">'+c+'</option>'; }).join('')
+      : '<option value="">Nenhuma turma disponível</option>';
+    if(current && values.indexOf(current) >= 0){
+      select.value = current;
+    }else if(values.length){
+      select.value = values[0];
+      try{ getData().currentClass = values[0]; }catch(e){}
+    }else{
+      try{ getData().currentClass = ''; }catch(e){}
+    }
+  }
+  function syncPanelClassSelects(values){
+    var d = getData();
+    ['v123-class-select','v132-class'].forEach(function(id){
+      var sel = byId(id);
+      if(sel) renderOptions(sel, values, d.currentClass || sel.value);
+    });
+  }
+  function updateSegmentNote(){
+    var host = byId('class-select');
+    if(!host) return;
+    var wrap = host.parentElement;
+    if(!wrap) return;
+    var note = byId('v135-segment-note');
+    if(!note){
+      note = document.createElement('span');
+      note.id = 'v135-segment-note';
+      note.className = 'v135-filter-note';
+      wrap.appendChild(note);
+    }
+    note.textContent = labelForSegment(getData().currentSubject || (byId('subject-select') ? byId('subject-select').value : ''));
+  }
+  function populateFilteredClassSelect(){
+    var d = getData(), u = getUser();
+    var subject = txt(d.currentSubject || (byId('subject-select') ? byId('subject-select').value : ''));
+    if(!subject && byId('subject-select')) subject = byId('subject-select').value;
+    if(!subject) return;
+
+    var values = filteredClassesForSubject(subject);
+    var main = byId('class-select');
+    if(main && !(u && u.role === 'parent')) renderOptions(main, values, d.currentClass || main.value);
+    syncPanelClassSelects(values);
+    updateSegmentNote();
+  }
+
+  var originalPopulate = window.populateClassSelect;
+  window.populateClassSelect = function(){
+    populateFilteredClassSelect();
+  };
+
+  window.changeSubject = function(v){
+    var d = getData();
+    d.currentSubject = v;
+    var ss = byId('subject-select');
+    if(ss && ss.value !== v) ss.value = v;
+    var ps = byId('v123-subject-select');
+    if(ps && ps.value !== v) ps.value = v;
+    var ps2 = byId('v132-subject');
+    if(ps2 && ps2.value !== v) ps2.value = v;
+    populateFilteredClassSelect();
+    if(typeof window.updateUI === 'function') window.updateUI();
+  };
+
+  window.changeClass = function(v){
+    var d = getData();
+    d.currentClass = v;
+    var cs = byId('class-select');
+    if(cs && cs.value !== v) cs.value = v;
+    var pc = byId('v123-class-select');
+    if(pc && pc.value !== v) pc.value = v;
+    var pc2 = byId('v132-class');
+    if(pc2 && pc2.value !== v) pc2.value = v;
+    if(typeof window.updateUI === 'function') window.updateUI();
+    if(d.currentMode === 'schedule' && typeof window.renderScheduleView === 'function') window.renderScheduleView();
+  };
+
+  function bindPanelSelects(){
+    var s1 = byId('v123-subject-select'), c1 = byId('v123-class-select'), s2 = byId('v132-subject'), c2 = byId('v132-class');
+    if(s1 && !s1.__v135Bound){ s1.__v135Bound = true; s1.addEventListener('change', function(){ window.changeSubject(this.value); }); }
+    if(c1 && !c1.__v135Bound){ c1.__v135Bound = true; c1.addEventListener('change', function(){ window.changeClass(this.value); }); }
+    if(s2 && !s2.__v135Bound){ s2.__v135Bound = true; s2.addEventListener('change', function(){ window.changeSubject(this.value); }); }
+    if(c2 && !c2.__v135Bound){ c2.__v135Bound = true; c2.addEventListener('change', function(){ window.changeClass(this.value); }); }
+  }
+  function refresh(){
+    bindPanelSelects();
+    populateFilteredClassSelect();
+  }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v135Hooked) return;
+    var wrapped = function(){
+      var out = fn.apply(this, arguments);
+      setTimeout(refresh, 60);
+      return out;
+    };
+    wrapped.__v135Hooked = true;
+    window[name] = wrapped;
+  }
+  function boot(){
+    hook('updateUI'); hook('showApp'); hook('loadParentSubjectsAndPopulate');
+    refresh();
+    setTimeout(refresh, 350);
+    setTimeout(refresh, 1100);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 500); });
+  setTimeout(boot, 1300);
+})();
+</script>
+
+
+<style id="concenal-v136-style">
+  /* V136: responsável pode escolher disciplina, mas não pode trocar turma/aluno vinculado */
+  body.v132-parent #v132-home-panel .v132-selects{
+    display:grid!important;
+    grid-template-columns:minmax(220px,320px)!important;
+    margin:14px 0 18px!important;
+  }
+  body.v132-parent #v132-home-panel .v132-select-card:nth-child(2){display:none!important;}
+  body.v132-parent #v132-home-panel .v132-select-card label{font-size:9px!important;}
+  body.v132-parent #v132-home-panel #v132-subject{cursor:pointer!important;pointer-events:auto!important;}
+  body.v132-parent #v132-home-panel .v132-info-grid .v132-info:nth-child(3){display:none!important;}
+  body.v132-parent #v132-home-panel .v132-info-grid{grid-template-columns:repeat(2,minmax(0,1fr))!important;}
+  @media(max-width:640px){body.v132-parent #v132-home-panel .v132-selects{grid-template-columns:1fr!important;}}
+</style>
+<script id="concenal-v136-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V136_LOADED__) return;
+  window.__CONCENAL_V136_LOADED__ = true;
+  function byId(id){ return document.getElementById(id); }
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function norm(v){ return txt(v).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+  function isParent(){
+    try{ var u = window.currentUser || currentUser || {}; return norm(u.role || u.accessMode || u.type) === 'parent' || norm(u.role).indexOf('respons') >= 0; }catch(e){ return false; }
+  }
+  function syncParentSubjectSelect(){
+    if(!isParent()) return;
+    var src = byId('subject-select');
+    var dst = byId('v132-subject');
+    if(!dst) return;
+    if(src && src.options && src.options.length){
+      var html = src.innerHTML;
+      if(dst.getAttribute('data-v136-options') !== html){
+        dst.innerHTML = html;
+        dst.setAttribute('data-v136-options', html);
+      }
+      if(src.value && dst.value !== src.value) dst.value = src.value;
+    }
+    if(!dst.__v136Bound){
+      dst.__v136Bound = true;
+      dst.addEventListener('change', function(){
+        var value = this.value;
+        try{
+          if(src) src.value = value;
+          if(window.appData) window.appData.currentSubject = value;
+          if(typeof window.changeSubject === 'function') window.changeSubject(value);
+          else if(typeof window.updateUI === 'function') window.updateUI();
+        }catch(e){ console.error('Erro ao trocar disciplina do responsável:', e); }
+        setTimeout(syncParentSubjectSelect, 120);
+      });
+    }
+    var label = dst.closest('.v132-select-card') && dst.closest('.v132-select-card').querySelector('label');
+    if(label) label.innerHTML = '<i class="fas fa-book"></i> Disciplina';
+  }
+  function refresh(){ setTimeout(syncParentSubjectSelect, 80); setTimeout(syncParentSubjectSelect, 350); }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v136Hooked) return;
+    var wrapped = function(){ var out = fn.apply(this, arguments); refresh(); return out; };
+    wrapped.__v136Hooked = true;
+    window[name] = wrapped;
+  }
+  function boot(){
+    hook('showApp'); hook('updateUI'); hook('changeSubject'); hook('loadParentSubjectsAndPopulate');
+    refresh();
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 500); });
+  setTimeout(boot, 1300);
+})();
+</script>
+
+
+<!-- V142: restauração segura pós-V141. Base V140 preservada: QR Codes, assinaturas digitais, turmas e Histórico Acadêmico original. -->
+
+<style id="concenal-v143-style">
+  #v143-action-center{margin-top:14px;width:100%;}
+  body.v122-module #v143-action-center,
+  body.v132-module #v143-action-center{display:none!important;}
+  .v143-actions-box{
+    background:rgba(255,255,255,.10);
+    border:1px solid rgba(255,255,255,.16);
+    border-radius:22px;
+    padding:13px;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08);
+  }
+  .v143-actions-head{display:flex;align-items:center;gap:9px;color:#ecfdf5;font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.12em;margin-bottom:11px;}
+  .v143-actions-head i{width:34px;height:34px;border-radius:14px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.14);}
+  .v143-actions-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;}
+  .v143-action-card{border:0;cursor:pointer;background:rgba(255,255,255,.96);color:#0f172a;border-radius:17px;padding:10px 12px;min-height:58px;display:flex;align-items:center;gap:10px;text-align:left;box-shadow:0 12px 24px rgba(0,0,0,.10);transition:.16s ease;width:100%;}
+  .v143-action-card:hover{transform:translateY(-1px);box-shadow:0 16px 28px rgba(0,0,0,.14);}
+  .v143-action-icon{width:38px;height:38px;min-width:38px;border-radius:14px;display:flex;align-items:center;justify-content:center;color:#fff;background:linear-gradient(135deg,#2563eb,#1d4ed8);font-size:15px;}
+  .v143-action-card.v143-rel .v143-action-icon{background:linear-gradient(135deg,#7c3aed,#4f46e5);}
+  .v143-action-card.v143-gestao .v143-action-icon{background:linear-gradient(135deg,#f97316,#ea580c);}
+  .v143-action-card.v143-com .v143-action-icon{background:linear-gradient(135deg,#059669,#047857);}
+  .v143-action-title{display:block;font-size:10px;font-weight:950;text-transform:uppercase;line-height:1.15;color:#111827;}
+  .v143-action-desc{display:block;font-size:9px;font-weight:800;color:#64748b;line-height:1.15;margin-top:3px;}
+  @media(max-width:900px){.v143-actions-grid{grid-template-columns:repeat(2,minmax(0,1fr));}}
+  @media(max-width:640px){.v143-actions-grid{grid-template-columns:1fr;}.v143-action-card{min-height:52px;}}
+  @media print{#v143-action-center{display:none!important;}}
+</style>
+<script id="concenal-v143-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V143_LOADED__) return;
+  window.__CONCENAL_V143_LOADED__ = true;
+
+  var lastCountByClass = {};
+  var lastRenderSig = '';
+
+  function byId(id){ return document.getElementById(id); }
+  function txt(v){ return String(v == null ? '' : v).replace(/\s+/g,' ').trim(); }
+  function esc(v){ return txt(v).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+  function norm(v){
+    return txt(v).toUpperCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g,'')
+      .replace(/º|ª|°/g,'')
+      .replace(/ENSINO\s*MEDIO|ENS\.?\s*MEDIO|MEDIO/g,'EM')
+      .replace(/SERIE|TURMA|ANO/g,'')
+      .replace(/[^A-Z0-9]/g,'')
+      .trim();
+  }
+  function app(){ try{return window.appData || appData || {};}catch(e){return window.appData || {};}}
+  function user(){ try{return window.currentUser || currentUser || null;}catch(e){return window.currentUser || null;}}
+  function role(){ var u=user()||{}; return txt(u.role || u.accessMode || '').toLowerCase(); }
+  function isParent(){ var r=role(); return r==='parent' || r.indexOf('respons')>=0; }
+  function currentClass(){
+    var d=app();
+    if(d.currentClass) return txt(d.currentClass);
+    var ids=['class-select','v123-class-select','v132-class'];
+    for(var i=0;i<ids.length;i++){
+      var s=byId(ids[i]);
+      if(s) return txt(s.value || (s.selectedOptions && s.selectedOptions[0] ? s.selectedOptions[0].textContent : ''));
+    }
+    return '';
+  }
+  function studentsArray(){ var d=app(); return Array.isArray(d.students) ? d.students : []; }
+  function countClassStudents(){
+    if(isParent()){
+      var u=user()||{};
+      if(Array.isArray(u.childrenIds) && u.childrenIds.length) return u.childrenIds.length;
+      if(Array.isArray(u.students) && u.students.length) return u.students.length;
+      return 1;
+    }
+    var cls=currentClass();
+    var key=norm(cls) || 'geral';
+    var manual=0;
+    var arr=studentsArray();
+    if(key==='geral') manual=arr.length;
+    else manual=arr.filter(function(s){
+      return norm(s && (s.class || s.turma || s.className || s.serie || s.series || s.grade || s.schoolClass)) === key;
+    }).length;
+    var real=0;
+    try{
+      if(typeof window.getStudentsByClass === 'function'){
+        var list=window.getStudentsByClass();
+        if(Array.isArray(list)) real=list.length;
+      }
+    }catch(e){}
+    var value=Math.max(manual, real, lastCountByClass[key] || 0);
+    if(value > 0) lastCountByClass[key]=value;
+    return value;
+  }
+  function fixLateralCount(){
+    var total=countClassStudents();
+    document.querySelectorAll('#v116-hero .v116-side .v116-mini, #v132-home-panel .v132-info').forEach(function(card){
+      var label=card.querySelector('.v116-mini-label') || card.querySelector('span');
+      var value=card.querySelector('.v116-mini-value') || card.querySelector('b');
+      var l=txt(label ? label.textContent : '').toLowerCase();
+      if(l === 'alunos' || l === 'alunos da turma'){
+        if(label) label.textContent = isParent() ? 'Aluno(s) vinculado(s)' : 'Alunos da turma';
+        if(value) value.textContent = String(total);
+        card.style.display='';
+      }
+      if(l === 'módulo atual' || l === 'modulo atual' || l === 'turmas' || l === 'horário' || l === 'horario'){
+        card.style.display='none';
+      }
+    });
+  }
+  function actionDefs(){
+    if(isParent()){
+      return [{label:'Abrir atendimento',desc:'Falar com a escola',icon:'fa-headset',group:'com',run:function(){ if(typeof openChat==='function') openChat(); }}];
+    }
+    var defs=[];
+    if(typeof toggleDiaryLock==='function') defs.push({label:'Fechar diário',desc:'Controle de edição',icon:'fa-lock-open',group:'acad',run:toggleDiaryLock});
+    if(typeof openAddModal==='function') defs.push({label:'Novo aluno',desc:'Cadastrar estudante',icon:'fa-user-plus',group:'acad',run:openAddModal});
+    defs.push({label:'Importar massa',desc:'Adicionar em lote',icon:'fa-file-import',group:'acad',run:function(){var m=byId('modal-import'); if(m) m.classList.remove('hidden');}});
+    if(typeof toggleAllExtra==='function') defs.push({label:'Extra turma',desc:'Marcação da turma',icon:'fa-star',group:'acad',run:toggleAllExtra});
+    if(typeof printClassReports==='function') defs.push({label:'Boletins turma',desc:'Impressão em massa',icon:'fa-print',group:'rel',run:printClassReports});
+    if(typeof exportGradesCSV==='function') defs.push({label:'Exportar CSV',desc:'Planilha de dados',icon:'fa-file-excel',group:'rel',run:exportGradesCSV});
+    if(typeof openManageClassModal==='function') defs.push({label:'Gerenciar turma',desc:'Organizar turma',icon:'fa-cogs',group:'gestao',run:openManageClassModal});
+    if(typeof exportSystemBackup==='function') defs.push({label:'Backup global',desc:'Cópia segura',icon:'fa-database',group:'gestao',run:exportSystemBackup});
+    return defs;
+  }
+  function findLeftPanel(){
+    var hero=byId('v116-hero');
+    if(!hero) return null;
+    return hero.querySelector('.v116-hero-inner > div:first-child') || hero.querySelector('.v116-hero-inner > div') || hero;
+  }
+  function renderActions(){
+    var left=findLeftPanel();
+    if(!left) return;
+    var modules=byId('v122-modules-center') || byId('v132-home-panel') || left.querySelector('.v116-actions');
+    var host=byId('v143-action-center');
+    if(!host){
+      host=document.createElement('section');
+      host.id='v143-action-center';
+      if(modules && modules.parentNode) modules.insertAdjacentElement('afterend', host); else left.appendChild(host);
+    }
+    var defs=actionDefs().filter(function(d){return d && typeof d.run==='function';});
+    if(!defs.length){ host.innerHTML=''; return; }
+    var sig=defs.map(function(d){return d.label;}).join('|')+'|'+role();
+    if(sig===lastRenderSig && host.querySelector('.v143-actions-box')) return;
+    lastRenderSig=sig;
+    host.innerHTML='<div class="v143-actions-box"><div class="v143-actions-head"><i class="fas fa-layer-group"></i> Central de Ações</div><div class="v143-actions-grid"></div></div>';
+    var grid=host.querySelector('.v143-actions-grid');
+    defs.forEach(function(d){
+      var btn=document.createElement('button');
+      btn.type='button';
+      btn.className='v143-action-card v143-'+(d.group||'acad');
+      btn.innerHTML='<span class="v143-action-icon"><i class="fas '+esc(d.icon)+'"></i></span><span><span class="v143-action-title">'+esc(d.label)+'</span><span class="v143-action-desc">'+esc(d.desc)+'</span></span>';
+      btn.onclick=function(e){ e.preventDefault(); e.stopPropagation(); try{d.run();}catch(err){console.error('Erro na ação V143:',err);} };
+      grid.appendChild(btn);
+    });
+  }
+  var t=null;
+  function refresh(){ clearTimeout(t); t=setTimeout(function(){ fixLateralCount(); renderActions(); }, 70); }
+  function hook(name){
+    var fn=window[name];
+    if(typeof fn !== 'function' || fn.__v143Hooked) return;
+    var wrapped=function(){ var out=fn.apply(this, arguments); refresh(); setTimeout(refresh,250); setTimeout(refresh,800); return out; };
+    wrapped.__v143Hooked=true;
+    window[name]=wrapped;
+  }
+  function boot(){
+    ['showApp','updateUI','switchMode','changeSubject','changeClass','renderGradesTable'].forEach(hook);
+    refresh(); setTimeout(refresh,300); setTimeout(refresh,900); setTimeout(refresh,1800);
+  }
+  document.addEventListener('DOMContentLoaded', function(){setTimeout(boot,500);});
+  setTimeout(boot,1200);
+  setInterval(fixLateralCount, 1000);
+})();
+</script>
+
+
+<style id="concenal-v144-style">
+  /* V144: mantém somente a Central de Ações consolidada atual e bloqueia centrais antigas recriadas por patches anteriores */
+  #v117-manage-host,
+  #v118-action-center,
+  #v125-action-center,
+  #v129-action-center{
+    display:none!important;
+    visibility:hidden!important;
+    height:0!important;
+    min-height:0!important;
+    max-height:0!important;
+    overflow:hidden!important;
+    opacity:0!important;
+    margin:0!important;
+    padding:0!important;
+    border:0!important;
+  }
+  body.v122-home #v143-action-center,
+  body.v132-home #v143-action-center,
+  body:not(.v122-module):not(.v132-module) #v143-action-center{
+    display:block!important;
+    visibility:visible!important;
+    opacity:1!important;
+  }
+  body.v122-module #v143-action-center,
+  body.v132-module #v143-action-center{
+    display:none!important;
+  }
+</style>
+<script id="concenal-v144-script">
+(function(){
+  'use strict';
+  if(window.__CONCENAL_V144_LOADED__) return;
+  window.__CONCENAL_V144_LOADED__ = true;
+  function byId(id){ return document.getElementById(id); }
+  function removeOldCenters(){
+    ['v117-manage-host','v118-action-center','v125-action-center','v129-action-center'].forEach(function(id){
+      var el = byId(id);
+      if(el){
+        el.innerHTML = '';
+        el.setAttribute('aria-hidden','true');
+        el.style.display = 'none';
+        el.style.height = '0';
+        el.style.overflow = 'hidden';
+        el.style.margin = '0';
+        el.style.padding = '0';
+      }
+    });
+    var all143 = Array.from(document.querySelectorAll('#v143-action-center'));
+    if(all143.length > 1){
+      all143.slice(1).forEach(function(el){ try{ el.remove(); }catch(e){ el.style.display='none'; } });
+    }
+  }
+  function hook(name){
+    var fn = window[name];
+    if(typeof fn !== 'function' || fn.__v144Hooked) return;
+    var wrapped = function(){
+      var out = fn.apply(this, arguments);
+      setTimeout(removeOldCenters, 30);
+      setTimeout(removeOldCenters, 180);
+      return out;
+    };
+    wrapped.__v144Hooked = true;
+    window[name] = wrapped;
+  }
+  function boot(){
+    ['showApp','updateUI','switchMode','changeSubject','changeClass','renderV132Home','renderActions','renderStableActions','renderProfileActions'].forEach(hook);
+    removeOldCenters();
+    setTimeout(removeOldCenters, 250);
+    setTimeout(removeOldCenters, 800);
+  }
+  document.addEventListener('DOMContentLoaded', function(){ setTimeout(boot, 450); });
+  setTimeout(boot, 1200);
+  setInterval(removeOldCenters, 1500);
+})();
+</script>
+
 </body>
 </html>
