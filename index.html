@@ -1257,9 +1257,12 @@
 
         function getEffectivePermissions(user = currentUser) {
             if(!user) return [];
-            if(Array.isArray(user.permissions) && user.permissions.length) return user.permissions;
             if(user.accessMode === 'developer') return ACCESS_PRESETS.developer;
             if(user.accessMode === 'demo' || user.role === 'demo') return ACCESS_PRESETS.demo;
+            // V106: responsável só acessa exatamente o que o criador do login marcou.
+            // Se o cadastro do responsável possui o campo permissions, até lista vazia é respeitada.
+            if(user.role === 'parent' && Array.isArray(user.permissions)) return user.permissions;
+            if(Array.isArray(user.permissions) && user.permissions.length) return user.permissions;
             return ACCESS_PRESETS[user.role] || [];
         }
 
@@ -1672,6 +1675,11 @@
         }
 
         function updateUnreadBadges() {
+            if(window.CONCENAL_CHAT_MODERN_ACTIVE && typeof window.refreshModernChatBadges === 'function') {
+                try { unreadCounts = {}; } catch(e) {}
+                window.refreshModernChatBadges();
+                return;
+            }
             const mainBadge = document.getElementById('chat-badge');
             const total = Object.values(unreadCounts).reduce((a,b)=>a+b, 0);
             if(mainBadge) {
@@ -2750,7 +2758,7 @@
                                         
                         const isFromMe = m.from === currentUser?.id;
                         
-                        if (isForMe && !isFromMe) {
+                        if (isForMe && !isFromMe && !window.CONCENAL_CHAT_MODERN_ACTIVE) {
                             newMessagesArrived = true;
                             let senderId = m.from;
                             if (m.to === 'global') senderId = 'global';
@@ -10862,6 +10870,1215 @@
             result.innerHTML = '<b>Não foi possível consultar agora.</b><br><span class="text-xs">Verifique a conexão e tente novamente.</span>';
         }
     };
+})();
+</script>
+
+
+<!-- PATCH V108: CHAT COM TRANSFERÊNCIA PRIVADA + APAGAR CHAT -->
+<script>
+/* ================================================================
+   CONCENAL - CHAT V108
+   Atualização pontual: transferência de atendimento cria uma conversa
+   nova e privada entre responsável e destinatário escolhido.
+   Inclui opção de apagar chat/conversa.
+   Não altera notas, relatórios, dashboard, planejamento ou demais módulos.
+   ================================================================ */
+(function(){
+  'use strict';
+
+  const CHAT_VERSION = 'V108_CHAT_TRANSFERENCIA_PRIVADA_APAGAR_CHAT';
+  const STATIC_DIRECTION_ALIASES = [
+    'direcao','direção','coord','coordenacao','coordenação','admin','admin_master',
+    'diretoria','direcao_geral','direção geral','direcao escolar','direção escolar',
+    'direcao_grupo','grupo_direcao'
+  ];
+
+  const state = {
+    built: false,
+    users: [],
+    routes: [],
+    messages: [],
+    selected: null,
+    filter: 'all',
+    hidden: {},
+    unsub: null,
+    routeUnsub: null,
+    loadingUsers: false,
+    knownDocIds: new Set(),
+    firstSnapshot: true,
+    unread: {}
+  };
+
+  window.CONCENAL_CHAT_MODERN_ACTIVE = true;
+
+  function $(id){ return document.getElementById(id); }
+  function txt(v){ return (v === undefined || v === null) ? '' : String(v); }
+  function norm(v){ return txt(v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase(); }
+  function safeId(v){ return norm(v).replace(/[^a-z0-9_-]+/g,'_') || 'id'; }
+  function esc(v){
+    return txt(v).replace(/[&<>'"]/g, function(c){
+      return {'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[c];
+    });
+  }
+  function uniq(arr){
+    const out = [];
+    (arr || []).flat(Infinity).forEach(function(v){
+      const s = txt(v).trim();
+      if(!s) return;
+      const n = norm(s);
+      if(!out.some(function(x){ return norm(x) === n; })) out.push(s);
+    });
+    return out;
+  }
+  function me(){ try { return currentUser || {}; } catch(e){ return {}; } }
+  function userId(u){ return txt((u||{}).id || (u||{}).uid || (u||{}).userId || (u||{}).authUid || (u||{}).email || (u||{}).username || (u||{}).name); }
+  function meId(){ return userId(me()) || 'usuario_atual'; }
+  function userName(u){ return txt((u||{}).displayName || (u||{}).name || (u||{}).fullName || (u||{}).username || (u||{}).email || userId(u) || 'Usuário'); }
+  function userRole(u){ return norm((u||{}).role || (u||{}).accessMode || (u||{}).tipo || ''); }
+  function isDirection(u){ const r = userRole(u); return ['admin','coord','coordenador','coordenacao','direcao','diretor','diretoria','developer'].includes(r); }
+  function isTeacher(u){ const r = userRole(u); return ['teacher','professor','docente'].includes(r); }
+  function isParent(u){ const r = userRole(u); return ['parent','pai','mae','mãe','responsavel','responsavel legal','aluno'].includes(r); }
+  function isStudentOnly(u){ const r = userRole(u); return ['student','estudante','aluno'].includes(r) && !isParent(u); }
+  function isSecretary(u){ const r = userRole(u); return ['secretaria','secretário','secretario','secretary','recepcao','recepção'].includes(r); }
+  function isStaff(u){ return !!u && !isParent(u) && !isStudentOnly(u); }
+  function roleLabel(u){
+    if(isDirection(u)) return 'Direção / Coordenação';
+    if(isTeacher(u)) return 'Professor';
+    if(isSecretary(u)) return 'Secretaria';
+    if(isParent(u)) return 'Responsável';
+    return txt((u||{}).role || 'Usuário');
+  }
+  function roleFilter(u){
+    if(isDirection(u)) return 'direction';
+    if(isTeacher(u)) return 'teacher';
+    if(isSecretary(u)) return 'direction';
+    if(isParent(u)) return 'parent';
+    return 'user';
+  }
+  function aliasesUser(u){
+    u = u || {};
+    const base = [u.id,u.uid,u.userId,u.authUid,u.email,u.username,u.login,u.name,u.displayName,u.fullName,u.fromName,u.toName];
+    if(isDirection(u)) base.push(STATIC_DIRECTION_ALIASES);
+    return uniq(base);
+  }
+  function directionAliases(){
+    let a = STATIC_DIRECTION_ALIASES.slice();
+    state.users.forEach(function(u){ if(isDirection(u)) a = a.concat(aliasesUser(u)); });
+    return uniq(a);
+  }
+  function currentAliases(){
+    let a = aliasesUser(me()).concat([meId()]);
+    if(isDirection(me())) a = a.concat(directionAliases());
+    return uniq(a);
+  }
+  function arrNorm(arr){ return uniq(arr).map(norm).filter(Boolean); }
+  function intersects(a,b){
+    const A = arrNorm(a), B = arrNorm(b);
+    if(!A.length || !B.length) return false;
+    return A.some(function(x){ return B.indexOf(x) >= 0; });
+  }
+  function directKey(a,b){ return [norm(a), norm(b)].sort().join('__'); }
+  function allDirectKeys(aList,bList){
+    const keys = [];
+    arrNorm(aList).forEach(function(a){ arrNorm(bList).forEach(function(b){ keys.push(directKey(a,b)); }); });
+    return uniq(keys);
+  }
+  function msgFromAliases(m){
+    return uniq([
+      m && m.from, m && m.fromId, m && m.fromUid, m && m.fromUserId, m && m.senderId,
+      m && m.sender, m && m.authorId, m && m.createdBy, m && m.fromEmail,
+      m && m.senderEmail, m && m.fromUsername, m && m.senderUsername, m && m.fromName,
+      m && m.senderName, m && m.authorName, m && m.createdByName, m && m.userName,
+      m && m.fromAliases
+    ]);
+  }
+  function msgToAliases(m){
+    return uniq([
+      m && m.to, m && m.toId, m && m.toUid, m && m.toUserId, m && m.recipientId,
+      m && m.receiverId, m && m.targetId, m && m.destinatarioId, m && m.destinatario,
+      m && m.toEmail, m && m.recipientEmail, m && m.toUsername, m && m.recipientUsername,
+      m && m.toName, m && m.recipientName, m && m.targetName, m && m.toAliases
+    ]);
+  }
+  function msgParticipants(m){ return uniq([m && m.participants, m && m.participantIds, m && m.users, m && m.members]); }
+  function msgText(m){ return txt((m||{}).text || (m||{}).message || (m||{}).body || (m||{}).content); }
+  function msgTime(m){
+    const t = (m||{}).timestamp || (m||{}).createdAt || (m||{}).date || (m||{}).sentAt;
+    if(t && typeof t.toDate === 'function') return t.toDate().getTime();
+    if(typeof t === 'number') return t;
+    const parsed = Date.parse(t);
+    return isNaN(parsed) ? 0 : parsed;
+  }
+
+  function getHiddenKey(){ return 'concenal_chat_ocultas_v107_' + norm(meId()); }
+  function loadHidden(){ try { return JSON.parse(localStorage.getItem(getHiddenKey()) || '{}'); } catch(e){ return {}; } }
+  function saveHidden(){ try { localStorage.setItem(getHiddenKey(), JSON.stringify(state.hidden || {})); } catch(e){} }
+  function isHidden(m){ return !!(m && m.docId && state.hidden && state.hidden[m.docId]); }
+  function isLocalDocId(id){ return !id || /^local_/i.test(txt(id)); }
+  function canDeleteChatForAll(){ return isTeacher(me()) || isDirection(me()) || txt(me().accessMode).toLowerCase() === 'developer'; }
+
+  function playChatReceiveSound(){
+    try{
+      if(typeof window.playChatReceiveSoundV106 === 'function') return window.playChatReceiveSoundV106();
+      if(typeof playSound === 'function') return playSound();
+    }catch(e){}
+  }
+
+  function findUserByAny(valueOrAliases){
+    const aliases = Array.isArray(valueOrAliases) ? valueOrAliases : [valueOrAliases];
+    return (state.users || []).find(function(u){ return intersects(aliasesUser(u), aliases); }) || null;
+  }
+  function routeId(r){ return txt((r||{}).routeId || (r||{}).id); }
+  function routeParentId(r){ return txt((r||{}).parentId || (r||{}).routeParentId); }
+  function routeAssignedId(r){ return txt((r||{}).assignedTo || (r||{}).assignedToId || (r||{}).routeAssignedTo); }
+  function routeParentUser(r){ return findUserByAny([routeParentId(r), (r||{}).parentName, (r||{}).parentEmail, (r||{}).parentUsername]); }
+  function routeAssignedUser(r){ return findUserByAny([routeAssignedId(r), (r||{}).assignedName, (r||{}).assignedEmail, (r||{}).assignedUsername]); }
+  function routeParentAliases(r){ return uniq([(r||{}).parentAliases, aliasesUser(routeParentUser(r)), routeParentId(r), (r||{}).parentName]); }
+  function routeAssignedAliases(r){ return uniq([(r||{}).assignedAliases, aliasesUser(routeAssignedUser(r)), routeAssignedId(r), (r||{}).assignedName]); }
+  function routeIsOpen(r){ return norm((r||{}).status || 'open') !== 'closed'; }
+  function routeVisibleToCurrentUser(r){
+    if(!r || !routeIsOpen(r)) return false;
+    const mine = currentAliases();
+    return intersects(routeParentAliases(r), mine) || intersects(routeAssignedAliases(r), mine);
+  }
+  function latestOpenRouteForParent(parentId){
+    const pAliases = uniq([parentId, aliasesUser(findUserByAny(parentId))]);
+    const mine = currentAliases();
+    const routes = (state.routes || []).filter(function(r){
+      if(!routeIsOpen(r)) return false;
+      if(!intersects(routeParentAliases(r), pAliases)) return false;
+      return isParent(me()) ? intersects(routeParentAliases(r), mine) : true;
+    }).sort(function(a,b){ return Number((b.updatedAt || b.createdAt || 0)) - Number((a.updatedAt || a.createdAt || 0)); });
+    return routes[0] || null;
+  }
+
+  function routeHasAssignedMessageForParent(r){
+    if(!r || !routeId(r)) return false;
+    const rid = norm(routeId(r));
+    const assignedA = routeAssignedAliases(r);
+    return (state.messages || []).some(function(m){
+      if(!m || isHidden(m) || !isRouteMessage(m)) return false;
+      if(norm(routeIdFromMessage(m)) !== rid) return false;
+      if(m.internalOnly || m.routeNotice || norm(m.chatType) === 'route_notice') return false;
+      return intersects(msgFromAliases(m), assignedA);
+    });
+  }
+
+  function latestRoutablePrivateChatForParent(parentId){
+    const routes = (state.routes || []).filter(function(r){
+      if(!routeIsOpen(r)) return false;
+      if(!intersects(routeParentAliases(r), uniq([parentId, aliasesUser(findUserByAny(parentId))]))) return false;
+      if(isParent(me()) && !intersects(routeParentAliases(r), currentAliases())) return false;
+      return routeHasAssignedMessageForParent(r);
+    }).sort(function(a,b){ return Number((b.updatedAt || b.createdAt || 0)) - Number((a.updatedAt || a.createdAt || 0)); });
+    return routes[0] || null;
+  }
+
+  function updateChatBadges(){
+    const unreadMap = state.unread || {};
+
+    Object.keys(unreadMap).forEach(function(id){
+      const n = Number(unreadMap[id] || 0);
+      if(n <= 0){ delete unreadMap[id]; return; }
+      const hasRealIncomingMessage = (state.messages || []).some(function(m){
+        if(!m || isHidden(m) || !messageVisibleToCurrentUser(m)) return false;
+        if(isSystemForward(m) || m.internalOnly || m.routeNotice || norm(m.chatType) === 'route_notice') return false;
+        if(intersects(msgFromAliases(m), currentAliases())) return false;
+        return norm(rowIdForMessage(m)) === norm(id);
+      });
+      if(!hasRealIncomingMessage) delete unreadMap[id];
+    });
+
+    let total = 0;
+    Object.keys(unreadMap).forEach(function(id){ total += Number(unreadMap[id] || 0); });
+    const mainBadge = $('chat-badge');
+    if(mainBadge){
+      mainBadge.classList.toggle('hidden', total <= 0);
+      mainBadge.style.display = total > 0 ? 'block' : 'none';
+      if(total <= 0) mainBadge.classList.remove('animate-pulse');
+      else mainBadge.classList.add('animate-pulse');
+    }
+    document.querySelectorAll('[id^="unread-"]').forEach(function(el){
+      const id = el.id.replace(/^unread-/, '');
+      const n = Number(unreadMap[id] || 0);
+      el.textContent = n > 99 ? '99+' : String(n || 0);
+      el.classList.toggle('hidden', n <= 0);
+      el.style.display = n > 0 ? 'flex' : 'none';
+    });
+  }
+  function clearChatUnread(id){ if(id){ state.unread[id] = 0; updateChatBadges(); } }
+
+  function isRouteMessage(m){ return !!(m && (m.routeId || norm(m.chatType) === 'route' || norm(m.conversationKey).indexOf('route__') === 0)); }
+  function routeIdFromMessage(m){ return txt((m||{}).routeId || txt((m||{}).conversationKey).replace(/^route__/i,'')); }
+  function routeFromMessage(m){
+    const rid = routeIdFromMessage(m);
+    return (state.routes || []).find(function(r){ return norm(routeId(r)) === norm(rid); }) || null;
+  }
+
+  function messageVisibleToCurrentUser(m){
+    if(!m || isHidden(m)) return false;
+    if(isParent(me()) && (m.internalOnly || m.routeNotice || norm(m.chatType) === 'route_notice')) return false;
+    if(norm(m.to) === 'global' || norm(m.chatType) === 'global' || norm(m.conversationKey) === 'global') return !isParent(me());
+
+    if(isRouteMessage(m)){
+      const myA = currentAliases();
+      const p = msgParticipants(m).concat(msgFromAliases(m), msgToAliases(m), (m||{}).routeParentAliases, (m||{}).routeAssignedAliases);
+      if(intersects(p, myA)) return true;
+      const r = routeFromMessage(m);
+      return r ? routeVisibleToCurrentUser(r) : false;
+    }
+
+    const myA = currentAliases();
+    const fromA = msgFromAliases(m);
+    const toA = msgToAliases(m).concat(msgParticipants(m));
+    if(intersects(fromA, myA) || intersects(toA, myA)) return true;
+    if(isDirection(me())){
+      const dirA = directionAliases();
+      return intersects(fromA, dirA) || intersects(toA, dirA);
+    }
+    return false;
+  }
+
+  function rowIdForMessage(m){
+    if(!m) return '';
+    if(norm(m.to) === 'global' || norm(m.chatType) === 'global' || norm(m.conversationKey) === 'global') return 'global';
+    if(isRouteMessage(m)) return isParent(me()) ? 'parent_home' : 'route_' + safeId(routeIdFromMessage(m));
+    if(isParent(me())) return 'parent_home';
+    const myA = currentAliases();
+    const fromA = msgFromAliases(m);
+    const toA = msgToAliases(m).concat(msgParticipants(m));
+    const fromMe = intersects(fromA, myA);
+    const otherA = fromMe ? toA : fromA;
+    if(intersects(otherA, directionAliases()) || norm(m.to) === 'direcao' || norm(m.toId) === 'direcao') return 'direcao_grupo';
+    const found = (state.users || []).find(function(u){ return intersects(aliasesUser(u), otherA); });
+    if(found) return userId(found);
+    return txt(fromMe ? (m.toId || m.to || m.toName) : (m.fromId || m.from || m.fromName)) || 'direcao_grupo';
+  }
+
+  async function markSelectedConversationRead(){
+    if(!state.selected) return;
+    clearChatUnread(state.selected.id);
+    const unreadDocs = (state.messages || []).filter(function(m){
+      if(!messageMatchesConversation(m)) return false;
+      if(isLocalDocId(m.docId)) return false;
+      if(intersects(msgFromAliases(m), currentAliases())) return false;
+      const readBy = Array.isArray(m.readBy) ? m.readBy.map(norm) : [];
+      return readBy.indexOf(norm(meId())) < 0;
+    }).slice(-60);
+    if(!unreadDocs.length || typeof firebase === 'undefined') return;
+    try{
+      const batch = db.batch();
+      unreadDocs.forEach(function(m){
+        batch.set(getCollection('concenal_chat').doc(m.docId), {
+          readBy: firebase.firestore.FieldValue.arrayUnion(meId()),
+          readAt: Date.now()
+        }, {merge:true});
+      });
+      await batch.commit();
+    }catch(e){ console.warn('Não foi possível marcar mensagens como lidas:', e); }
+  }
+
+  function isSystemForward(m){ return !!(m && (m.internalOnly || m.routeNotice || m.chatType === 'route_notice')); }
+  function selectedAliases(){
+    const sel = state.selected;
+    if(!sel) return [];
+    if(sel.type === 'global') return ['global'];
+    if(sel.type === 'direction') return directionAliases();
+    if(sel.type === 'parent_home') return currentAliases();
+    if(sel.type === 'route') return routeParentAliases(sel.route).concat(routeAssignedAliases(sel.route));
+    if(sel.user) return aliasesUser(sel.user).concat([sel.id, sel.name]);
+    return [sel.id, sel.name];
+  }
+  function messageMatchesConversation(m){
+    if(!m || isHidden(m) || !state.selected) return false;
+    const sel = state.selected;
+    if(sel.type === 'global') return norm(m.to) === 'global' || norm(m.chatType) === 'global' || norm(m.conversationKey) === 'global';
+    if(sel.type === 'parent_home'){
+      // Atendimento oficial do responsável: somente responsável <-> direção/coordenação.
+      // Não mistura mensagens de atendimentos transferidos.
+      if(isRouteMessage(m)) return false;
+      if(norm(m.to) === 'global' || norm(m.chatType) === 'global' || norm(m.conversationKey) === 'global') return false;
+      const myA = currentAliases();
+      const dirA = directionAliases();
+      const fromA = msgFromAliases(m);
+      const toA = msgToAliases(m).concat(msgParticipants(m));
+      return ((intersects(fromA, myA) && intersects(toA, dirA)) || (intersects(fromA, dirA) && intersects(toA, myA)));
+    }
+    if(sel.type === 'route') return isRouteMessage(m) && norm(routeIdFromMessage(m)) === norm(sel.routeId) && messageVisibleToCurrentUser(m);
+    if(isRouteMessage(m)) return false;
+
+    const myA = currentAliases();
+    const themA = selectedAliases();
+    const fromA = msgFromAliases(m);
+    const toA = msgToAliases(m).concat(msgParticipants(m));
+    const convKey = norm(m.conversationKey || m.conversaKey || m.threadKey || '');
+
+    if(convKey){
+      const possible = allDirectKeys(myA, themA).map(norm);
+      if(possible.indexOf(convKey) >= 0) return true;
+    }
+
+    const fromMe = intersects(fromA, myA);
+    const toMe = intersects(toA, myA);
+    const fromThem = intersects(fromA, themA);
+    const toThem = intersects(toA, themA);
+
+    if(sel.type === 'direction'){
+      const dirA = directionAliases();
+      const fromAnyDirection = intersects(fromA, dirA);
+      const toAnyDirection = intersects(toA, dirA);
+      return (fromThem && toAnyDirection) || (fromAnyDirection && toThem) || (fromMe && toThem) || (fromThem && toMe);
+    }
+    return (fromMe && toThem) || (fromThem && toMe);
+  }
+
+
+  function ensureCss(){
+    if($('chat-v107-style')) return;
+    const style = document.createElement('style');
+    style.id = 'chat-v107-style';
+    style.textContent = `
+      #modal-chat.chat-v103-active{background:rgba(15,23,42,.78);backdrop-filter:blur(4px);}
+      #modal-chat .chat-v103-shell{width:min(1120px,96vw);height:min(760px,92vh);background:#f8fafc;border-radius:24px;box-shadow:0 25px 70px rgba(0,0,0,.35);overflow:hidden;display:flex;border:1px solid rgba(255,255,255,.25)}
+      .chat-v103-sidebar{width:340px;min-width:300px;background:#ffffff;border-right:1px solid #e5e7eb;display:flex;flex-direction:column;height:100%}
+      .chat-v103-brand{padding:18px 18px 14px;background:linear-gradient(135deg,#047857,#065f46);color:white}
+      .chat-v103-brand h2{font-size:15px;font-weight:900;letter-spacing:.04em;text-transform:uppercase;margin:0;display:flex;gap:8px;align-items:center}.chat-v103-brand p{font-size:10px;margin:4px 0 0;opacity:.85;text-transform:uppercase;font-weight:700;letter-spacing:.08em}
+      .chat-v103-search{padding:14px;border-bottom:1px solid #eef2f7;background:#f9fafb}.chat-v103-search input{width:100%;border:1px solid #d1d5db;border-radius:14px;padding:10px 12px 10px 34px;font-size:12px;outline:none;background:white}.chat-v103-search input:focus{border-color:#047857;box-shadow:0 0 0 3px rgba(4,120,87,.12)}
+      .chat-v103-pills{display:flex;gap:6px;overflow-x:auto;margin-top:10px;padding-bottom:2px}.chat-v103-pills::-webkit-scrollbar{height:0}.chat-v103-pill{border:0;border-radius:999px;background:#e5e7eb;color:#475569;font-size:10px;font-weight:900;text-transform:uppercase;padding:7px 10px;white-space:nowrap;cursor:pointer}.chat-v103-pill.active{background:#047857;color:white;box-shadow:0 5px 12px rgba(4,120,87,.25)}
+      .chat-v103-list{padding:10px;overflow-y:auto;flex:1;background:#ffffff}.chat-v103-user{width:100%;display:flex;align-items:center;gap:10px;border:1px solid transparent;background:#fff;border-radius:16px;padding:10px;margin-bottom:8px;text-align:left;cursor:pointer;transition:.15s;box-shadow:0 1px 3px rgba(15,23,42,.06)}.chat-v103-user:hover{border-color:#bbf7d0;background:#f0fdf4}.chat-v103-user.active{border-color:#10b981;background:#ecfdf5;box-shadow:0 8px 18px rgba(16,185,129,.16)}
+      .chat-v103-avatar{width:42px;height:42px;border-radius:999px;background:#e5e7eb;color:#047857;display:flex;align-items:center;justify-content:center;font-weight:900;font-size:14px;flex:0 0 auto;overflow:hidden}.chat-v103-avatar img{width:100%;height:100%;object-fit:cover}.chat-v103-user-main{min-width:0;flex:1}.chat-v103-user-name{font-size:12px;font-weight:900;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chat-v103-user-role{font-size:9px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.08em;margin-top:2px}.chat-v103-unread{display:none;min-width:18px;height:18px;border-radius:999px;background:#ef4444;color:white;font-size:9px;font-weight:900;align-items:center;justify-content:center}
+      .chat-v103-main{flex:1;display:flex;flex-direction:column;min-width:0;background:#f1f5f9;height:100%}.chat-v103-header{height:72px;background:white;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;padding:12px 16px;box-shadow:0 2px 8px rgba(15,23,42,.04);z-index:2}.chat-v103-title-wrap{display:flex;align-items:center;gap:10px;min-width:0}.chat-v103-back{display:none;border:0;background:#f1f5f9;color:#475569;width:36px;height:36px;border-radius:999px}.chat-v103-title{font-size:14px;font-weight:900;color:#1f2937;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chat-v103-subtitle{font-size:10px;font-weight:900;text-transform:uppercase;color:#047857;letter-spacing:.08em;margin-top:2px}.chat-v103-actions{display:flex;align-items:center;gap:8px}.chat-v103-clear,.chat-v103-close,.chat-v103-transfer{border:0;width:38px;height:38px;border-radius:999px;background:#f1f5f9;color:#475569;cursor:pointer}.chat-v103-transfer{background:#eff6ff;color:#2563eb}.chat-v103-transfer:hover{background:#dbeafe;color:#1d4ed8}.chat-v103-clear:hover{background:#fef2f2;color:#dc2626}.chat-v103-close:hover{background:#fee2e2;color:#dc2626}
+      .chat-v103-messages{flex:1;overflow-y:auto;padding:22px;display:flex;flex-direction:column;gap:10px;background:#f8fafc;background-image:radial-gradient(#d1d5db 0.6px, transparent 0.6px);background-size:18px 18px}.chat-v103-empty{margin:auto;text-align:center;color:#64748b;background:white;border:1px dashed #cbd5e1;border-radius:20px;padding:28px;max-width:360px}.chat-v103-empty i{font-size:34px;color:#10b981;margin-bottom:10px}.chat-v103-day{align-self:center;background:rgba(255,255,255,.9);border:1px solid #e5e7eb;color:#64748b;font-size:9px;font-weight:900;text-transform:uppercase;border-radius:999px;padding:5px 12px;margin:4px 0}
+      .chat-v103-msg{max-width:min(72%,620px);position:relative;border-radius:18px;padding:10px 12px;box-shadow:0 2px 8px rgba(15,23,42,.08);font-size:12px;line-height:1.45;border:1px solid transparent;word-break:break-word}.chat-v103-msg.sent{align-self:flex-end;background:#dcfce7;border-color:#bbf7d0;border-bottom-right-radius:4px}.chat-v103-msg.received{align-self:flex-start;background:white;border-color:#e5e7eb;border-bottom-left-radius:4px}.chat-v103-msg.system{border-style:dashed;background:#eff6ff;border-color:#bfdbfe;color:#1e3a8a}.chat-v103-msg-author{font-size:8px;font-weight:900;color:#64748b;text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px}.chat-v103-msg-text{white-space:pre-wrap}.chat-v103-msg-time{text-align:right;font-size:8px;color:#64748b;opacity:.65;font-weight:800;margin-top:4px}.chat-v103-tag{display:inline-flex;align-items:center;gap:4px;background:#dbeafe;color:#1d4ed8;border-radius:999px;padding:3px 8px;font-size:8px;font-weight:900;text-transform:uppercase;margin-bottom:5px}.chat-v103-hide{position:absolute;top:-9px;right:-9px;border:1px solid #fecaca;background:white;color:#dc2626;width:23px;height:23px;border-radius:999px;display:none;align-items:center;justify-content:center;box-shadow:0 2px 6px rgba(0,0,0,.12);font-size:10px}.chat-v103-msg:hover .chat-v103-hide{display:flex}.chat-v103-hide.delete-all{background:#dc2626;color:#fff;border-color:#b91c1c}
+      .chat-v103-attach-preview{display:none;background:#eff6ff;border-top:1px solid #bfdbfe;color:#1e40af;font-size:11px;font-weight:800;padding:9px 14px;align-items:center;justify-content:space-between}.chat-v103-attach-preview.active{display:flex}.chat-v103-composer{background:white;border-top:1px solid #e5e7eb;padding:12px;display:flex;align-items:center;gap:10px}.chat-v103-composer input[type=text]{flex:1;border:1px solid #d1d5db;background:#f9fafb;border-radius:999px;padding:12px 16px;font-size:13px;outline:none}.chat-v103-composer input[type=text]:focus{border-color:#047857;box-shadow:0 0 0 3px rgba(4,120,87,.12)}.chat-v103-attach-btn,.chat-v103-send{border:0;border-radius:999px;width:44px;height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer}.chat-v103-attach-btn{background:#f1f5f9;color:#475569}.chat-v103-send{background:#047857;color:white;box-shadow:0 8px 16px rgba(4,120,87,.25)}.chat-v103-send:disabled{opacity:.55;cursor:not-allowed}
+      @media(max-width:767px){#modal-chat .chat-v103-shell{width:100vw;height:100vh;border-radius:0}.chat-v103-sidebar{width:100%;min-width:0}.chat-v103-main{position:absolute;inset:0;transform:translateX(100%);transition:.2s;z-index:3}.chat-v103-main.active{transform:translateX(0)}.chat-v103-back{display:block}.chat-v103-msg{max-width:86%}}
+    `;
+    document.head.appendChild(style);
+  }
+
+  function ensureLayout(){
+    ensureCss();
+    const modal = $('modal-chat');
+    if(!modal) return;
+    if(state.built && modal.classList.contains('chat-v103-active')) return;
+    modal.classList.add('chat-v103-active');
+    modal.innerHTML = ''+
+      '<div class="chat-v103-shell">'+
+        '<aside id="chat-sidebar" class="chat-v103-sidebar">'+
+          '<div class="chat-v103-brand"><h2><i class="fas fa-comments"></i> Comunicação CONCENAL</h2><p>Chat escolar interno e atendimentos</p></div>'+
+          '<div class="chat-v103-search">'+
+            '<div class="relative"><i class="fas fa-search absolute left-3 top-3 text-gray-400 text-xs"></i><input id="chat-search-input" type="text" placeholder="Buscar conversa..."></div>'+
+            '<div id="chat-filter-pills" class="chat-v103-pills">'+
+              '<button type="button" class="chat-v103-pill active" data-filter="all">Todos</button>'+
+              '<button type="button" class="chat-v103-pill" data-filter="teacher">Professores</button>'+
+              '<button type="button" class="chat-v103-pill" data-filter="direction">Coord/Direção</button>'+
+              '<button type="button" class="chat-v103-pill" data-filter="parent">Responsáveis</button>'+
+            '</div>'+
+          '</div>'+
+          '<div id="chat-user-list" class="chat-v103-list"></div>'+
+        '</aside>'+
+        '<main id="chat-main-window" class="chat-v103-main">'+
+          '<header id="mobile-chat-header" class="chat-v103-header">'+
+            '<div class="chat-v103-title-wrap"><button type="button" id="chat-v103-back" class="chat-v103-back"><i class="fas fa-arrow-left"></i></button><div class="min-w-0"><div id="chat-recipient-info" class="chat-v103-title">Selecione uma conversa</div><div id="chat-recipient-role" class="chat-v103-subtitle">Comunicação escolar</div></div></div>'+
+            '<div class="chat-v103-actions"><button type="button" id="btn-transfer-chat" class="chat-v103-transfer hidden" title="Transferir atendimento"><i class="fas fa-share"></i></button><button type="button" id="btn-clear-chat" class="chat-v103-clear" title="Apagar chat"><i class="fas fa-trash-alt"></i></button><button type="button" class="chat-v103-close" title="Fechar"><i class="fas fa-times"></i></button></div>'+
+          '</header>'+
+          '<section id="chat-messages" class="chat-v103-messages"></section>'+
+          '<div id="chat-attachment-preview" class="chat-v103-attach-preview"><span><i class="fas fa-paperclip mr-1"></i> Anexo: <span id="attachment-name">Arquivo anexado</span></span><button type="button" id="chat-v103-clear-attach" class="text-red-500 bg-white rounded-full w-7 h-7"><i class="fas fa-times"></i></button></div>'+
+          '<footer class="chat-v103-composer"><input type="file" id="chat-file" class="hidden"><button type="button" id="chat-v103-attach" class="chat-v103-attach-btn"><i class="fas fa-paperclip"></i></button><input type="text" id="chat-input" placeholder="Digite sua mensagem..."><button type="button" id="chat-v103-send" class="chat-v103-send"><i class="fas fa-paper-plane"></i></button></footer>'+
+        '</main>'+
+      '</div>';
+    state.built = true;
+    const search = $('chat-search-input'); if(search) search.addEventListener('input', filterChat);
+    document.querySelectorAll('#chat-filter-pills [data-filter]').forEach(function(btn){ btn.addEventListener('click', function(){ filterChatRole(btn.getAttribute('data-filter')); }); });
+    const back = $('chat-v103-back'); if(back) back.addEventListener('click', hideChatMainWindow);
+    const close = modal.querySelector('.chat-v103-close'); if(close) close.addEventListener('click', function(){ modal.classList.add('hidden'); });
+    const clear = $('btn-clear-chat'); if(clear) clear.addEventListener('click', clearConversation);
+    const transfer = $('btn-transfer-chat'); if(transfer) transfer.addEventListener('click', transferParentAttendance);
+    const send = $('chat-v103-send'); if(send) send.addEventListener('click', sendChatMessage);
+    const input = $('chat-input'); if(input) input.addEventListener('keydown', function(e){ if(e.key === 'Enter' && !e.shiftKey){ e.preventDefault(); sendChatMessage(); } });
+    const attach = $('chat-v103-attach'); if(attach) attach.addEventListener('click', function(){ const f=$('chat-file'); if(f) f.click(); });
+    const file = $('chat-file'); if(file) file.addEventListener('change', function(){ handleChatFile(file); });
+    const clearAttach = $('chat-v103-clear-attach'); if(clearAttach) clearAttach.addEventListener('click', clearChatAttachment);
+  }
+
+  async function getUsers(){
+    if(state.loadingUsers) return state.users;
+    state.loadingUsers = true;
+    try{
+      const users = [];
+      const snap = await getCollection('concenal_users').get();
+      snap.forEach(function(doc){ users.push(Object.assign({id:doc.id}, doc.data() || {})); });
+      state.users = users;
+      return users;
+    }catch(e){
+      console.error('Erro ao carregar usuários do chat:', e);
+      state.users = [];
+      return [];
+    }finally{ state.loadingUsers = false; }
+  }
+
+  async function getRoutesOnce(){
+    try{
+      const routes = [];
+      const snap = await getCollection('concenal_chat_routes').get();
+      snap.forEach(function(doc){ routes.push(Object.assign({id:doc.id, routeId:doc.id}, doc.data() || {})); });
+      state.routes = routes;
+      return routes;
+    }catch(e){
+      console.warn('Não foi possível carregar rotas de chat:', e);
+      state.routes = [];
+      return [];
+    }
+  }
+
+  function startRouteListener(){
+    if(state.routeUnsub) return;
+    try{
+      state.routeUnsub = getCollection('concenal_chat_routes').onSnapshot(function(snap){
+        const routes = [];
+        snap.forEach(function(doc){ routes.push(Object.assign({id:doc.id, routeId:doc.id}, doc.data() || {})); });
+        state.routes = routes;
+        updateChatBadges();
+        const modal = $('modal-chat');
+        if(modal && !modal.classList.contains('hidden')) loadChatUsers();
+      }, function(err){ console.warn('Erro no listener de rotas do chat:', err); });
+    }catch(e){ console.warn('Erro ao iniciar listener de rotas:', e); }
+  }
+
+  function startListener(){
+    if(!state.unsub){
+      try{
+        state.unsub = getCollection('concenal_chat').onSnapshot(function(snap){
+          const messages = [];
+          let receivedNewMessage = false;
+          snap.forEach(function(doc){
+            const m = Object.assign({docId:doc.id}, doc.data() || {});
+            messages.push(m);
+            const isNew = !state.knownDocIds.has(doc.id);
+            if(isNew && !state.firstSnapshot && messageVisibleToCurrentUser(m) && !intersects(msgFromAliases(m), currentAliases())){
+              const isRealChatMessage = !(isSystemForward(m) || m.internalOnly || m.routeNotice || norm(m.chatType) === 'route_notice');
+              if(isRealChatMessage){
+                const rid = rowIdForMessage(m);
+                const modal = $('modal-chat');
+                const open = modal && !modal.classList.contains('hidden');
+                const isCurrentOpen = open && state.selected && norm(state.selected.id) === norm(rid);
+                if(!isCurrentOpen){
+                  receivedNewMessage = true;
+                  state.unread[rid] = Number(state.unread[rid] || 0) + 1;
+                  try { if(typeof showToast === 'function') showToast('Nova mensagem', (m.fromName || 'Usuário') + ': ' + (msgText(m) || 'Anexo enviado')); } catch(e){}
+                }
+              }
+            }
+            state.knownDocIds.add(doc.id);
+          });
+          messages.sort(function(a,b){ return msgTime(a) - msgTime(b); });
+          state.messages = messages;
+          state.firstSnapshot = false;
+          try { allChatMessagesMaster = messages.slice(-900); } catch(e){}
+          updateChatBadges();
+          if(receivedNewMessage) playChatReceiveSound();
+          const modal = $('modal-chat');
+          if(modal && !modal.classList.contains('hidden')){
+            renderChatMessages(messages);
+            if(state.selected) setTimeout(markSelectedConversationRead, 120);
+          }
+        }, function(err){ console.error('Erro no listener do chat:', err); });
+      }catch(e){ console.error('Erro ao iniciar listener do chat:', e); }
+    }
+    startRouteListener();
+  }
+  function buildRows(){
+    const rows = [];
+    const current = me();
+    const isParentCurrent = isParent(current);
+    const isTeacherCurrent = isTeacher(current);
+    const isDirectionCurrent = isDirection(current);
+    const routedParentIds = new Set();
+
+    // Responsável não deve receber lista de usuários/opções. Ele verá apenas o atendimento atual no painel principal.
+    if(isParentCurrent) return rows;
+
+    // Quando já existe atendimento privado aberto para um responsável, escondemos o contato direto duplicado dele.
+    (state.routes || []).forEach(function(r){
+      if(!routeIsOpen(r)) return;
+      const pId = norm(routeParentId(r));
+      if(!pId) return;
+      if(isDirectionCurrent || routeVisibleToCurrentUser(r)) routedParentIds.add(pId);
+    });
+
+    rows.push({id:'global', type:'global', name:'Avisos Gerais', label:'Mural da Escola', role:'global', icon:'<i class="fas fa-bullhorn"></i>'});
+
+    if(isTeacherCurrent){
+      rows.push({id:'direcao_grupo', type:'direction', name:'Direção / Coordenação', label:'Atendimento oficial', role:'direction', icon:'<i class="fas fa-building"></i>'});
+    }
+
+    state.users.forEach(function(u){
+      const uid = userId(u);
+      if(!uid || norm(uid) === norm(meId())) return;
+      // Evita que a Direção/Coordenação apareça como contato para ela mesma.
+      // Como as contas de direção compartilham aliases institucionais, ocultamos esses perfis no próprio login da direção.
+      if(isDirectionCurrent && isDirection(u)) return;
+      if(intersects(aliasesUser(u), aliasesUser(current))) return;
+      if(isTeacherCurrent && isParent(u)) return;
+      if(isTeacherCurrent && isDirection(u)) return;
+      if(isParent(u) && routedParentIds.has(norm(uid))) return;
+      rows.push({id:uid, type:'user', user:u, name:userName(u), label:roleLabel(u), role:roleFilter(u), avatar:u.avatarUrl || u.photoURL || u.photo || ''});
+    });
+
+    // Atendimento privado só aparece para quem recebeu a transferência.
+    // A direção não entra na conversa privada, preservando a privacidade.
+    (state.routes || []).filter(routeVisibleToCurrentUser).forEach(function(r){
+      if(!intersects(routeAssignedAliases(r), currentAliases())) return;
+      const pUser = routeParentUser(r);
+      const name = (r.parentName || (pUser ? userName(pUser) : routeParentId(r)) || 'Responsável');
+      rows.push({
+        id:'route_' + safeId(routeId(r)),
+        type:'route',
+        routeId:routeId(r),
+        route:r,
+        user:pUser,
+        name:name,
+        label:'Atendimento privado',
+        role:'parent',
+        icon:'<i class="fas fa-user-shield"></i>'
+      });
+    });
+
+    const seen = new Set();
+    return rows.filter(function(r){
+      const key = norm(r.type + '_' + r.id);
+      if(seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
+
+  async function loadChatUsers(){
+    ensureLayout();
+    await getUsers();
+    await getRoutesOnce();
+    const list = $('chat-user-list');
+    if(!list) return;
+    const rows = buildRows();
+    if(!rows.length){ list.innerHTML = '<div class="text-xs text-gray-500 p-4 text-center">Nenhuma conversa disponível.</div>'; return; }
+    let html = '';
+    rows.forEach(function(row){
+      const active = state.selected && norm(state.selected.id) === norm(row.id) ? ' active' : '';
+      const initial = row.icon || (row.avatar ? '<img src="'+esc(row.avatar)+'" onerror="this.remove()">' : esc((row.name || 'U').charAt(0).toUpperCase()));
+      html += '<button type="button" class="chat-v103-user'+active+'" data-chat-id="'+esc(row.id)+'" data-route-id="'+esc(row.routeId || '')+'" data-chat-type="'+esc(row.type)+'" data-name="'+esc(row.name)+'" data-role="'+esc(row.role)+'">'+
+        '<div class="chat-v103-avatar">'+initial+'</div><div class="chat-v103-user-main"><div class="chat-v103-user-name">'+esc(row.name)+'</div><div class="chat-v103-user-role">'+esc(row.label)+'</div></div><span id="unread-'+esc(row.id)+'" class="chat-v103-unread">0</span></button>';
+    });
+    list.innerHTML = html;
+    list.querySelectorAll('[data-chat-id]').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        const id = btn.getAttribute('data-chat-id') || 'global';
+        const type = btn.getAttribute('data-chat-type') || 'user';
+        const routeIdAttr = btn.getAttribute('data-route-id') || '';
+        const route = type === 'route' ? (state.routes || []).find(function(r){ return norm(routeId(r)) === norm(routeIdAttr); }) : null;
+        const rowUser = type === 'user' ? state.users.find(function(u){ return norm(userId(u)) === norm(id); }) : (route ? routeParentUser(route) : null);
+        const roleDesc = type === 'global' ? 'Mural da Escola' : (type === 'direction' ? 'Atendimento oficial' : (type === 'route' ? 'Atendimento privado' : roleLabel(rowUser || {})));
+        setChatRecipient(id, btn.getAttribute('data-name') || (rowUser ? userName(rowUser) : id), roleDesc, type, rowUser, route);
+      });
+    });
+    filterChat();
+    updateChatBadges();
+  }
+  function showChatMainWindow(){
+    const main = $('chat-main-window'); const sidebar = $('chat-sidebar');
+    if(!main) return;
+    if(isParent(me())){
+      if(sidebar) sidebar.style.display = 'none';
+      main.classList.add('active');
+      main.style.display = 'flex';
+      return;
+    }
+    if(window.innerWidth < 768){ main.classList.add('active'); if(sidebar) sidebar.style.display = 'flex'; }
+    else { main.classList.add('active'); main.style.display = 'flex'; if(sidebar) sidebar.style.display = 'flex'; }
+  }
+
+  function hideChatMainWindow(){ const main = $('chat-main-window'); if(main && window.innerWidth < 768) main.classList.remove('active'); }
+  async function openChat(){
+    ensureLayout();
+    state.hidden = loadHidden();
+
+    // Correção V112: no acesso do responsável, não exibir a tela intermediária
+    // "Selecione uma conversa" enquanto usuários/rotas são carregados.
+    if(isParent(me())){
+      state.selected = { id:'parent_home', name:'Direção / Coordenação', roleDesc:'Atendimento oficial', type:'parent_home', user:me(), route:null, routeId:'' };
+      try { chatRecipient = 'parent_home'; chatRecipientName = 'Direção / Coordenação'; currentRecipientRole = 'Atendimento oficial'; } catch(e){}
+      const sidebarEarly = $('chat-sidebar'); if(sidebarEarly) sidebarEarly.style.display = 'none';
+      const titleEarly = $('chat-recipient-info'); if(titleEarly) titleEarly.textContent = 'Direção / Coordenação';
+      const subEarly = $('chat-recipient-role'); if(subEarly) subEarly.textContent = 'Atendimento oficial';
+      showChatMainWindow();
+      renderChatMessages(state.messages.length ? state.messages : (typeof allChatMessagesMaster !== 'undefined' ? allChatMessagesMaster : []));
+    }
+
+    const modal = $('modal-chat');
+    if(modal){ modal.classList.remove('hidden'); modal.classList.add('chat-v103-active'); }
+
+    await getUsers();
+    await getRoutesOnce();
+    startListener();
+    await loadChatUsers();
+
+    if(isParent(me())){
+      const sidebar = $('chat-sidebar'); if(sidebar) sidebar.style.display = 'none';
+      const activeRoute = latestOpenRouteForParent(meId());
+      if(activeRoute){
+        const assigned = routeAssignedUser(activeRoute);
+        const assignedName = userName(assigned) || activeRoute.assignedName || 'Atendimento';
+        setChatRecipient('route_' + safeId(routeId(activeRoute)), assignedName, 'Atendimento privado', 'route', assigned, activeRoute);
+      } else {
+        setChatRecipient('parent_home', 'Direção / Coordenação', 'Atendimento oficial', 'parent_home', me(), null);
+      }
+    } else if(!state.selected){
+      setChatRecipient('global', 'Avisos Gerais', 'Mural da Escola', 'global', null, null);
+    } else {
+      renderChatMessages(state.messages.length ? state.messages : (typeof allChatMessagesMaster !== 'undefined' ? allChatMessagesMaster : []));
+    }
+    if(window.innerWidth >= 768 || isParent(me())) showChatMainWindow();
+  }
+
+
+  function updateTransferButton(){
+    const btn = $('btn-transfer-chat');
+    if(!btn) return;
+    const show = !!(state.selected && isDirection(me()) && state.selected.type === 'user' && isParent(state.selected.user));
+    btn.classList.toggle('hidden', !show);
+  }
+
+  function setChatRecipient(id, name, roleDesc, type, rawUser, route){
+    ensureLayout();
+    type = type || (id === 'global' ? 'global' : (id === 'direcao_grupo' || id === 'direcao' ? 'direction' : 'user'));
+    if(type === 'route'){
+      route = route || (state.routes || []).find(function(r){ return norm('route_' + safeId(routeId(r))) === norm(id) || norm(routeId(r)) === norm(id); }) || null;
+      rawUser = rawUser || routeParentUser(route) || null;
+    }
+    if(!rawUser && type === 'user') rawUser = state.users.find(function(u){ return norm(userId(u)) === norm(id); }) || null;
+    state.selected = { id: txt(id), name: txt(name || id), roleDesc: txt(roleDesc || ''), type: type, user: rawUser || null, route: route || null, routeId: route ? routeId(route) : '' };
+    try { chatRecipient = state.selected.id; chatRecipientName = state.selected.name; currentRecipientRole = state.selected.roleDesc; } catch(e){}
+    const title = $('chat-recipient-info'); if(title) title.innerHTML = esc(state.selected.name) + (type === 'global' ? ' <i class="fas fa-check-circle text-blue-500 text-[10px]" title="Oficial"></i>' : '');
+    const sub = $('chat-recipient-role'); if(sub) sub.textContent = state.selected.roleDesc || 'Comunicação escolar';
+    document.querySelectorAll('.chat-v103-user').forEach(function(btn){ btn.classList.toggle('active', norm(btn.getAttribute('data-chat-id')) === norm(id)); });
+    updateTransferButton();
+    clearChatUnread(state.selected.id);
+    showChatMainWindow();
+    renderChatMessages(state.messages.length ? state.messages : (typeof allChatMessagesMaster !== 'undefined' ? allChatMessagesMaster : []));
+    setTimeout(markSelectedConversationRead, 80);
+  }
+
+  function filterChatRole(role){
+    state.filter = role || 'all';
+    document.querySelectorAll('#chat-filter-pills [data-filter]').forEach(function(btn){ btn.classList.toggle('active', btn.getAttribute('data-filter') === state.filter); });
+    filterChat();
+  }
+  function filterChat(){
+    const term = norm(($('chat-search-input') || {}).value || '');
+    document.querySelectorAll('.chat-v103-user').forEach(function(btn){
+      const role = btn.getAttribute('data-role') || 'user';
+      const name = norm(btn.getAttribute('data-name') || '');
+      let roleOk = state.filter === 'all' || role === state.filter || role === 'global';
+      if(state.filter === 'direction' && role === 'global') roleOk = false;
+      if(state.filter === 'parent' && role === 'global') roleOk = false;
+      const termOk = !term || name.indexOf(term) >= 0;
+      btn.style.display = (roleOk && termOk) ? 'flex' : 'none';
+    });
+  }
+
+  function renderChatMessages(allMessages){
+    ensureLayout();
+    const div = $('chat-messages');
+    if(!div) return;
+    const messages = (allMessages || state.messages || []).slice().sort(function(a,b){ return msgTime(a) - msgTime(b); });
+    const filtered = messages.filter(messageMatchesConversation);
+    try { currentChatMessages = filtered; } catch(e){}
+    if(!state.selected){ div.innerHTML = '<div class="chat-v103-empty"><i class="fas fa-comments"></i><div class="font-bold text-gray-700">Selecione uma conversa</div><p class="text-xs mt-1">Escolha um professor, direção ou atendimento.</p></div>'; return; }
+    if(!filtered.length){ div.innerHTML = '<div class="chat-v103-empty"><i class="fas fa-comment-dots"></i><div class="font-bold text-gray-700">Nenhuma mensagem ainda</div><p class="text-xs mt-1">Envie a primeira mensagem para iniciar a conversa.</p></div>'; return; }
+    let html = '', lastDay = '';
+    filtered.forEach(function(m){
+      const t = msgTime(m) || Date.now(); const d = new Date(t); const today = new Date();
+      const day = d.toDateString() === today.toDateString() ? 'Hoje' : d.toLocaleDateString('pt-BR');
+      if(day !== lastDay){ html += '<div class="chat-v103-day">'+esc(day)+'</div>'; lastDay = day; }
+      const fromMe = intersects(msgFromAliases(m), currentAliases());
+      const cls = fromMe ? 'sent' : 'received';
+      const system = isSystemForward(m);
+      const author = txt(m.fromName || m.senderName || m.authorName || (fromMe ? userName(me()) : 'Usuário'));
+      let fileHtml = '';
+      if(m.file){
+        const fType = txt(m.file.type || ''); const fData = txt(m.file.data || m.file.url || ''); const fName = txt(m.file.name || 'Anexo');
+        if(fData && norm(fType).indexOf('image') === 0) fileHtml = '<img src="'+esc(fData)+'" class="max-h-56 rounded-xl mb-2 shadow-sm cursor-pointer" onclick="window.open(\''+esc(fData)+'\',\'_blank\')">';
+        else if(fData) fileHtml = '<a href="'+esc(fData)+'" target="_blank" rel="noopener noreferrer" class="block bg-white/70 border rounded-xl p-2 text-xs mb-2"><i class="fas fa-file-alt mr-1"></i>'+esc(fName)+'</a>';
+      }
+      const tag = system ? '<div class="chat-v103-tag"><i class="fas fa-lock"></i> Aviso interno</div>' : '';
+      const deleteForAll = canDeleteChatForAll() && m.docId && !isLocalDocId(m.docId);
+      const hide = m.docId ? (deleteForAll ? '<button type="button" class="chat-v103-hide delete-all" data-delete-all-msg="'+esc(m.docId)+'" title="Apagar para todos"><i class="fas fa-trash-alt"></i></button>' : '<button type="button" class="chat-v103-hide" data-hide-msg="'+esc(m.docId)+'" title="Ocultar somente para mim"><i class="fas fa-times"></i></button>') : '';
+      html += '<article class="chat-v103-msg '+cls+(system?' system':'')+'">'+hide+tag+'<div class="chat-v103-msg-author">'+esc(author)+'</div>'+fileHtml+'<div class="chat-v103-msg-text">'+esc(msgText(m))+'</div><div class="chat-v103-msg-time">'+d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})+'</div></article>';
+    });
+    div.innerHTML = html;
+    div.querySelectorAll('[data-hide-msg]').forEach(function(btn){ btn.addEventListener('click', function(){ const id = btn.getAttribute('data-hide-msg'); if(id){ state.hidden[id] = true; saveHidden(); renderChatMessages(state.messages); } }); });
+    div.querySelectorAll('[data-delete-all-msg]').forEach(function(btn){ btn.addEventListener('click', function(){ const id = btn.getAttribute('data-delete-all-msg'); if(id) deleteMsg(id); }); });
+    setTimeout(function(){ div.scrollTop = div.scrollHeight; }, 60);
+  }
+
+  function buildBaseMsg(toId, toName, toRole, toAliases, chatType, conversationKey){
+    const myA = currentAliases();
+    let fromA = myA.slice();
+    if(chatType !== 'route' && isDirection(me())) fromA = fromA.concat(directionAliases());
+    return {
+      chatVersion: CHAT_VERSION,
+      chatType: chatType || 'direct',
+      conversationKey: conversationKey || directKey(meId(), toId),
+      from: meId(), fromId: meId(), fromName: userName(me()), fromRole: userRole(me()), fromEmail: txt(me().email), fromUsername: txt(me().username), fromAliases: uniq(fromA),
+      to: toId, toId: toId, toName: toName, toRole: toRole, toAliases: uniq(toAliases || [toId, toName]),
+      participants: uniq(fromA.concat(toAliases || [toId, toName])),
+      timestamp: Date.now(),
+      clientMessageId: meId() + '_' + Date.now() + '_' + Math.random().toString(36).slice(2,8),
+      readBy: [meId()]
+    };
+  }
+
+  function applyRouteFields(msgData, route, toUser){
+    const rid = routeId(route);
+    msgData.chatType = 'route';
+    msgData.routeId = rid;
+    msgData.conversationKey = 'route__' + rid;
+    msgData.routeParentId = routeParentId(route);
+    msgData.routeParentName = route.parentName || userName(routeParentUser(route));
+    msgData.routeParentAliases = routeParentAliases(route);
+    msgData.routeAssignedTo = routeAssignedId(route);
+    msgData.routeAssignedName = route.assignedName || userName(routeAssignedUser(route));
+    msgData.routeAssignedAliases = routeAssignedAliases(route);
+    msgData.participants = uniq(currentAliases().concat(aliasesUser(toUser), msgData.toAliases, msgData.fromAliases));
+  }
+  async function sendChatMessage(){
+    ensureLayout();
+    const input = $('chat-input'); if(!input) return;
+    const text = txt(input.value).trim();
+    let fileObj = null; try { fileObj = currentChatFile || null; } catch(e){ fileObj = null; }
+    if(!text && !fileObj) return;
+    if(!state.selected) return alert('Selecione uma conversa antes de enviar.');
+    const sendBtn = $('chat-v103-send'); if(sendBtn) sendBtn.disabled = true;
+
+    let msgData = null;
+    let routeForUpdate = null;
+
+    if(state.selected.type === 'route'){
+      const r = state.selected.route;
+      const pUser = routeParentUser(r);
+      const assignedUser = routeAssignedUser(r);
+      const toUser = intersects(routeParentAliases(r), currentAliases()) ? assignedUser : pUser;
+      const toId = userId(toUser) || (toUser === pUser ? routeParentId(r) : routeAssignedId(r));
+      const toName = userName(toUser) || (toUser === pUser ? r.parentName : r.assignedName);
+      msgData = buildBaseMsg(toId, toName, userRole(toUser), aliasesUser(toUser).concat(toId, toName), 'route', 'route__' + routeId(r));
+      applyRouteFields(msgData, r, toUser);
+      routeForUpdate = r;
+    } else if(state.selected.type === 'parent_home'){
+      // Responsável sem transferência ativa: sempre envia para Direção/Coordenação.
+      msgData = buildBaseMsg('direcao', 'Direção / Coordenação', 'direction', directionAliases(), 'direct', directKey(meId(), 'direcao'));
+    } else {
+      let toId = state.selected.id, toName = state.selected.name, toRole = state.selected.type, toA = selectedAliases();
+      if(state.selected.type === 'direction'){
+        toId = 'direcao'; toName = 'Direção / Coordenação'; toRole = 'direction'; toA = directionAliases();
+      } else if(state.selected.type === 'global'){
+        toId = 'global'; toName = 'Avisos Gerais'; toRole = 'global'; toA = ['global'];
+      } else if(state.selected.user){
+        toId = userId(state.selected.user); toName = userName(state.selected.user); toRole = userRole(state.selected.user); toA = aliasesUser(state.selected.user);
+      }
+      msgData = buildBaseMsg(toId, toName, toRole, toA, state.selected.type === 'global' ? 'global' : 'direct', state.selected.type === 'global' ? 'global' : directKey(meId(), toId));
+    }
+
+    msgData.text = text;
+    const loadingOverlay = $('loading-overlay'); if(fileObj && loadingOverlay) loadingOverlay.classList.remove('hidden');
+    try{
+      if(fileObj){
+        const fileUrl = await uploadFileToStorage(fileObj.data, fileObj.name, 'artifacts/' + (window.APP_ID || 'default') + '/chat');
+        msgData.file = { name:fileObj.name, type:fileObj.type, data:fileUrl };
+      }
+      await getCollection('concenal_chat').add(msgData);
+      if(routeForUpdate){ await getCollection('concenal_chat_routes').doc(routeId(routeForUpdate)).set({ updatedAt: Date.now(), lastMessageAt: Date.now() }, {merge:true}); }
+      input.value = '';
+      clearChatAttachment();
+      if(typeof window.playSaveSoundV106 === 'function') window.playSaveSoundV106();
+      setTimeout(function(){ const div = $('chat-messages'); if(div) div.scrollTop = div.scrollHeight; }, 120);
+    }catch(e){
+      console.error('Erro ao enviar mensagem:', e);
+      alert('Erro ao enviar mensagem: ' + (e.message || e));
+    }finally{
+      if(sendBtn) sendBtn.disabled = false;
+      if(loadingOverlay) loadingOverlay.classList.add('hidden');
+    }
+  }
+
+
+  async function transferParentAttendance(){
+    if(!isDirection(me())) return alert('Apenas direção/coordenação pode transferir atendimento.');
+    if(!state.selected || state.selected.type !== 'user' || !isParent(state.selected.user)) return alert('Selecione uma conversa de responsável para transferir.');
+    await getUsers();
+    const parentUser = state.selected.user;
+    const staff = (state.users || []).filter(function(u){ return isStaff(u) && norm(userId(u)) !== norm(meId()); });
+    if(!staff.length) return alert('Nenhum professor, coordenação ou secretaria encontrado para receber o atendimento.');
+    const options = staff.map(function(u,i){ return (i+1)+') '+userName(u)+' — '+roleLabel(u); }).join('\n');
+    const chosen = prompt('Digite o número de quem receberá este atendimento:\n\n' + options);
+    if(chosen === null) return;
+    const idx = parseInt(chosen,10) - 1;
+    if(isNaN(idx) || !staff[idx]) return alert('Opção inválida.');
+    const target = staff[idx];
+    const now = Date.now();
+    const rid = 'route_' + safeId(userId(parentUser)) + '_' + safeId(userId(target)) + '_' + now;
+    const routeData = {
+      routeId: rid,
+      parentId: userId(parentUser),
+      parentName: userName(parentUser),
+      parentRole: userRole(parentUser),
+      parentEmail: txt(parentUser.email),
+      parentUsername: txt(parentUser.username),
+      parentAliases: aliasesUser(parentUser),
+      assignedTo: userId(target),
+      assignedName: userName(target),
+      assignedRole: userRole(target),
+      assignedEmail: txt(target.email),
+      assignedUsername: txt(target.username),
+      assignedAliases: aliasesUser(target),
+      createdBy: meId(),
+      createdByName: userName(me()),
+      createdAt: now,
+      updatedAt: now,
+      status: 'open',
+      privateThread: true,
+      note: 'Conversa privada criada por transferência de atendimento.'
+    };
+    try{
+      await getCollection('concenal_chat_routes').doc(rid).set(routeData, {merge:true});
+      const notice = buildBaseMsg(userId(target), userName(target), userRole(target), aliasesUser(target), 'route', 'route__' + rid);
+      notice.routeId = rid;
+      notice.routeNotice = true;
+      notice.internalOnly = true;
+      notice.routeParentId = userId(parentUser);
+      notice.routeParentName = userName(parentUser);
+      notice.routeAssignedTo = userId(target);
+      notice.routeAssignedName = userName(target);
+      notice.participants = uniq(aliasesUser(target).concat([userId(target)]));
+      notice.text = 'Novo atendimento iniciado.';
+      await getCollection('concenal_chat').add(notice);
+      state.routes.push(routeData);
+      await loadChatUsers();
+      setChatRecipient(userId(parentUser), userName(parentUser), roleLabel(parentUser), 'user', parentUser, null);
+      alert('Atendimento transferido para ' + userName(target) + '.');
+    }catch(e){
+      console.error('Erro ao transferir atendimento:', e);
+      alert('Erro ao transferir atendimento: ' + (e.message || e));
+    }
+  }
+
+  function handleChatFile(input){
+    const file = input && input.files ? input.files[0] : null;
+    if(!file) return;
+    if(file.size > 10 * 1024 * 1024) return alert('Tamanho máximo permitido: 10MB');
+    const reader = new FileReader();
+    reader.onload = function(e){
+      try { currentChatFile = { name:file.name, type:file.type, data:e.target.result }; } catch(err){}
+      const preview = $('chat-attachment-preview'); if(preview) preview.classList.add('active');
+      const name = $('attachment-name'); if(name) name.textContent = file.name;
+    };
+    reader.readAsDataURL(file);
+  }
+  function clearChatAttachment(){ try { currentChatFile = null; } catch(e){} const f = $('chat-file'); if(f) f.value = ''; const preview = $('chat-attachment-preview'); if(preview) preview.classList.remove('active'); }
+
+  function docsForConversationDeletion(selectedBeforeDelete){
+    selectedBeforeDelete = selectedBeforeDelete || state.selected;
+    const routeToDelete = selectedBeforeDelete && selectedBeforeDelete.type === 'route' ? selectedBeforeDelete.route : null;
+    const rid = routeToDelete ? routeId(routeToDelete) : '';
+
+    if(rid){
+      return (state.messages || []).filter(function(m){
+        return m && m.docId && !isLocalDocId(m.docId) && isRouteMessage(m) && norm(routeIdFromMessage(m)) === norm(rid);
+      });
+    }
+
+    return (state.messages || []).filter(function(m){
+      return m && m.docId && !isLocalDocId(m.docId) && messageMatchesConversation(m);
+    });
+  }
+
+  async function clearConversation(){
+    if(!state.selected) return alert('Selecione uma conversa para apagar.');
+
+    const selectedBeforeDelete = state.selected;
+    const msgs = docsForConversationDeletion(selectedBeforeDelete);
+    const routeToDelete = selectedBeforeDelete.type === 'route' ? selectedBeforeDelete.route : null;
+    const hasRouteToDelete = !!(routeToDelete && routeId(routeToDelete));
+
+    if(!msgs.length && !hasRouteToDelete) return alert('Não há mensagens para apagar nesta conversa.');
+
+    const confirmText = hasRouteToDelete
+      ? 'Apagar este chat definitivamente para TODOS os participantes? Esta ação vai excluir as mensagens e o registro da transferência da base, sem backup.'
+      : 'Apagar este chat definitivamente para TODOS os participantes? Esta ação vai excluir as mensagens da base, sem backup.';
+    if(!confirm(confirmText)) return;
+
+    try{
+      if(msgs.length){
+        for(let i=0; i<msgs.length; i+=430){
+          const batch = db.batch();
+          msgs.slice(i, i+430).forEach(function(m){ batch.delete(getCollection('concenal_chat').doc(m.docId)); });
+          await batch.commit();
+        }
+      }
+
+      if(hasRouteToDelete){
+        await getCollection('concenal_chat_routes').doc(routeId(routeToDelete)).delete();
+        state.routes = (state.routes || []).filter(function(r){ return norm(routeId(r)) !== norm(routeId(routeToDelete)); });
+      }
+
+      const deletedIds = new Set(msgs.map(function(m){ return m.docId; }));
+      state.messages = (state.messages || []).filter(function(m){ return !deletedIds.has(m.docId); });
+      Object.keys(state.unread || {}).forEach(function(id){ delete state.unread[id]; });
+      clearChatUnread(selectedBeforeDelete.id);
+      updateChatBadges();
+
+      if(typeof window.playSaveSoundV106 === 'function') window.playSaveSoundV106();
+      await getRoutesOnce();
+      await loadChatUsers();
+
+      state.selected = null;
+      if(isParent(me())){
+        const activeRoute = latestOpenRouteForParent(meId());
+        if(activeRoute){
+          const assigned = routeAssignedUser(activeRoute);
+          setChatRecipient('route_' + safeId(routeId(activeRoute)), userName(assigned) || activeRoute.assignedName || 'Atendimento', 'Atendimento privado', 'route', assigned, activeRoute);
+        } else {
+          setChatRecipient('parent_home', 'Direção / Coordenação', 'Atendimento oficial', 'parent_home', me(), null);
+        }
+      } else {
+        setChatRecipient('global', 'Avisos Gerais', 'Mural da Escola', 'global', null, null);
+      }
+    }catch(e){
+      console.error('Erro ao apagar chat:', e);
+      alert('Erro ao apagar chat: ' + (e.message || e));
+    }
+  }
+
+  async function deleteMsg(docId){
+    if(!docId) return;
+    if(canDeleteChatForAll() && !isLocalDocId(docId)){
+      if(!confirm('Apagar esta mensagem para todos?')) return;
+      try{ await getCollection('concenal_chat').doc(docId).delete(); if(typeof window.playSaveSoundV106 === 'function') window.playSaveSoundV106(); }
+      catch(e){ console.error('Erro ao apagar mensagem:', e); alert('Erro ao apagar mensagem: ' + (e.message || e)); }
+      return;
+    }
+    state.hidden[docId] = true; saveHidden(); renderChatMessages(state.messages);
+  }
+
+  window.openChat = openChat;
+  window.loadChatUsers = loadChatUsers;
+  window.setChatRecipient = setChatRecipient;
+  window.filterChatRole = filterChatRole;
+  window.filterChat = filterChat;
+  window.renderChatMessages = renderChatMessages;
+  window.sendChatMessage = sendChatMessage;
+  window.handleChatFile = handleChatFile;
+  window.clearChatAttachment = clearChatAttachment;
+  window.clearConversation = clearConversation;
+  window.refreshModernChatBadges = updateChatBadges;
+  window.showChatMainWindow = showChatMainWindow;
+  window.hideChatMainWindow = hideChatMainWindow;
+  window.deleteMsg = deleteMsg;
+  window.forwardParentAttendance = transferParentAttendance;
+  window.transferParentAttendance = transferParentAttendance;
+
+  console.log('CONCENAL Chat carregado:', CHAT_VERSION);
+})();
+</script>
+
+
+
+<!-- PATCH V106: ajustes pontuais solicitados - permissões, QR com câmera, sons, modo noturno, mobile e dicas de planejamento -->
+<style id="concenal-v106-style">
+  body.dark-theme{background:#0b1220!important;color:#e5e7eb!important;}
+  body.dark-theme #app-screen, body.dark-theme main{background:#0b1220!important;}
+  body.dark-theme .bg-white{background:#111827!important;color:#e5e7eb!important;border-color:#334155!important;}
+  body.dark-theme .bg-gray-50, body.dark-theme .bg-gray-100{background:#0f172a!important;color:#dbeafe!important;border-color:#334155!important;}
+  body.dark-theme .text-gray-800, body.dark-theme .text-gray-700{color:#f8fafc!important;}
+  body.dark-theme .text-gray-600, body.dark-theme .text-gray-500, body.dark-theme .text-gray-400{color:#cbd5e1!important;}
+  body.dark-theme input, body.dark-theme select, body.dark-theme textarea{background:#0f172a!important;color:#f8fafc!important;border-color:#475569!important;}
+  body.dark-theme input::placeholder, body.dark-theme textarea::placeholder{color:#94a3b8!important;}
+  body.dark-theme .chat-v103-shell{background:#0f172a!important;border-color:#334155!important;}
+  body.dark-theme .chat-v103-sidebar, body.dark-theme .chat-v103-list, body.dark-theme .chat-v103-composer, body.dark-theme .chat-v103-header{background:#111827!important;border-color:#334155!important;}
+  body.dark-theme .chat-v103-search{background:#0b1220!important;border-color:#334155!important;}
+  body.dark-theme .chat-v103-user{background:#172033!important;border-color:#334155!important;color:#e5e7eb!important;}
+  body.dark-theme .chat-v103-user.active{background:#064e3b!important;border-color:#34d399!important;}
+  body.dark-theme .chat-v103-messages{background-color:#0b1220!important;background-image:radial-gradient(circle at 1px 1px,rgba(148,163,184,.18) 1px,transparent 0)!important;background-size:18px 18px!important;}
+  body.dark-theme .chat-v103-msg.received{background:#1e293b!important;color:#f8fafc!important;border-color:#334155!important;}
+  body.dark-theme .chat-v103-msg.sent{background:#065f46!important;color:#ecfdf5!important;border-color:#10b981!important;}
+  body.dark-theme .chat-v103-day{background:#111827!important;color:#cbd5e1!important;border-color:#334155!important;}
+  body.dark-theme .chat-v103-empty{color:#cbd5e1!important;}
+  .v106-qr-camera-box video{width:100%;max-height:280px;border-radius:16px;background:#000;object-fit:cover;border:3px solid #047857;}
+  .v106-qr-camera-box{border:1px solid #bbf7d0;background:#f0fdf4;border-radius:16px;padding:12px;}
+  body.dark-theme .v106-qr-camera-box{background:#052e2b;border-color:#059669;color:#d1fae5;}
+  .planning-v106-tips{border:1px solid #bfdbfe;background:#eff6ff;border-radius:16px;padding:14px;font-size:11px;color:#1e3a8a;line-height:1.5;}
+  .planning-v106-tips h4{font-weight:900;text-transform:uppercase;letter-spacing:.08em;font-size:11px;margin:0 0 8px;}
+  .planning-v106-tips ul{margin:8px 0 0 16px;list-style:disc;}
+  .planning-v106-tips code{background:#dbeafe;border-radius:6px;padding:1px 5px;font-weight:800;}
+  body.dark-theme .planning-v106-tips{background:#0f274a;border-color:#1d4ed8;color:#dbeafe;}
+  @media(max-width:767px){
+    body{font-size:14px;}
+    #app-screen header{position:sticky;top:0;z-index:40;}
+    #main-controls{padding:10px!important;gap:8px!important;}
+    #main-controls select, #main-controls button{min-height:42px;font-size:12px!important;}
+    #class-tabs{overflow-x:auto;white-space:nowrap;padding-bottom:6px;}
+    nav, #nav-tabs, .hide-scroll-x{overflow-x:auto!important;-webkit-overflow-scrolling:touch;}
+    #view-grades, #view-attendance, #view-daily, #view-behavior, #view-planning, #view-activities, #view-dashboard{border-radius:14px!important;margin:8px!important;width:auto!important;}
+    table{font-size:11px;}
+    .overflow-x-auto{max-width:100vw;}
+    .modal-content, [id^="modal-"] .bg-white{max-width:96vw!important;}
+    #toast-container{left:10px!important;right:10px!important;bottom:10px!important;}
+    #toast-container>div{width:100%!important;}
+  }
+</style>
+<script id="concenal-v106-script">
+(function(){
+  'use strict';
+  function $(id){ return document.getElementById(id); }
+  function norm(v){ return String(v == null ? '' : v).normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase(); }
+  function featureForMode(mode){
+    return {grades:'grades',attendance:'attendance',daily:'daily',behavior:'behavior',planning:'planning',activities:'activities',schedule:'schedule',calendar:'calendar',dashboard:'reports'}[mode] || mode;
+  }
+  function allowedMode(mode){ try{ return typeof canAccess === 'function' ? canAccess(featureForMode(mode)) : true; }catch(e){ return true; } }
+  function enforceAccessV106(){
+    try{
+      if(!currentUser) return;
+      var modes = ['grades','attendance','daily','behavior','planning','activities','schedule','calendar','dashboard'];
+      modes.forEach(function(m){ var nav = $('nav-'+m); if(nav) nav.classList.toggle('hidden', !allowedMode(m)); });
+      var btnChat = $('btn-chat'); if(btnChat) btnChat.classList.toggle('hidden', !allowedMode('chat'));
+      if(!allowedMode(appData.currentMode)){
+        var first = modes.find(allowedMode) || 'grades';
+        appData.currentMode = first;
+      }
+    }catch(e){ console.warn('Permissões V106:', e); }
+  }
+  var oldSwitch = window.switchMode;
+  window.switchMode = function(mode){
+    if(!allowedMode(mode)){
+      alert('Este usuário não possui permissão para acessar esta área.');
+      return;
+    }
+    return oldSwitch ? oldSwitch.apply(this, arguments) : undefined;
+  };
+  var oldUpdate = window.updateUI;
+  window.updateUI = function(){ var r = oldUpdate ? oldUpdate.apply(this, arguments) : undefined; enforceAccessV106(); return r; };
+  var oldShowApp = window.showApp;
+  window.showApp = function(){ var r = oldShowApp ? oldShowApp.apply(this, arguments) : undefined; setTimeout(enforceAccessV106, 80); return r; };
+
+  function tone(freq, duration, gain){
+    try{
+      var AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if(!AudioCtx) return;
+      var ctx = window.__concenalAudioCtx || (window.__concenalAudioCtx = new AudioCtx());
+      var osc = ctx.createOscillator();
+      var vol = ctx.createGain();
+      osc.type = 'sine'; osc.frequency.value = freq;
+      vol.gain.value = gain;
+      osc.connect(vol); vol.connect(ctx.destination);
+      osc.start();
+      setTimeout(function(){ try{ osc.stop(); }catch(e){} }, duration);
+    }catch(e){}
+  }
+  window.playChatReceiveSoundV106 = function(){ tone(880, 120, .055); setTimeout(function(){ tone(1175, 100, .045); }, 110); };
+  window.playSaveSoundV106 = function(){ tone(660, 90, .045); setTimeout(function(){ tone(990, 110, .04); }, 90); };
+
+  function wrapSaveSounds(){
+    ['saveSchedule','saveGlobalConfig','saveUserOps','addStudent','addObservation','saveDailyAttendance','saveDailyLog','saveBehaviorReport','parsePlanningText','addManualPlanningContentV37'].forEach(function(name){
+      var fn = window[name];
+      if(typeof fn !== 'function' || fn.__v106SoundWrapped) return;
+      var wrapped = function(){
+        var result = fn.apply(this, arguments);
+        try{
+          if(result && typeof result.then === 'function') result.then(function(){ window.playSaveSoundV106(); }).catch(function(){});
+          else setTimeout(window.playSaveSoundV106, 80);
+        }catch(e){}
+        return result;
+      };
+      wrapped.__v106SoundWrapped = true;
+      window[name] = wrapped;
+    });
+  }
+
+  function insertPlanningTips(){
+    var leftCol = document.querySelector('#view-planning .lg\\:col-span-1');
+    if(!leftCol || $('planning-v106-tips')) return;
+    var card = document.createElement('div');
+    card.id = 'planning-v106-tips';
+    card.className = 'planning-v106-tips';
+    card.innerHTML = '<h4><i class="fas fa-lightbulb mr-1"></i> Dicas para o arquivo ser lido corretamente</h4>'+
+      '<div>Para Excel, prefira colunas claras: <code>Unidade</code>, <code>Período</code>, <code>Conteúdo</code>, <code>Habilidade</code>, <code>Metodologia</code> e <code>Avaliação</code>.</div>'+
+      '<ul><li>Separe os blocos com títulos como <b>1ª Unidade</b>, <b>Unidade 2</b> ou <b>U3</b>.</li><li>Evite células mescladas, imagens de texto e tabelas muito quebradas.</li><li>No PDF, use texto selecionável; PDF escaneado como imagem pode não transcrever bem.</li><li>Coloque um conteúdo por linha para o sistema organizar melhor.</li><li>Use nomes de disciplina e turma no início do arquivo quando possível.</li></ul>';
+    var first = leftCol.children[0];
+    if(first && first.nextSibling) leftCol.insertBefore(card, first.nextSibling); else leftCol.appendChild(card);
+  }
+
+  var qrStream = null;
+  var qrScanTimer = null;
+  function extractCode(text){
+    var s = String(text || '').trim();
+    try{ var u = new URL(s); s = u.searchParams.get('verify') || u.searchParams.get('code') || s; }catch(e){}
+    var m = s.match(/CONCENAL[-_A-Z0-9]+/i);
+    return (m ? m[0] : s).toUpperCase();
+  }
+  function injectQrButton(){
+    var input = $('verify-doc-code');
+    if(!input || $('btn-scan-qr-v106')) return;
+    var btn = document.createElement('button');
+    btn.id = 'btn-scan-qr-v106';
+    btn.type = 'button';
+    btn.className = 'w-full bg-blue-600 text-white py-3 rounded-lg text-xs font-bold uppercase shadow hover:bg-blue-700 transition';
+    btn.innerHTML = '<i class="fas fa-camera mr-1"></i> Ler QR Code com a câmera';
+    btn.onclick = startQrScanner;
+    input.insertAdjacentElement('afterend', btn);
+    var box = document.createElement('div');
+    box.id = 'qr-scanner-box-v106';
+    box.className = 'v106-qr-camera-box hidden space-y-2';
+    box.innerHTML = '<video id="qr-video-v106" playsinline muted></video><div class="flex gap-2"><button type="button" id="btn-stop-qr-v106" class="flex-1 bg-red-600 text-white rounded-lg py-2 text-xs font-bold uppercase"><i class="fas fa-stop mr-1"></i>Parar câmera</button></div><p id="qr-scanner-status-v106" class="text-[10px] font-bold text-green-800">Aponte a câmera para o QR Code do documento.</p>';
+    btn.insertAdjacentElement('afterend', box);
+    var stop = $('btn-stop-qr-v106'); if(stop) stop.onclick = stopQrScanner;
+  }
+  async function startQrScanner(){
+    var box = $('qr-scanner-box-v106'), video = $('qr-video-v106'), status = $('qr-scanner-status-v106');
+    if(!box || !video) return;
+    if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){ alert('Este navegador não liberou acesso à câmera. Digite o código manualmente.'); return; }
+    if(!('BarcodeDetector' in window)){ alert('Seu navegador não tem leitura nativa de QR Code. Use Chrome/Edge atualizado ou digite o código manualmente.'); return; }
+    try{
+      box.classList.remove('hidden');
+      qrStream = await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}, audio:false});
+      video.srcObject = qrStream;
+      await video.play();
+      var detector = new BarcodeDetector({formats:['qr_code']});
+      qrScanTimer = setInterval(async function(){
+        try{
+          var codes = await detector.detect(video);
+          if(codes && codes.length){
+            var value = extractCode(codes[0].rawValue || '');
+            var input = $('verify-doc-code'); if(input) input.value = value;
+            if(status) status.textContent = 'QR Code lido: ' + value;
+            stopQrScanner();
+            if(typeof verifyPrintedDocument === 'function') verifyPrintedDocument();
+          }
+        }catch(e){}
+      }, 650);
+    }catch(e){ alert('Não foi possível acessar a câmera. Verifique a permissão do navegador.'); }
+  }
+  function stopQrScanner(){
+    try{ if(qrScanTimer) clearInterval(qrScanTimer); qrScanTimer = null; }catch(e){}
+    try{ if(qrStream) qrStream.getTracks().forEach(function(t){ t.stop(); }); qrStream = null; }catch(e){}
+    var box = $('qr-scanner-box-v106'); if(box) box.classList.add('hidden');
+  }
+  var oldClose = window.closeModal;
+  window.closeModal = function(id){ if(id === 'modal-verify-doc') stopQrScanner(); return oldClose ? oldClose.apply(this, arguments) : undefined; };
+
+  document.addEventListener('DOMContentLoaded', function(){
+    injectQrButton(); insertPlanningTips(); wrapSaveSounds(); enforceAccessV106();
+    setInterval(function(){ insertPlanningTips(); wrapSaveSounds(); enforceAccessV106(); }, 2500);
+  });
+  setTimeout(function(){ injectQrButton(); insertPlanningTips(); wrapSaveSounds(); enforceAccessV106(); }, 800);
 })();
 </script>
 
